@@ -142,7 +142,7 @@ export default async function ProductPage({
                             {formatPrice(variation.price)}
                           </span>
                           <AddToCartButton
-                            productId={product.databaseId}
+                            productId={product.databaseId || 0}
                             variationId={variation.databaseId}
                             disabled={variation.stockStatus !== 'IN_STOCK'}
                           />
@@ -156,7 +156,7 @@ export default async function ProductPage({
               {/* Add to Cart for Simple Products */}
               {product.type === 'SIMPLE' && (
                 <div className="mb-6">
-                  <AddToCartButton productId={product.databaseId} disabled={!isInStock} />
+                  <AddToCartButton productId={product.databaseId || 0} disabled={!isInStock} />
                 </div>
               )}
 

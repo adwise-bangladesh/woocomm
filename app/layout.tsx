@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import Header from '@/components/Header';
+import ProgressBar from '@/components/ProgressBar';
 import { graphqlClient } from '@/lib/graphql-client';
 import { GET_MENU, GET_SITE_SETTINGS } from '@/lib/queries';
 
@@ -67,6 +68,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        <ProgressBar />
         <Header menuItems={menuItems} siteSettings={siteSettings} />
         <main className="pb-16 lg:pb-0">{children}</main>
       </body>

@@ -4,6 +4,8 @@ import HeroSlider from '@/components/HeroSlider';
 import QuickLinks from '@/components/QuickLinks';
 import CircularCategories from '@/components/CircularCategories';
 import InfiniteProductGrid from '@/components/InfiniteProductGrid';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import StructuredData from '@/components/StructuredData';
 import { Product } from '@/lib/types';
 
 interface ProductsData {
@@ -21,74 +23,76 @@ interface SliderResponse {
   sliders?: { nodes: never[] };
 }
 
-export const revalidate = 60; // ISR: Revalidate every 60 seconds
+export const revalidate = 300; // ISR: Revalidate every 5 minutes (optimized for e-commerce)
 
 async function getHomePageData() {
   try {
-    // Fetch data separately to better handle errors
-    const categoriesData = await graphqlClient.request(GET_CATEGORIES).catch(() => ({ 
-      productCategories: { nodes: [] } 
-    })) as CategoriesResponse;
-    
-    const sliderData = await graphqlClient.request(GET_SLIDER_IMAGES).catch(() => ({ 
-      sliders: { nodes: [] } 
-    })) as SliderResponse;
-    
-    // Fetch popular products separately
-    const popularData = await graphqlClient.request(GET_POPULAR_PRODUCTS, { first: 12 }).catch(() => ({ 
-      products: { nodes: [] } 
-    })) as { products: { nodes: Product[] } };
-    
-    let productsData: ProductsData;
-    try {
-      productsData = await graphqlClient.request(GET_PRODUCTS, { first: 24, after: null }) as ProductsData;
-    } catch (error) {
-      console.error('Error fetching products - full error:', JSON.stringify(error, null, 2));
-      productsData = {
-        products: {
-          nodes: [],
-          pageInfo: { hasNextPage: false, endCursor: null }
+    // Fetch all data in parallel for better performance
+    const [categoriesData, sliderData, popularData, productsData] = await Promise.all([
+      graphqlClient.request(GET_CATEGORIES).catch(() => ({ 
+        productCategories: { nodes: [] } 
+      })) as Promise<CategoriesResponse>,
+      
+      graphqlClient.request(GET_SLIDER_IMAGES).catch(() => ({ 
+        sliders: { nodes: [] } 
+      })) as Promise<SliderResponse>,
+      
+      graphqlClient.request(GET_POPULAR_PRODUCTS, { first: 12 }).catch(() => ({ 
+        products: { nodes: [] } 
+      })) as Promise<{ products: { nodes: Product[] } }>,
+      
+      graphqlClient.request(GET_PRODUCTS, { first: 24, after: null }).catch((error) => {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error fetching products:', error);
         }
-      };
-    }
+        return {
+          products: {
+            nodes: [],
+            pageInfo: { hasNextPage: false, endCursor: null }
+          }
+        };
+      }) as Promise<ProductsData>,
+    ]);
 
     // Get all products
     const allProducts = productsData.products?.nodes || [];
     const popularProductsList = popularData.products?.nodes || [];
     
-    // Create sets to track product IDs
-    const recentIds = new Set<string>();
-    const featuredIds = new Set<string>();
-    const popularIds = new Set<string>();
+    // Optimized sorting: Use Set for O(1) lookups
+    const usedIds = new Set<string>();
+    const sortedProducts: Product[] = [];
     
-    // Get first 8 as recent
-    const recentProducts = allProducts.slice(0, 8);
-    recentProducts.forEach(p => recentIds.add(p.id));
+    // 1. Add first 8 as recent
+    const recentCount = Math.min(8, allProducts.length);
+    for (let i = 0; i < recentCount; i++) {
+      sortedProducts.push(allProducts[i]);
+      usedIds.add(allProducts[i].id);
+    }
     
-    // Get featured products (excluding recent)
-    const featuredProducts = allProducts.filter((p: Product) => 
-      p.featured && !recentIds.has(p.id)
-    );
-    featuredProducts.forEach(p => featuredIds.add(p.id));
+    // 2. Add featured products (excluding recent)
+    for (const product of allProducts) {
+      if (product.featured && !usedIds.has(product.id)) {
+        sortedProducts.push(product);
+        usedIds.add(product.id);
+      }
+    }
     
-    // Get popular products (excluding recent and featured)
-    const popularProducts = popularProductsList.filter((p: Product) => 
-      !recentIds.has(p.id) && !featuredIds.has(p.id)
-    ).slice(0, 12);
-    popularProducts.forEach(p => popularIds.add(p.id));
+    // 3. Add popular products (excluding recent and featured)
+    const popularCount = Math.min(12, popularProductsList.length);
+    for (let i = 0; i < popularCount; i++) {
+      const product = popularProductsList[i];
+      if (!usedIds.has(product.id)) {
+        sortedProducts.push(product);
+        usedIds.add(product.id);
+      }
+    }
     
-    // Get rest of the products (excluding recent, featured, and popular)
-    const regularProducts = allProducts.filter((p: Product) => 
-      !recentIds.has(p.id) && !featuredIds.has(p.id) && !popularIds.has(p.id)
-    );
-    
-    // Combine in desired order: Recent → Featured → Popular → Rest
-    const sortedProducts = [
-      ...recentProducts,
-      ...featuredProducts,
-      ...popularProducts,
-      ...regularProducts
-    ];
+    // 4. Add remaining products
+    for (const product of allProducts) {
+      if (!usedIds.has(product.id)) {
+        sortedProducts.push(product);
+      }
+    }
 
     return {
       products: sortedProducts,
@@ -112,37 +116,48 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* SEO Structured Data */}
+      <StructuredData products={products} type="homepage" />
+      
       {/* Hero Slider */}
-      <section className="container mx-auto px-4 py-4 md:py-6">
-        <HeroSlider images={sliderImages} />
-      </section>
+      <ErrorBoundary>
+        <section className="container mx-auto px-4 py-4 md:py-6">
+          <HeroSlider images={sliderImages} />
+        </section>
+      </ErrorBoundary>
 
       {/* Quick Links */}
-      <QuickLinks />
+      <ErrorBoundary>
+        <QuickLinks />
+      </ErrorBoundary>
 
       {/* Circular Categories */}
-      <CircularCategories categories={categories} />
+      <ErrorBoundary>
+        <CircularCategories categories={categories} />
+      </ErrorBoundary>
 
       {/* All Products */}
-      {products.length > 0 ? (
-        <InfiniteProductGrid
-          initialProducts={products}
-          initialEndCursor={pageInfo.endCursor}
-          initialHasNextPage={pageInfo.hasNextPage}
-        />
-      ) : (
-        <section className="py-8 bg-white">
-          <div className="container mx-auto px-4">
-            <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-6">Products For You</h2>
-            <div className="text-center py-12">
-              <p className="text-gray-500 mb-4">Unable to load products. Please check WooGraphQL plugin installation.</p>
-              <p className="text-sm text-gray-400">
-                Make sure &quot;WPGraphQL for WooCommerce&quot; plugin is installed and activated.
-              </p>
+      <ErrorBoundary>
+        {products.length > 0 ? (
+          <InfiniteProductGrid
+            initialProducts={products}
+            initialEndCursor={pageInfo.endCursor}
+            initialHasNextPage={pageInfo.hasNextPage}
+          />
+        ) : (
+          <section className="py-8 bg-white">
+            <div className="container mx-auto px-4">
+              <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-6">Products For You</h2>
+              <div className="text-center py-12">
+                <p className="text-gray-500 mb-4">Unable to load products. Please check WooGraphQL plugin installation.</p>
+                <p className="text-sm text-gray-400">
+                  Make sure &quot;WPGraphQL for WooCommerce&quot; plugin is installed and activated.
+                </p>
+              </div>
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+        )}
+      </ErrorBoundary>
     </div>
   );
 }

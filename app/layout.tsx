@@ -68,9 +68,16 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        {/* Skip to main content link for accessibility */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:shadow-lg"
+        >
+          Skip to main content
+        </a>
         <ProgressBar />
         <Header menuItems={menuItems} siteSettings={siteSettings} />
-        <main className="pb-16 lg:pb-0">{children}</main>
+        <main id="main-content" className="pb-16 lg:pb-0">{children}</main>
       </body>
     </html>
   );

@@ -35,6 +35,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     <Link
       href={`/product/${product.slug}`}
       className="group block bg-white hover:shadow-md transition-shadow overflow-hidden relative"
+      prefetch={true}
     >
       {/* Discount Badge */}
       {discount && (

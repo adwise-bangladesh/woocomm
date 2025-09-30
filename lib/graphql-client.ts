@@ -1,6 +1,10 @@
 import { GraphQLClient } from 'graphql-request';
 
-const endpoint = 'https://backend.zonash.com/graphql';
+const endpoint = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'https://backend.zonash.com/graphql';
+
+if (!process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT && process.env.NODE_ENV === 'development') {
+  console.warn('⚠️  NEXT_PUBLIC_GRAPHQL_ENDPOINT not set, using default endpoint');
+}
 
 // Create a client for server-side requests (no session)
 export const graphqlClient = new GraphQLClient(endpoint, {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createSessionClient } from '@/lib/graphql-client';
 import { GET_PRODUCTS } from '@/lib/queries';
 import ProductCard from './ProductCard';
@@ -22,11 +22,23 @@ export default function InfiniteProductGrid({
   const [endCursor, setEndCursor] = useState<string | null>(initialEndCursor);
   const [hasNextPage, setHasNextPage] = useState(initialHasNextPage);
   const [isLoading, setIsLoading] = useState(false);
+  const [lastLoadTime, setLastLoadTime] = useState(0);
+  const [announcement, setAnnouncement] = useState('');
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const MIN_LOAD_INTERVAL = 1000; // Minimum 1 second between loads
 
   const loadMore = useCallback(async () => {
     if (isLoading || !hasNextPage) return;
 
+    // Rate limiting: prevent requests within 1 second
+    const now = Date.now();
+    if (now - lastLoadTime < MIN_LOAD_INTERVAL) {
+      return;
+    }
+
     setIsLoading(true);
+    setLastLoadTime(now);
+    
     try {
       const client = createSessionClient();
       const data = await client.request(GET_PRODUCTS, {
@@ -35,34 +47,60 @@ export default function InfiniteProductGrid({
       }) as { products: { nodes: Product[]; pageInfo: { endCursor: string | null; hasNextPage: boolean } } };
 
       if (data.products) {
+        const newProductsCount = data.products.nodes.length;
         setProducts((prev) => [...prev, ...data.products.nodes]);
         setEndCursor(data.products.pageInfo.endCursor);
         setHasNextPage(data.products.pageInfo.hasNextPage);
+        
+        // Announce to screen readers
+        setAnnouncement(`Loaded ${newProductsCount} more products`);
+        setTimeout(() => setAnnouncement(''), 1000);
       }
     } catch (error) {
-      console.error('Error loading more products:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error loading more products:', error);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [endCursor, hasNextPage, isLoading]);
+  }, [endCursor, hasNextPage, isLoading, lastLoadTime]);
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
+    // Debounced scroll handler to prevent excessive calls
     const handleScroll = () => {
-      if (
-        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 500 &&
-        !isLoading &&
-        hasNextPage
-      ) {
-        loadMore();
-      }
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        if (
+          window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 500 &&
+          !isLoading &&
+          hasNextPage
+        ) {
+          loadMore();
+        }
+      }, 200); // 200ms debounce
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, [loadMore, isLoading, hasNextPage]);
 
   return (
     <section className="py-6 bg-gray-50">
+      {/* Screen reader announcements */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {announcement}
+      </div>
+
       <div className="container mx-auto px-4 mb-4">
         <div className="flex items-center gap-3">
           <div className="flex-1 h-[2px] bg-gradient-to-r from-transparent via-gray-300 to-gray-300"></div>
@@ -80,18 +118,20 @@ export default function InfiniteProductGrid({
         </div>
       </div>
 
-      {isLoading && (
-        <div className="flex justify-center items-center py-8">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-          <span className="ml-2 text-gray-600">Loading more products...</span>
-        </div>
-      )}
+      <div ref={loadMoreRef}>
+        {isLoading && (
+          <div className="flex justify-center items-center py-8">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <span className="ml-2 text-gray-600">Loading more products...</span>
+          </div>
+        )}
 
-      {!hasNextPage && products.length > 0 && (
-        <div className="text-center py-8">
-          <p className="text-gray-600">You&apos;ve reached the end of the products!</p>
-        </div>
-      )}
+        {!hasNextPage && products.length > 0 && (
+          <div className="text-center py-8">
+            <p className="text-gray-600">You&apos;ve reached the end of the products!</p>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

@@ -32,6 +32,7 @@ export default function HeroSlider({ images }: HeroSliderProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const [isVisible, setIsVisible] = useState(true);
 
   // Minimum swipe distance (in px)
   const minSwipeDistance = 50;
@@ -64,13 +65,26 @@ export default function HeroSlider({ images }: HeroSliderProps) {
     },
   ];
 
+  // Pause slider when tab is not visible
   useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsVisible(!document.hidden);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
+  // Auto-advance slider only when visible
+  useEffect(() => {
+    if (!isVisible || slides.length <= 1) return;
+
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 5000);
 
     return () => clearInterval(timer);
-  }, [slides.length]);
+  }, [slides.length, isVisible]);
 
   const goToSlide = (index: number) => {
     setCurrentSlide(index);

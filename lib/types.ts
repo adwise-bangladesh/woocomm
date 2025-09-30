@@ -6,6 +6,7 @@ export interface Product {
   type?: string;
   description?: string;
   shortDescription?: string;
+  featured?: boolean;
   image?: {
     sourceUrl: string;
     altText: string;

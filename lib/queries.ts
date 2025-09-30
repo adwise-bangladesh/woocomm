@@ -37,10 +37,10 @@ export const GET_MENU = gql`
   }
 `;
 
-// Query to get product categories
+// Query to get product categories (only parent categories)
 export const GET_CATEGORIES = gql`
   query GetCategories {
-    productCategories(first: 20, where: { hideEmpty: true }) {
+    productCategories(first: 20, where: { hideEmpty: true, parent: null }) {
       nodes {
         id
         name
@@ -128,9 +128,14 @@ export const GET_HOMEPAGE_SLIDER = gql`
 
 // Query to get all products with pagination
 // Using ProductWithPricing interface to access price fields
+// Sorted by: Date (newest first), Featured status included for frontend sorting
 export const GET_PRODUCTS = gql`
   query GetProducts($first: Int!, $after: String) {
-    products(first: $first, after: $after) {
+    products(
+      first: $first
+      after: $after
+      where: { orderby: { field: DATE, order: DESC } }
+    ) {
       pageInfo {
         hasNextPage
         endCursor
@@ -139,6 +144,36 @@ export const GET_PRODUCTS = gql`
         id
         name
         slug
+        featured
+        image {
+          sourceUrl
+          altText
+        }
+        ... on ProductWithPricing {
+          price
+          regularPrice
+          salePrice
+        }
+        ... on InventoriedProduct {
+          stockStatus
+        }
+      }
+    }
+  }
+`;
+
+// Query to get popular products (by sales/popularity)
+export const GET_POPULAR_PRODUCTS = gql`
+  query GetPopularProducts($first: Int!) {
+    products(
+      first: $first
+      where: { orderby: { field: POPULARITY, order: DESC } }
+    ) {
+      nodes {
+        id
+        name
+        slug
+        featured
         image {
           sourceUrl
           altText

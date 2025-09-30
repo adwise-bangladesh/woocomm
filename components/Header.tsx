@@ -97,19 +97,14 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
             {/* Search Bar */}
             <form onSubmit={handleSearch} className="flex-1 max-w-2xl mx-8">
               <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search for brands, products, categories..."
-                  className="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  placeholder="Search for products..."
+                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-transparent placeholder:text-gray-400 transition-all"
                 />
-                <button
-                  type="submit"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700 transition-colors"
-                >
-                  <Search className="w-5 h-5" />
-                </button>
               </div>
             </form>
 
@@ -227,20 +222,15 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
             <div className="pb-3 animate-slideDown">
               <form onSubmit={handleSearch}>
                 <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search products..."
-                    className="w-full px-4 py-2 pr-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-transparent placeholder:text-gray-400 transition-all"
                     autoFocus
                   />
-                  <button
-                    type="submit"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-teal-600"
-                  >
-                    <Search className="w-5 h-5" />
-                  </button>
                 </div>
               </form>
             </div>

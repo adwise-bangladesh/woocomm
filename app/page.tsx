@@ -6,7 +6,7 @@ import CircularCategories from '@/components/CircularCategories';
 import InfiniteProductGrid from '@/components/InfiniteProductGrid';
 import { Product } from '@/lib/types';
 
-interface ProductsResponse {
+interface ProductsData {
   products: {
     nodes: Product[];
     pageInfo: { hasNextPage: boolean; endCursor: string | null };
@@ -34,9 +34,9 @@ async function getHomePageData() {
       sliders: { nodes: [] } 
     })) as SliderResponse;
     
-    let productsData: any;
+    let productsData: ProductsData;
     try {
-      productsData = await graphqlClient.request(GET_PRODUCTS, { first: 24, after: null });
+      productsData = await graphqlClient.request(GET_PRODUCTS, { first: 24, after: null }) as ProductsData;
     } catch (error) {
       console.error('Error fetching products - full error:', JSON.stringify(error, null, 2));
       productsData = {
@@ -94,7 +94,7 @@ export default async function HomePage() {
             <div className="text-center py-12">
               <p className="text-gray-500 mb-4">Unable to load products. Please check WooGraphQL plugin installation.</p>
               <p className="text-sm text-gray-400">
-                Make sure "WPGraphQL for WooCommerce" plugin is installed and activated.
+                Make sure &quot;WPGraphQL for WooCommerce&quot; plugin is installed and activated.
               </p>
             </div>
           </div>

@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useCartStore } from '@/lib/store';
-import { ShoppingCart, Search, User, MessageCircle } from 'lucide-react';
+import { ShoppingCart, Search, User } from 'lucide-react';
 import { useState } from 'react';
 
 interface MenuItem {
@@ -75,10 +76,13 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2">
               {logoUrl ? (
-                <img 
+                <Image 
                   src={logoUrl} 
                   alt={logoAlt}
+                  width={120}
+                  height={40}
                   className="h-10 w-auto object-contain"
+                  priority
                 />
               ) : (
                 <>
@@ -180,10 +184,13 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2">
               {logoUrl ? (
-                <img 
+                <Image 
                   src={logoUrl} 
                   alt={logoAlt}
+                  width={100}
+                  height={32}
                   className="h-8 w-auto object-contain"
+                  priority
                 />
               ) : (
                 <>

@@ -87,27 +87,11 @@ export default async function CategoryPage({
     notFound();
   }
 
-  const { category, products } = data;
+  const { products } = data;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Category Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-6">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-            {category.name}
-          </h1>
-          {category.description && (
-            <div
-              className="text-gray-600 text-sm md:text-base"
-              dangerouslySetInnerHTML={{ __html: category.description }}
-            />
-          )}
-          <p className="text-sm text-gray-500 mt-2">{category.count} products</p>
-        </div>
-      </div>
-
-      {/* Filters & Sort - Sticky */}
+      {/* Filters & Sort - Sticky under header */}
       <CategoryFiltersWrapper initialProducts={products} />
     </div>
   );

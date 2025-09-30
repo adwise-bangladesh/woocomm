@@ -75,16 +75,16 @@ export default function CategoryFilters({ onSortChange, onFilterChange }: Catego
     filters.rating !== null;
 
   return (
-    <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
+    <div className="sticky top-[72px] lg:top-[120px] z-30 bg-white border-b border-gray-200 shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between py-3 gap-4">
           {/* Filter Button */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors relative"
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors relative text-gray-900"
           >
-            <SlidersHorizontal className="w-4 h-4" />
-            <span className="text-sm font-medium">Filters</span>
+            <SlidersHorizontal className="w-4 h-4 text-gray-700" />
+            <span className="text-sm font-medium text-gray-900">Filters</span>
             {hasActiveFilters && (
               <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                 !
@@ -98,7 +98,7 @@ export default function CategoryFilters({ onSortChange, onFilterChange }: Catego
               <select
                 value={sortBy}
                 onChange={(e) => handleSortChange(e.target.value)}
-                className="w-full appearance-none bg-gray-100 hover:bg-gray-200 border-0 rounded-lg px-4 py-2 pr-10 text-sm font-medium cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full appearance-none bg-gray-100 hover:bg-gray-200 border-0 rounded-lg px-4 py-2 pr-10 text-sm font-medium cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
               >
                 {sortOptions.map((option) => (
                   <option key={option.value} value={option.value}>

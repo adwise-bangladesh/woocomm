@@ -18,12 +18,6 @@ export default function CategoryFiltersWrapper({ initialProducts }: CategoryFilt
     rating: null,
   });
 
-  // Helper to extract numeric price from string
-  const getNumericPrice = (priceString: string | null | undefined): number => {
-    if (!priceString) return 0;
-    return parseFloat(priceString.replace(/[^0-9.]/g, '')) || 0;
-  };
-
   // Helper to get product rating (using same logic as ProductCard)
   const getProductRating = (product: Product): number => {
     const productIdHash = product.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -32,10 +26,16 @@ export default function CategoryFiltersWrapper({ initialProducts }: CategoryFilt
 
   // Filter and sort products
   const filteredAndSortedProducts = useMemo(() => {
+    // Helper to extract numeric price (defined inside useMemo)
+    const extractPrice = (priceString: string | null | undefined): number => {
+      if (!priceString) return 0;
+      return parseFloat(priceString.replace(/[^0-9.]/g, '')) || 0;
+    };
+
     // Helper to check if product is on sale
     const checkIfOnSale = (product: Product): boolean => {
       return !!(product.salePrice && product.regularPrice && 
-        getNumericPrice(product.salePrice) < getNumericPrice(product.regularPrice));
+        extractPrice(product.salePrice) < extractPrice(product.regularPrice));
     };
 
     let filtered = [...initialProducts];
@@ -43,7 +43,7 @@ export default function CategoryFiltersWrapper({ initialProducts }: CategoryFilt
     // Apply price filter
     if (filters.priceRange[0] !== 0 || filters.priceRange[1] !== 999999) {
       filtered = filtered.filter((product) => {
-        const price = getNumericPrice(product.price || product.regularPrice);
+        const price = extractPrice(product.price || product.regularPrice);
         return price >= filters.priceRange[0] && price <= filters.priceRange[1];
       });
     }
@@ -91,8 +91,8 @@ export default function CategoryFiltersWrapper({ initialProducts }: CategoryFilt
       case 'price':
         // Low to high
         filtered.sort((a, b) => {
-          const priceA = getNumericPrice(a.price || a.regularPrice);
-          const priceB = getNumericPrice(b.price || b.regularPrice);
+          const priceA = extractPrice(a.price || a.regularPrice);
+          const priceB = extractPrice(b.price || b.regularPrice);
           return priceA - priceB;
         });
         break;
@@ -100,8 +100,8 @@ export default function CategoryFiltersWrapper({ initialProducts }: CategoryFilt
       case 'price-desc':
         // High to low
         filtered.sort((a, b) => {
-          const priceA = getNumericPrice(a.price || a.regularPrice);
-          const priceB = getNumericPrice(b.price || b.regularPrice);
+          const priceA = extractPrice(a.price || a.regularPrice);
+          const priceB = extractPrice(b.price || b.regularPrice);
           return priceB - priceA;
         });
         break;

@@ -24,11 +24,12 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   const discount = calculateDiscount();
   
-  // Generate random rating between 4.2 and 5.0
-  const rating = parseFloat((Math.random() * (5.0 - 4.2) + 4.2).toFixed(1));
+  // Generate consistent random rating based on product ID
+  const productIdHash = product.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const rating = parseFloat((4.2 + ((productIdHash % 80) / 100)).toFixed(1));
   
-  // Generate random review count between 700 and 2500
-  const reviewCount = Math.floor(Math.random() * (2500 - 700 + 1)) + 700;
+  // Generate consistent random review count based on product ID
+  const reviewCount = 700 + (productIdHash % 1801);
 
   return (
     <Link

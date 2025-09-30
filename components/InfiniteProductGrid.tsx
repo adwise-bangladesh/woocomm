@@ -72,8 +72,8 @@ export default function InfiniteProductGrid({
           <div className="flex-1 h-[2px] bg-gradient-to-l from-transparent via-gray-300 to-gray-300"></div>
         </div>
       </div>
-      <div className="w-full">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-[5px] gap-y-[4px]">
+      <div className="w-full lg:container lg:mx-auto lg:px-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-[5px] gap-y-[4px] lg:gap-x-4 lg:gap-y-4">
           {products.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}

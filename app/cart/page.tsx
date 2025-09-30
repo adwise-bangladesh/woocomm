@@ -8,6 +8,13 @@ import { createSessionClient } from '@/lib/graphql-client';
 import { REMOVE_FROM_CART, UPDATE_CART_ITEM } from '@/lib/mutations';
 import { useState } from 'react';
 
+interface CartResponse {
+  contents: { nodes: never[] };
+  subtotal: string;
+  total: string;
+  isEmpty: boolean;
+}
+
 export default function CartPage() {
   const { items, total, isEmpty, sessionToken, setCart } = useCartStore();
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
@@ -26,10 +33,10 @@ export default function CartPage() {
         input: {
           keys: [key],
         },
-      }) as { removeItemsFromCart: { cart: { contents: { nodes: unknown[] }; subtotal: string; total: string; isEmpty: boolean } } };
+      }) as { removeItemsFromCart: { cart: CartResponse } };
 
       if (response.removeItemsFromCart.cart) {
-        setCart(response.removeItemsFromCart.cart);
+        setCart(response.removeItemsFromCart.cart as never);
       }
     } catch (error) {
       console.error('Error removing item:', error);
@@ -49,10 +56,10 @@ export default function CartPage() {
         input: {
           items: [{ key, quantity }],
         },
-      }) as { updateItemQuantities: { cart: { contents: { nodes: unknown[] }; subtotal: string; total: string; isEmpty: boolean } } };
+      }) as { updateItemQuantities: { cart: CartResponse } };
 
       if (response.updateItemQuantities.cart) {
-        setCart(response.updateItemQuantities.cart);
+        setCart(response.updateItemQuantities.cart as never);
       }
     } catch (error) {
       console.error('Error updating quantity:', error);

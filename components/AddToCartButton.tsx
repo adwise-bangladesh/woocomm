@@ -6,6 +6,13 @@ import { createSessionClient } from '@/lib/graphql-client';
 import { ADD_TO_CART } from '@/lib/mutations';
 import { ShoppingCart } from 'lucide-react';
 
+interface CartResponse {
+  contents: { nodes: never[] };
+  subtotal: string;
+  total: string;
+  isEmpty: boolean;
+}
+
 interface AddToCartButtonProps {
   productId: number;
   variationId?: number;
@@ -34,14 +41,14 @@ export default function AddToCartButton({
         },
       };
 
-      const response = await client.request(ADD_TO_CART, variables) as { addToCart: { cart: { contents: { nodes: unknown[] }; subtotal: string; total: string; isEmpty: boolean } } };
+      const response = await client.request(ADD_TO_CART, variables) as { addToCart: { cart: CartResponse } };
 
       // Extract session token if available
       // Note: With graphql-request, we need to handle this differently
       // For now, we'll store it when available
       
       if (response.addToCart.cart) {
-        setCart(response.addToCart.cart);
+        setCart(response.addToCart.cart as never);
         setIsAdded(true);
         setTimeout(() => setIsAdded(false), 2000);
       }

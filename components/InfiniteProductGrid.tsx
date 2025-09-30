@@ -62,9 +62,15 @@ export default function InfiniteProductGrid({
   }, [loadMore, isLoading, hasNextPage]);
 
   return (
-    <section className="py-4" style={{ backgroundColor: '#ededed' }}>
-      <div className="container mx-auto px-4">
-        <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 px-1">Products For You</h2>
+    <section className="py-6 bg-gray-50">
+      <div className="container mx-auto px-4 mb-4">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-[2px] bg-gradient-to-r from-transparent via-gray-300 to-gray-300"></div>
+          <h2 className="text-lg md:text-xl font-bold text-gray-800 tracking-wide whitespace-nowrap">
+            Products For You
+          </h2>
+          <div className="flex-1 h-[2px] bg-gradient-to-l from-transparent via-gray-300 to-gray-300"></div>
+        </div>
       </div>
       <div className="w-full">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-[5px] gap-y-[4px]">

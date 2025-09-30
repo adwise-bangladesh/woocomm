@@ -12,11 +12,21 @@ interface MenuItem {
   path: string;
 }
 
-interface HeaderProps {
-  menuItems?: MenuItem[];
+interface SiteSettings {
+  title: string;
+  logo?: string;
+  logoAlt?: string;
 }
 
-export default function Header({ menuItems = [] }: HeaderProps) {
+interface HeaderProps {
+  menuItems?: MenuItem[];
+  siteSettings?: SiteSettings;
+}
+
+export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
+  const siteName = siteSettings?.title || 'Zonash';
+  const logoUrl = siteSettings?.logo;
+  const logoAlt = siteSettings?.logoAlt || siteName;
   const items = useCartStore((state) => state.items);
   const total = useCartStore((state) => state.total);
   const [searchQuery, setSearchQuery] = useState('');
@@ -64,10 +74,20 @@ export default function Header({ menuItems = [] }: HeaderProps) {
           <div className="flex items-center justify-between py-3">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2">
-              <div className="bg-teal-600 text-white font-bold text-2xl px-3 py-2 rounded">
-                Z
-              </div>
-              <span className="text-2xl font-bold text-gray-900">Zonash</span>
+              {logoUrl ? (
+                <img 
+                  src={logoUrl} 
+                  alt={logoAlt}
+                  className="h-10 w-auto object-contain"
+                />
+              ) : (
+                <>
+                  <div className="bg-teal-600 text-white font-bold text-2xl px-3 py-2 rounded">
+                    {siteName.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-2xl font-bold text-gray-900">{siteName}</span>
+                </>
+              )}
             </Link>
 
             {/* Search Bar */}
@@ -159,10 +179,20 @@ export default function Header({ menuItems = [] }: HeaderProps) {
           <div className="flex items-center justify-between py-3">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2">
-              <div className="bg-teal-600 text-white font-bold text-xl px-2 py-1 rounded">
-                Z
-              </div>
-              <span className="text-xl font-bold text-gray-900">Zonash</span>
+              {logoUrl ? (
+                <img 
+                  src={logoUrl} 
+                  alt={logoAlt}
+                  className="h-8 w-auto object-contain"
+                />
+              ) : (
+                <>
+                  <div className="bg-teal-600 text-white font-bold text-xl px-2 py-1 rounded">
+                    {siteName.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-xl font-bold text-gray-900">{siteName}</span>
+                </>
+              )}
             </Link>
 
             {/* Mobile Icons */}

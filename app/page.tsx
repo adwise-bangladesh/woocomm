@@ -25,11 +25,27 @@ export const revalidate = 60; // ISR: Revalidate every 60 seconds
 
 async function getHomePageData() {
   try {
-    const [productsData, categoriesData, sliderData] = await Promise.all([
-      graphqlClient.request(GET_PRODUCTS, { first: 24 }),
-      graphqlClient.request(GET_CATEGORIES),
-      graphqlClient.request(GET_SLIDER_IMAGES).catch(() => ({ sliders: { nodes: [] } })),
-    ]) as [ProductsResponse, CategoriesResponse, SliderResponse];
+    // Fetch data separately to better handle errors
+    const categoriesData = await graphqlClient.request(GET_CATEGORIES).catch(() => ({ 
+      productCategories: { nodes: [] } 
+    })) as CategoriesResponse;
+    
+    const sliderData = await graphqlClient.request(GET_SLIDER_IMAGES).catch(() => ({ 
+      sliders: { nodes: [] } 
+    })) as SliderResponse;
+    
+    let productsData: ProductsResponse;
+    try {
+      productsData = await graphqlClient.request(GET_PRODUCTS, { first: 24 }) as ProductsResponse;
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      productsData = {
+        products: {
+          nodes: [],
+          pageInfo: { hasNextPage: false, endCursor: null }
+        }
+      };
+    }
 
     return {
       products: productsData.products.nodes as Product[],

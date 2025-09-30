@@ -1,5 +1,25 @@
 import { gql } from 'graphql-request';
 
+// Query to get site settings (logo, title, etc.)
+export const GET_SITE_SETTINGS = gql`
+  query GetSiteSettings {
+    generalSettings {
+      title
+      description
+      url
+    }
+    siteLogo {
+      id
+      sourceUrl
+      altText
+      mediaDetails {
+        width
+        height
+      }
+    }
+  }
+`;
+
 // Query to get primary menu
 export const GET_MENU = gql`
   query GetMenu($location: MenuLocationEnum!) {
@@ -108,35 +128,40 @@ export const GET_HOMEPAGE_SLIDER = gql`
 
 // Query to get all products with pagination
 export const GET_PRODUCTS = gql`
-  query GetProducts($first: Int = 12, $after: String) {
-    products(first: $first, after: $after, where: { status: "publish" }) {
+  query GetProducts($first: Int!, $after: String) {
+    products(first: $first, after: $after) {
       pageInfo {
         hasNextPage
         endCursor
       }
       nodes {
         id
-        databaseId
         name
         slug
-        type
-        description
-        shortDescription
         image {
           sourceUrl
           altText
         }
-        ... on SimpleProduct {
-          price
-          regularPrice
-          salePrice
-          stockStatus
-        }
-        ... on VariableProduct {
-          price
-          regularPrice
-          salePrice
-          stockStatus
+      }
+    }
+  }
+`;
+
+// Simpler products query without inline fragments (use if above fails)
+export const GET_PRODUCTS_SIMPLE = gql`
+  query GetProductsSimple($first: Int!, $after: String) {
+    products(first: $first, after: $after) {
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        id
+        name
+        slug
+        image {
+          sourceUrl
+          altText
         }
       }
     }

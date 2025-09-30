@@ -3,13 +3,19 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import Header from '@/components/Header';
 import { graphqlClient } from '@/lib/graphql-client';
-import { GET_MENU } from '@/lib/queries';
+import { GET_MENU, GET_SITE_SETTINGS } from '@/lib/queries';
 
 interface MenuItem {
   id: string;
   label: string;
   url: string;
   path: string;
+}
+
+interface SiteSettings {
+  title: string;
+  logo?: string;
+  logoAlt?: string;
 }
 
 const inter = Inter({ subsets: ['latin'] });
@@ -31,17 +37,37 @@ async function getMenuItems(): Promise<MenuItem[]> {
   }
 }
 
+async function getSiteSettings(): Promise<SiteSettings> {
+  try {
+    const data = await graphqlClient.request(GET_SITE_SETTINGS) as {
+      generalSettings: { title: string };
+      siteLogo?: { sourceUrl: string; altText: string };
+    };
+    return {
+      title: data.generalSettings.title,
+      logo: data.siteLogo?.sourceUrl,
+      logoAlt: data.siteLogo?.altText || 'Site Logo',
+    };
+  } catch (error) {
+    console.error('Error fetching site settings:', error);
+    return { title: 'Zonash' };
+  }
+}
+
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const menuItems = await getMenuItems();
+  const [menuItems, siteSettings] = await Promise.all([
+    getMenuItems(),
+    getSiteSettings(),
+  ]);
 
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Header menuItems={menuItems} />
+        <Header menuItems={menuItems} siteSettings={siteSettings} />
         <main className="pb-16 lg:pb-0">{children}</main>
       </body>
     </html>

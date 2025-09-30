@@ -57,22 +57,24 @@ export default function ProductCard({ product }: ProductCardProps) {
         </h3>
 
         {/* Price Section */}
-        <div className="flex items-center gap-2 mb-2">
-          {product.salePrice ? (
-            <>
-              <span className="text-lg font-bold text-red-600">
-                {formatPrice(product.salePrice)}
+        {(product.price || product.regularPrice || product.salePrice) && (
+          <div className="flex items-center gap-2 mb-2">
+            {product.salePrice ? (
+              <>
+                <span className="text-lg font-bold text-red-600">
+                  {formatPrice(product.salePrice)}
+                </span>
+                <span className="text-sm text-gray-400 line-through">
+                  {formatPrice(product.regularPrice)}
+                </span>
+              </>
+            ) : (
+              <span className="text-lg font-bold text-gray-900">
+                {formatPrice(product.price || product.regularPrice)}
               </span>
-              <span className="text-sm text-gray-400 line-through">
-                {formatPrice(product.regularPrice)}
-              </span>
-            </>
-          ) : (
-            <span className="text-lg font-bold text-gray-900">
-              {formatPrice(product.price || product.regularPrice)}
-            </span>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
         {/* Reviews */}
         <div className="flex items-center gap-1">

@@ -6,15 +6,30 @@ import CircularCategories from '@/components/CircularCategories';
 import InfiniteProductGrid from '@/components/InfiniteProductGrid';
 import { Product } from '@/lib/types';
 
+interface ProductsResponse {
+  products: {
+    nodes: Product[];
+    pageInfo: { hasNextPage: boolean; endCursor: string | null };
+  };
+}
+
+interface CategoriesResponse {
+  productCategories: { nodes: never[] };
+}
+
+interface SliderResponse {
+  sliders?: { nodes: never[] };
+}
+
 export const revalidate = 60; // ISR: Revalidate every 60 seconds
 
 async function getHomePageData() {
   try {
-    const [productsData, categoriesData, sliderData] = await Promise.all<unknown>([
+    const [productsData, categoriesData, sliderData] = await Promise.all([
       graphqlClient.request(GET_PRODUCTS, { first: 24 }),
       graphqlClient.request(GET_CATEGORIES),
       graphqlClient.request(GET_SLIDER_IMAGES).catch(() => ({ sliders: { nodes: [] } })),
-    ]);
+    ]) as [ProductsResponse, CategoriesResponse, SliderResponse];
 
     return {
       products: productsData.products.nodes as Product[],

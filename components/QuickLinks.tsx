@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Zap, Truck, Gift } from 'lucide-react';
+import { Zap, Truck } from 'lucide-react';
 
 interface QuickLink {
   id: string;
@@ -19,7 +19,7 @@ export default function QuickLinks() {
       id: '1',
       title: 'Flash Sale',
       subtitle: 'Up to 70% Off',
-      icon: <Zap className="w-6 h-6" />,
+      icon: <Zap className="w-5 h-5" />,
       link: '/flash-sale',
       color: 'text-orange-500',
       animation: 'animate-flash',
@@ -28,19 +28,10 @@ export default function QuickLinks() {
       id: '2',
       title: 'Free Delivery',
       subtitle: 'On orders over Tk 500',
-      icon: <Truck className="w-6 h-6" />,
+      icon: <Truck className="w-5 h-5" />,
       link: '/free-shipping',
       color: 'text-green-500',
       animation: 'animate-slide',
-    },
-    {
-      id: '3',
-      title: 'Special Offers',
-      subtitle: 'Limited Time',
-      icon: <Gift className="w-6 h-6" />,
-      link: '/offers',
-      color: 'text-blue-500',
-      animation: 'animate-blink',
     },
   ];
 
@@ -55,43 +46,38 @@ export default function QuickLinks() {
           0%, 100% { transform: translateX(0); }
           50% { transform: translateX(5px); }
         }
-        @keyframes blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.3; }
-        }
         .animate-flash {
           animation: flash 1s ease-in-out infinite;
         }
         .animate-slide {
           animation: slide 1.5s ease-in-out infinite;
         }
-        .animate-blink {
-          animation: blink 2s ease-in-out infinite;
-        }
       `}</style>
-      <section className="py-4 md:py-6 bg-white">
+      <section className="py-3 md:py-4 bg-white">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-3 gap-2 md:gap-4">
+          <div className="grid grid-cols-2 gap-2 md:gap-3">
             {links.map((link) => (
               <Link
                 key={link.id}
                 href={link.link}
-                className="flex flex-col items-center justify-center p-3 md:p-5 bg-white border border-gray-200 rounded-lg hover:shadow-lg transition-shadow"
+                className="flex items-center gap-2 md:gap-3 p-2 md:p-3 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
               >
-                <div className={`mb-2 ${link.color} ${link.animation}`}>
+                <div className={`${link.color} ${link.animation} flex-shrink-0`}>
                   {link.icon}
                 </div>
-              <h3 className="text-xs md:text-sm font-bold text-gray-900 text-center mb-0.5">
-                {link.title}
-              </h3>
-              <p className="text-[10px] md:text-xs text-gray-500 text-center">
-                {link.subtitle}
-              </p>
-            </Link>
-          ))}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xs md:text-sm font-semibold text-gray-900 truncate">
+                    {link.title}
+                  </h3>
+                  <p className="text-[10px] md:text-xs text-gray-500 truncate">
+                    {link.subtitle}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
     </>
   );
 }

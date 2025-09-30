@@ -38,7 +38,7 @@ async function getHomePageData() {
     try {
       productsData = await graphqlClient.request(GET_PRODUCTS, { first: 24 }) as ProductsResponse;
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error('Error fetching products - full error:', JSON.stringify(error, null, 2));
       productsData = {
         products: {
           nodes: [],
@@ -48,8 +48,8 @@ async function getHomePageData() {
     }
 
     return {
-      products: productsData.products.nodes as Product[],
-      pageInfo: productsData.products.pageInfo,
+      products: productsData.products?.nodes || [],
+      pageInfo: productsData.products?.pageInfo || { hasNextPage: false, endCursor: null },
       categories: categoriesData.productCategories.nodes || [],
       sliderImages: sliderData.sliders?.nodes || [],
     };

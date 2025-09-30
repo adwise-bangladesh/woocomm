@@ -128,20 +128,12 @@ export const GET_HOMEPAGE_SLIDER = gql`
 
 // Query to get all products with pagination
 export const GET_PRODUCTS = gql`
-  query GetProducts($first: Int!, $after: String) {
-    products(first: $first, after: $after) {
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
+  query GetProducts($first: Int!) {
+    products(first: $first) {
       nodes {
         id
         name
         slug
-        image {
-          sourceUrl
-          altText
-        }
       }
     }
   }

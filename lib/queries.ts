@@ -127,13 +127,30 @@ export const GET_HOMEPAGE_SLIDER = gql`
 `;
 
 // Query to get all products with pagination
+// Using ProductWithPricing interface to access price fields
 export const GET_PRODUCTS = gql`
-  query GetProducts($first: Int!) {
-    products(first: $first) {
+  query GetProducts($first: Int!, $after: String) {
+    products(first: $first, after: $after) {
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
       nodes {
         id
         name
         slug
+        image {
+          sourceUrl
+          altText
+        }
+        ... on ProductWithPricing {
+          price
+          regularPrice
+          salePrice
+        }
+        ... on InventoriedProduct {
+          stockStatus
+        }
       }
     }
   }

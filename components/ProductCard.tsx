@@ -23,8 +23,12 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   const discount = calculateDiscount();
-  const rating = 4.5; // Mock rating - replace with actual data when available
-  const reviewCount = 128; // Mock review count - replace with actual data
+  
+  // Generate random rating between 4.2 and 5.0
+  const rating = parseFloat((Math.random() * (5.0 - 4.2) + 4.2).toFixed(1));
+  
+  // Generate random review count between 700 and 2500
+  const reviewCount = Math.floor(Math.random() * (2500 - 700 + 1)) + 700;
 
   return (
     <Link
@@ -44,7 +48,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           src={product.image?.sourceUrl || '/placeholder.png'}
           alt={product.image?.altText || product.name}
           fill
-          className="object-contain p-2 group-hover:scale-105 transition-transform duration-300"
+          className="object-cover group-hover:scale-105 transition-transform duration-300"
           sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
         />
       </div>

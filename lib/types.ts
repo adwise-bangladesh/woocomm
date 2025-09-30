@@ -1,19 +1,19 @@
 export interface Product {
   id: string;
-  databaseId: number;
+  databaseId?: number;
   name: string;
   slug: string;
-  type: string;
-  description: string;
-  shortDescription: string;
-  image: {
+  type?: string;
+  description?: string;
+  shortDescription?: string;
+  image?: {
     sourceUrl: string;
     altText: string;
   };
-  price: string;
-  regularPrice: string;
+  price?: string;
+  regularPrice?: string;
   salePrice?: string;
-  stockStatus: string;
+  stockStatus?: string;
   stockQuantity?: number;
   galleryImages?: {
     nodes: {

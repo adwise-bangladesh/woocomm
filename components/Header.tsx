@@ -70,7 +70,7 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
       </div>
 
       {/* Main Header - Desktop */}
-      <header className="hidden lg:block sticky top-0 z-50 bg-white shadow-sm">
+      <header className="hidden lg:block bg-white shadow-sm">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between py-3">
             {/* Logo */}
@@ -172,7 +172,7 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
       </header>
 
       {/* Mobile Header */}
-      <header className="lg:hidden sticky top-0 z-50 bg-white shadow-md">
+      <header className="lg:hidden bg-white shadow-md">
         <div className="px-4">
           {/* Top Mobile Header */}
           <div className="flex items-center justify-between py-3">

@@ -65,15 +65,15 @@ export default function ProductCard({ product }: ProductCardProps) {
           <div className="flex items-center gap-2">
             {product.salePrice ? (
               <>
-                <span className="text-lg font-bold text-red-600">
+                <span className="text-base font-bold text-red-600">
                   {formatPrice(product.salePrice)}
                 </span>
-                <span className="text-sm text-gray-400 line-through">
+                <span className="text-xs text-gray-400 line-through">
                   {formatPrice(product.regularPrice)}
                 </span>
               </>
             ) : (
-              <span className="text-lg font-bold text-gray-900">
+              <span className="text-base font-bold text-red-600">
                 {formatPrice(product.price || product.regularPrice)}
               </span>
             )}

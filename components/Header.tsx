@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { useCartStore } from '@/lib/store';
 import { ShoppingCart, Search, User, MessageCircle } from 'lucide-react';
 import { useState } from 'react';

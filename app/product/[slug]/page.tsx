@@ -9,7 +9,7 @@ export const revalidate = 60; // ISR: Revalidate every 60 seconds
 
 async function getProduct(slug: string) {
   try {
-    const data: any = await graphqlClient.request(GET_PRODUCT_BY_SLUG, { slug });
+    const data = await graphqlClient.request(GET_PRODUCT_BY_SLUG, { slug }) as { product: Product };
     return data.product as Product;
   } catch (error) {
     console.error('Error fetching product:', error);

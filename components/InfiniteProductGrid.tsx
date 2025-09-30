@@ -29,7 +29,7 @@ export default function InfiniteProductGrid({
     setIsLoading(true);
     try {
       const client = createSessionClient();
-      const data: any = await client.request(GET_PRODUCTS, {
+      const data = await client.request(GET_PRODUCTS, {
         first: 12,
         after: endCursor,
       });
@@ -80,7 +80,7 @@ export default function InfiniteProductGrid({
 
         {!hasNextPage && products.length > 0 && (
           <div className="text-center py-8">
-            <p className="text-gray-600">You've reached the end of the products!</p>
+            <p className="text-gray-600">You&apos;ve reached the end of the products!</p>
           </div>
         )}
       </div>

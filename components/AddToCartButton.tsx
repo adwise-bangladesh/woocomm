@@ -19,7 +19,7 @@ export default function AddToCartButton({
 }: AddToCartButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
-  const { sessionToken, setSessionToken, setCart } = useCartStore();
+  const { sessionToken, setCart } = useCartStore();
 
   const handleAddToCart = async () => {
     setIsLoading(true);
@@ -34,7 +34,7 @@ export default function AddToCartButton({
         },
       };
 
-      const response: any = await client.request(ADD_TO_CART, variables);
+      const response = await client.request(ADD_TO_CART, variables) as { addToCart: { cart: unknown } };
 
       // Extract session token if available
       // Note: With graphql-request, we need to handle this differently

@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 async function getMenuItems() {
   try {
-    const data: any = await graphqlClient.request(GET_MENU, {
+    const data = await graphqlClient.request(GET_MENU, {
       location: 'PRIMARY',
     });
     return data.menuItems?.nodes || [];

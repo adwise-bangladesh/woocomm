@@ -43,7 +43,7 @@ export default function CheckoutPage() {
     try {
       const client = createSessionClient(sessionToken || undefined);
       
-      const response: any = await client.request(CHECKOUT, {
+      const response = await client.request(CHECKOUT, {
         input: {
           paymentMethod: formData.paymentMethod,
           billing: {

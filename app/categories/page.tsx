@@ -5,9 +5,20 @@ import Image from 'next/image';
 
 export const revalidate = 60;
 
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  count: number;
+  image?: {
+    sourceUrl: string;
+    altText?: string;
+  };
+}
+
 async function getCategories() {
   try {
-    const data: any = await graphqlClient.request(GET_CATEGORIES);
+    const data = await graphqlClient.request(GET_CATEGORIES) as { productCategories: { nodes: Category[] } };
     return data.productCategories.nodes || [];
   } catch (error) {
     console.error('Error fetching categories:', error);
@@ -23,7 +34,7 @@ export default async function CategoriesPage() {
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-8">All Categories</h1>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {categories.map((category: any) => (
+          {categories.map((category) => (
             <Link
               key={category.id}
               href={`/category/${category.slug}`}

@@ -44,7 +44,10 @@ const GET_CATEGORY_PRODUCTS = gql`
 
 async function getCategoryData(slug: string) {
   try {
-    const data: any = await graphqlClient.request(GET_CATEGORY_PRODUCTS, { slug, first: 24 });
+    const data = await graphqlClient.request(GET_CATEGORY_PRODUCTS, { slug, first: 24 }) as {
+      productCategory: { id: string; name: string; description?: string; count: number };
+      products: { nodes: Product[] };
+    };
     return {
       category: data.productCategory,
       products: data.products.nodes as Product[],

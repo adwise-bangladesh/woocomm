@@ -22,7 +22,7 @@ export default function CartPage() {
     setLoadingKey(key);
     try {
       const client = createSessionClient(sessionToken || undefined);
-      const response: any = await client.request(REMOVE_FROM_CART, {
+      const response = await client.request(REMOVE_FROM_CART, {
         input: {
           keys: [key],
         },
@@ -45,7 +45,7 @@ export default function CartPage() {
     setLoadingKey(key);
     try {
       const client = createSessionClient(sessionToken || undefined);
-      const response: any = await client.request(UPDATE_CART_ITEM, {
+      const response = await client.request(UPDATE_CART_ITEM, {
         input: {
           items: [{ key, quantity }],
         },

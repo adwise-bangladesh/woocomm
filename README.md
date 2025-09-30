@@ -1,36 +1,157 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Zonash Shop - Fast E-commerce Frontend
 
-## Getting Started
+Modern, blazing-fast e-commerce frontend built with Next.js 14, WPGraphQL, and WooCommerce.
 
-First, run the development server:
+## 🚀 Tech Stack
 
+- **Next.js 14** with App Router
+- **TypeScript** for type safety
+- **Tailwind CSS** for styling
+- **WPGraphQL + WooGraphQL** for backend integration
+- **Zustand** for state management
+- **graphql-request** for GraphQL client
+- **Lucide React** for icons
+
+## 📦 Features
+
+- ✅ Homepage with product grid (ISR - 60s revalidation)
+- ✅ Individual product pages for simple & variable products (ISR)
+- ✅ Shopping cart with persistent storage (localStorage)
+- ✅ Checkout flow with order placement
+- ✅ Responsive design (mobile + desktop)
+- ✅ Session-based cart management
+- ✅ Real-time cart updates
+- ✅ Optimized images with Next.js Image
+
+## 🛠️ Installation
+
+1. Install dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Configure environment variables:
+```bash
+# Create .env.local with your GraphQL endpoint
+NEXT_PUBLIC_GRAPHQL_ENDPOINT=https://backend.zonash.com/graphql
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Run the development server:
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Open [http://localhost:3000](http://localhost:3000)
 
-## Learn More
+## 📁 Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+woocommerce-frontend/
+├── app/
+│   ├── page.tsx              # Homepage (product grid)
+│   ├── product/[slug]/       # Product detail pages
+│   ├── cart/                 # Shopping cart
+│   ├── checkout/             # Checkout page
+│   └── layout.tsx            # Root layout
+├── components/
+│   ├── Header.tsx            # Main navigation
+│   ├── ProductCard.tsx       # Product card component
+│   └── AddToCartButton.tsx   # Add to cart functionality
+├── lib/
+│   ├── graphql-client.ts     # GraphQL client setup
+│   ├── queries.ts            # GraphQL queries
+│   ├── mutations.ts          # GraphQL mutations
+│   ├── store.ts              # Zustand store
+│   └── types.ts              # TypeScript types
+└── public/                   # Static assets
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🎯 Performance Optimizations
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **ISR (Incremental Static Regeneration)** for product pages
+- **Image optimization** with Next.js Image component
+- **Persistent cart state** with localStorage
+- **Minimal JavaScript bundle** with server components
+- **Zustand** for lightweight state management
 
-## Deploy on Vercel
+## 🔧 GraphQL Queries & Mutations
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Queries
+- `GET_PRODUCTS` - Fetch products with pagination
+- `GET_PRODUCT_BY_SLUG` - Fetch single product details
+- `GET_CART` - Fetch current cart contents
+- `GET_CUSTOMER` - Fetch customer data
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Mutations
+- `ADD_TO_CART` - Add items to cart
+- `REMOVE_FROM_CART` - Remove items from cart
+- `UPDATE_CART_ITEM` - Update item quantities
+- `CHECKOUT` - Complete order placement
+
+## 📱 Pages
+
+### Homepage (`/`)
+- Displays all products in a responsive grid
+- ISR with 60-second revalidation
+- Clickable product cards
+
+### Product Page (`/product/[slug]`)
+- Product images and gallery
+- Price and stock status
+- Add to cart functionality
+- Support for simple and variable products
+- ISR with 60-second revalidation
+
+### Cart Page (`/cart`)
+- View all cart items
+- Update quantities
+- Remove items
+- Proceed to checkout
+- Client-side rendered for real-time updates
+
+### Checkout Page (`/checkout`)
+- Billing address form
+- Order summary
+- Payment method selection (COD)
+- Order placement
+
+## 🔐 Session Management
+
+The app uses WooCommerce session tokens to maintain cart state across requests. Session tokens are:
+- Stored in Zustand store
+- Persisted in localStorage
+- Sent with every cart mutation
+
+## 🚀 Build & Deploy
+
+```bash
+# Build for production
+npm run build
+
+# Start production server
+npm start
+```
+
+## 🎨 Customization
+
+### Styling
+Edit Tailwind classes in components or modify `tailwind.config.js`
+
+### GraphQL Endpoint
+Update `.env.local` with your WooCommerce GraphQL endpoint
+
+### Revalidation Time
+Change `revalidate` value in page components (default: 60 seconds)
+
+## 📝 License
+
+This project is built for demonstration purposes.
+
+## 🙏 Credits
+
+Built with:
+- [Next.js](https://nextjs.org/)
+- [WPGraphQL](https://www.wpgraphql.com/)
+- [WooGraphQL](https://woographql.com/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Zustand](https://github.com/pmndrs/zustand)

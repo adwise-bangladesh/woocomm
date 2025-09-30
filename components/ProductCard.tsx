@@ -33,7 +33,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   return (
     <Link
       href={`/product/${product.slug}`}
-      className="group block bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden relative"
+      className="group block bg-white hover:shadow-md transition-shadow overflow-hidden relative"
     >
       {/* Discount Badge */}
       {discount && (
@@ -56,13 +56,13 @@ export default function ProductCard({ product }: ProductCardProps) {
       {/* Product Info */}
       <div className="p-3">
         {/* Product Title - Single Line */}
-        <h3 className="font-medium text-gray-900 text-sm mb-2 truncate group-hover:text-blue-600 transition-colors">
+        <h3 className="font-medium text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors">
           {product.name}
         </h3>
 
         {/* Price Section */}
         {(product.price || product.regularPrice || product.salePrice) && (
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2">
             {product.salePrice ? (
               <>
                 <span className="text-lg font-bold text-red-600">
@@ -87,9 +87,9 @@ export default function ProductCard({ product }: ProductCardProps) {
               const fillPercentage = Math.min(Math.max(rating - i, 0), 1) * 100;
               
               return (
-                <div key={i} className="relative w-3 h-3">
+                <div key={i} className="relative w-4 h-4">
                   {/* Background star (empty) */}
-                  <Star className="w-3 h-3 text-gray-300 absolute" />
+                  <Star className="w-4 h-4 text-gray-300 absolute" />
                   {/* Foreground star (filled) with clip-path */}
                   {fillPercentage > 0 && (
                     <div 
@@ -100,7 +100,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                         height: '100%'
                       }}
                     >
-                      <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                     </div>
                   )}
                 </div>

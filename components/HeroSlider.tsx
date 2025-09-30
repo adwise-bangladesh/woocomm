@@ -30,6 +30,11 @@ interface HeroSliderProps {
 
 export default function HeroSlider({ images }: HeroSliderProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+
+  // Minimum swipe distance (in px)
+  const minSwipeDistance = 50;
 
   // If no images provided, use placeholder
   const slides = images.length > 0 ? images : [
@@ -79,8 +84,37 @@ export default function HeroSlider({ images }: HeroSliderProps) {
     setCurrentSlide((prev) => (prev + 1) % slides.length);
   };
 
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(0); // Reset touchEnd
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      goToNext();
+    }
+    if (isRightSwipe) {
+      goToPrevious();
+    }
+  };
+
   return (
-    <div className="relative w-full h-[200px] md:h-[320px] lg:h-[400px] overflow-hidden rounded-[5px] bg-gray-100 shadow-md">
+    <div 
+      className="relative w-full h-[150px] md:h-[300px] lg:h-[400px] overflow-hidden rounded-[5px] bg-gray-100 shadow-md"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
       {/* Slides */}
       {slides.map((slide, index) => {
         const acf = slide.acfSlider;

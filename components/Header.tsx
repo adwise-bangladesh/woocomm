@@ -167,6 +167,15 @@ export default function Header({ menuItems = [] }: HeaderProps) {
 
             {/* Mobile Icons */}
             <div className="flex items-center gap-4">
+              <a
+                href="https://m.me/your-page"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-700 hover:text-teal-600 transition-colors"
+              >
+                <MessageCircle className="w-6 h-6" />
+              </a>
+
               <button
                 onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
                 className="text-gray-700 hover:text-teal-600 transition-colors"

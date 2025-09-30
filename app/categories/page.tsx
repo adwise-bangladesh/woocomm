@@ -3,7 +3,7 @@ import { GET_CATEGORIES } from '@/lib/queries';
 import Link from 'next/link';
 import Image from 'next/image';
 
-export const revalidate = 60;
+export const revalidate = 300; // 5 minutes, consistent with homepage
 
 interface Category {
   id: string;
@@ -21,7 +21,9 @@ async function getCategories() {
     const data = await graphqlClient.request(GET_CATEGORIES) as { productCategories: { nodes: Category[] } };
     return data.productCategories.nodes || [];
   } catch (error) {
-    console.error('Error fetching categories:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error fetching categories:', error);
+    }
     return [];
   }
 }

@@ -21,7 +21,7 @@ export const ADD_TO_CART = gql`
                   sourceUrl
                   altText
                 }
-                ... on SimpleProduct {
+                ... on ProductWithPricing {
                   price
                 }
               }
@@ -65,7 +65,7 @@ export const REMOVE_FROM_CART = gql`
                   sourceUrl
                   altText
                 }
-                ... on SimpleProduct {
+                ... on ProductWithPricing {
                   price
                 }
               }
@@ -109,7 +109,7 @@ export const UPDATE_CART_ITEM = gql`
                   sourceUrl
                   altText
                 }
-                ... on SimpleProduct {
+                ... on ProductWithPricing {
                   price
                 }
               }

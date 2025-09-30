@@ -4,7 +4,7 @@ import ProductCard from '@/components/ProductCard';
 import { Product } from '@/lib/types';
 import { notFound } from 'next/navigation';
 
-export const revalidate = 60;
+export const revalidate = 300; // 5 minutes, consistent with homepage
 
 const GET_CATEGORY_PRODUCTS = gql`
   query GetCategoryProducts($slug: ID!, $first: Int = 12) {
@@ -17,24 +17,18 @@ const GET_CATEGORY_PRODUCTS = gql`
     products(first: $first, where: { category: $slug }) {
       nodes {
         id
-        databaseId
         name
         slug
-        type
         image {
           sourceUrl
           altText
         }
-        ... on SimpleProduct {
+        ... on ProductWithPricing {
           price
           regularPrice
           salePrice
-          stockStatus
         }
-        ... on VariableProduct {
-          price
-          regularPrice
-          salePrice
+        ... on InventoriedProduct {
           stockStatus
         }
       }
@@ -53,7 +47,9 @@ async function getCategoryData(slug: string) {
       products: data.products.nodes as Product[],
     };
   } catch (error) {
-    console.error('Error fetching category:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error fetching category:', error);
+    }
     return null;
   }
 }
@@ -91,7 +87,7 @@ export default async function CategoryPage({
             <p className="text-gray-600 text-lg">No products found in this category</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-[5px] gap-y-[4px] lg:gap-x-4 lg:gap-y-4">
             {products.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}

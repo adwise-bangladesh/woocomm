@@ -5,14 +5,16 @@ import Image from 'next/image';
 import AddToCartButton from '@/components/AddToCartButton';
 import { notFound } from 'next/navigation';
 
-export const revalidate = 60; // ISR: Revalidate every 60 seconds
+export const revalidate = 300; // ISR: Revalidate every 5 minutes
 
 async function getProduct(slug: string) {
   try {
     const data = await graphqlClient.request(GET_PRODUCT_BY_SLUG, { slug }) as { product: Product };
     return data.product as Product;
   } catch (error) {
-    console.error('Error fetching product:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error fetching product:', error);
+    }
     return null;
   }
 }

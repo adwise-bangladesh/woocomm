@@ -215,27 +215,21 @@ export const GET_PRODUCTS_SIMPLE = gql`
 // Query to get flash sale products (on sale)
 export const GET_FLASH_SALE_PRODUCTS = gql`
   query GetFlashSaleProducts($first: Int = 8) {
-    products(first: $first, where: { onSale: true, status: "publish" }) {
+    products(first: $first, where: { onSale: true }) {
       nodes {
         id
-        databaseId
         name
         slug
-        type
         image {
           sourceUrl
           altText
         }
-        ... on SimpleProduct {
+        ... on ProductWithPricing {
           price
           regularPrice
           salePrice
-          stockStatus
         }
-        ... on VariableProduct {
-          price
-          regularPrice
-          salePrice
+        ... on InventoriedProduct {
           stockStatus
         }
       }
@@ -251,7 +245,6 @@ export const GET_PRODUCT_BY_SLUG = gql`
       databaseId
       name
       slug
-      type
       description
       shortDescription
       image {
@@ -264,44 +257,14 @@ export const GET_PRODUCT_BY_SLUG = gql`
           altText
         }
       }
-      ... on SimpleProduct {
-        id
+      ... on ProductWithPricing {
         price
         regularPrice
         salePrice
+      }
+      ... on InventoriedProduct {
         stockStatus
         stockQuantity
-      }
-      ... on VariableProduct {
-        id
-        price
-        regularPrice
-        salePrice
-        stockStatus
-        variations {
-          nodes {
-            id
-            databaseId
-            name
-            price
-            regularPrice
-            salePrice
-            stockStatus
-            stockQuantity
-            attributes {
-              nodes {
-                name
-                value
-              }
-            }
-          }
-        }
-        attributes {
-          nodes {
-            name
-            options
-          }
-        }
       }
     }
   }
@@ -327,10 +290,7 @@ export const GET_CART = gql`
                 sourceUrl
                 altText
               }
-              ... on SimpleProduct {
-                price
-              }
-              ... on VariableProduct {
+              ... on ProductWithPricing {
                 price
               }
             }

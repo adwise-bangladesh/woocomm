@@ -16,7 +16,7 @@ async function getMenuItems() {
   try {
     const data = await graphqlClient.request(GET_MENU, {
       location: 'PRIMARY',
-    });
+    }) as { menuItems?: { nodes: unknown[] } };
     return data.menuItems?.nodes || [];
   } catch (error) {
     console.error('Error fetching menu:', error);

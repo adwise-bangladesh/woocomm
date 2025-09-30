@@ -32,7 +32,7 @@ export default function InfiniteProductGrid({
       const data = await client.request(GET_PRODUCTS, {
         first: 12,
         after: endCursor,
-      });
+      }) as { products: { nodes: Product[]; pageInfo: { endCursor: string | null; hasNextPage: boolean } } };
 
       if (data.products) {
         setProducts((prev) => [...prev, ...data.products.nodes]);

@@ -26,7 +26,7 @@ export default function CartPage() {
         input: {
           keys: [key],
         },
-      });
+      }) as { removeItemsFromCart: { cart: { contents: { nodes: unknown[] }; subtotal: string; total: string; isEmpty: boolean } } };
 
       if (response.removeItemsFromCart.cart) {
         setCart(response.removeItemsFromCart.cart);
@@ -49,7 +49,7 @@ export default function CartPage() {
         input: {
           items: [{ key, quantity }],
         },
-      });
+      }) as { updateItemQuantities: { cart: { contents: { nodes: unknown[] }; subtotal: string; total: string; isEmpty: boolean } } };
 
       if (response.updateItemQuantities.cart) {
         setCart(response.updateItemQuantities.cart);

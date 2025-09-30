@@ -69,7 +69,7 @@ export default function CheckoutPage() {
             country: formData.country,
           },
         },
-      });
+      }) as { checkout: { order: { orderNumber: string } } };
 
       if (response.checkout.order) {
         clearCart();

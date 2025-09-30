@@ -34,7 +34,7 @@ export default function AddToCartButton({
         },
       };
 
-      const response = await client.request(ADD_TO_CART, variables) as { addToCart: { cart: unknown } };
+      const response = await client.request(ADD_TO_CART, variables) as { addToCart: { cart: { contents: { nodes: unknown[] }; subtotal: string; total: string; isEmpty: boolean } } };
 
       // Extract session token if available
       // Note: With graphql-request, we need to handle this differently

@@ -10,7 +10,7 @@ export const revalidate = 60; // ISR: Revalidate every 60 seconds
 
 async function getHomePageData() {
   try {
-    const [productsData, categoriesData, sliderData] = await Promise.all([
+    const [productsData, categoriesData, sliderData] = await Promise.all<unknown>([
       graphqlClient.request(GET_PRODUCTS, { first: 24 }),
       graphqlClient.request(GET_CATEGORIES),
       graphqlClient.request(GET_SLIDER_IMAGES).catch(() => ({ sliders: { nodes: [] } })),

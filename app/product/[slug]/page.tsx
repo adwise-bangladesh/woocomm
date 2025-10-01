@@ -73,7 +73,10 @@ export default async function ProductPage({
     return Math.round(((regular - sale) / regular) * 100);
   };
 
+  // Allow orders for IN_STOCK and ON_BACKORDER products
   const isInStock = product.stockStatus === 'IN_STOCK';
+  const isBackordersAllowed = product.stockStatus === 'ON_BACKORDER';
+  const canOrder = isInStock || isBackordersAllowed;
   const discount = calculateDiscount();
   
   // Calculate expected delivery date (3-5 days from now)
@@ -170,7 +173,7 @@ export default async function ProductPage({
               <div className="mb-2">
                 <AnimatedOrderButton 
                   productId={product.databaseId || 0} 
-                  disabled={!isInStock} 
+                  disabled={!canOrder} 
                 />
               </div>
 
@@ -178,7 +181,7 @@ export default async function ProductPage({
               <div className="mb-3">
                 <AddToCartButton 
                   productId={product.databaseId || 0} 
-                  disabled={!isInStock} 
+                  disabled={!canOrder} 
                 />
               </div>
 
@@ -258,6 +261,11 @@ export default async function ProductPage({
                     <>
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                       <span className="text-green-600 font-semibold">In Stock</span>
+                    </>
+                  ) : isBackordersAllowed ? (
+                    <>
+                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                      <span className="text-orange-600 font-semibold">Pre-Order (Imported from China)</span>
                     </>
                   ) : (
                     <>

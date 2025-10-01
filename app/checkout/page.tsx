@@ -14,11 +14,13 @@ export default function CheckoutPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [localItems, setLocalItems] = useState(items);
+  const [isVerifyingAddress, setIsVerifyingAddress] = useState(false);
+  const [deliveryZone, setDeliveryZone] = useState<'dhaka' | 'outside' | null>(null);
+  const [showManualSelection, setShowManualSelection] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
     address: '',
-    deliveryMethod: 'inside-dhaka',
     paymentMethod: 'cod',
   });
 
@@ -33,8 +35,58 @@ export default function CheckoutPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const verifyAddress = async () => {
+    if (!formData.address || formData.address.length < 10) {
+      return;
+    }
+
+    setIsVerifyingAddress(true);
+    try {
+      // Using OpenStreetMap Nominatim API (FREE, no API key needed)
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?` +
+        `q=${encodeURIComponent(formData.address + ', Bangladesh')}` +
+        `&format=json&addressdetails=1&limit=1`,
+        {
+          headers: {
+            'User-Agent': 'Zonash-Ecommerce/1.0', // Required by Nominatim
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        const result = data[0];
+        
+        // Check if address is in Dhaka (city, district, or state level)
+        const address = result.address || {};
+        const isDhaka = 
+          address.city?.toLowerCase().includes('dhaka') ||
+          address.state?.toLowerCase().includes('dhaka') ||
+          address.county?.toLowerCase().includes('dhaka') ||
+          address.state_district?.toLowerCase().includes('dhaka') ||
+          result.display_name?.toLowerCase().includes('dhaka');
+
+        setDeliveryZone(isDhaka ? 'dhaka' : 'outside');
+      } else {
+        // If no results found, show manual selection option
+        setDeliveryZone(null);
+        setShowManualSelection(true);
+      }
+    } catch (error) {
+      console.error('Address verification failed:', error);
+      setDeliveryZone(null);
+      setShowManualSelection(true);
+    } finally {
+      setIsVerifyingAddress(false);
+    }
+  };
+
   const getDeliveryCharge = () => {
-    return formData.deliveryMethod === 'inside-dhaka' ? 80 : 130;
+    if (deliveryZone === 'dhaka') return 80;
+    if (deliveryZone === 'outside') return 130;
+    return 130; // Default to outside Dhaka if not verified
   };
 
   const getDeliveryTime = () => {
@@ -94,6 +146,13 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if address is verified
+    if (!deliveryZone) {
+      alert('Please verify your address to calculate delivery charges.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -102,8 +161,18 @@ export default function CheckoutPage() {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       const orderNumber = Math.random().toString(36).substr(2, 9).toUpperCase();
+      const deliveryCharge = getDeliveryCharge();
+      const subtotalAmount = parseInt(total?.replace(/[^0-9]/g, '') || '0');
+      const totalAmount = subtotalAmount + deliveryCharge;
+      
       clearCart();
-      alert(`Order placed successfully! Order #${orderNumber}\n\nWe'll contact you within 24 hours to confirm your order.`);
+      alert(
+        `Order placed successfully! Order #${orderNumber}\n\n` +
+        `Delivery Zone: ${deliveryZone === 'dhaka' ? 'Inside Dhaka' : 'Outside Dhaka'}\n` +
+        `Delivery Charge: Tk ${deliveryCharge}\n` +
+        `Total Amount: Tk ${totalAmount}\n\n` +
+        `We'll contact you within 24 hours to confirm your order.`
+      );
       router.push('/');
     } catch (error) {
       console.error('Checkout error:', error);
@@ -181,69 +250,76 @@ export default function CheckoutPage() {
                   required
                   rows={3}
                   value={formData.address}
-                  onChange={handleInputChange}
+                  onChange={(e) => {
+                    handleInputChange(e);
+                    setDeliveryZone(null); // Reset when address changes
+                  }}
                   className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent resize-none placeholder:text-gray-900"
                   placeholder="House/Flat no, Road, Area, City, District"
                 />
+                
+                <div className="mt-2 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={verifyAddress}
+                      disabled={isVerifyingAddress || !formData.address || formData.address.length < 10}
+                      className="px-4 py-2 text-xs font-medium bg-teal-600 text-white rounded hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isVerifyingAddress ? 'Verifying...' : 'Verify Address'}
+                    </button>
+                    
+                    {deliveryZone && (
+                      <span className="text-xs font-medium text-teal-600">
+                        ✓ Verified: {deliveryZone === 'dhaka' ? 'Inside Dhaka' : 'Outside Dhaka'} - Tk {getDeliveryCharge()}
+                      </span>
+                    )}
+                    
+                    {!deliveryZone && !isVerifyingAddress && formData.address.length >= 10 && !showManualSelection && (
+                      <span className="text-xs text-orange-600">
+                        Click to verify your address
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Manual Selection Fallback */}
+                  {showManualSelection && !deliveryZone && (
+                    <div className="bg-orange-50 border border-orange-200 rounded p-3">
+                      <p className="text-xs text-orange-800 mb-2">
+                        Couldn&apos;t verify address automatically. Please select your delivery area:
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeliveryZone('dhaka');
+                            setShowManualSelection(false);
+                          }}
+                          className="flex-1 px-3 py-2 text-xs font-medium bg-white border border-gray-300 rounded hover:bg-gray-50"
+                        >
+                          Inside Dhaka (Tk 80)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeliveryZone('outside');
+                            setShowManualSelection(false);
+                          }}
+                          className="flex-1 px-3 py-2 text-xs font-medium bg-white border border-gray-300 rounded hover:bg-gray-50"
+                        >
+                          Outside Dhaka (Tk 130)
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {!deliveryZone && !showManualSelection && (
+                    <p className="text-xs text-gray-500">
+                      Delivery charge: Tk 80 (Dhaka) / Tk 130 (Outside Dhaka)
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          </div>
-
-          {/* Delivery Method Card */}
-          <div className="bg-white rounded-[5px] p-3 mb-2">
-            <h3 className="text-base font-semibold text-gray-900 mb-3">Delivery Method</h3>
-            <div className="space-y-2">
-              <label className="flex items-center justify-between p-3 border border-gray-200 rounded cursor-pointer hover:border-gray-300">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="deliveryMethod"
-                    value="inside-dhaka"
-                    checked={formData.deliveryMethod === 'inside-dhaka'}
-                    onChange={handleInputChange}
-                    className="w-4 h-4"
-                  />
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">Inside Dhaka</div>
-                    <div className="flex items-center gap-3 text-xs text-gray-600 mt-0.5">
-                      <span className="flex items-center gap-1">
-                        <Truck className="w-3 h-3" />
-                        Tk 80
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        1-3 days
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </label>
-              
-              <label className="flex items-center justify-between p-3 border border-gray-200 rounded cursor-pointer hover:border-gray-300">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="deliveryMethod"
-                    value="outside-dhaka"
-                    checked={formData.deliveryMethod === 'outside-dhaka'}
-                    onChange={handleInputChange}
-                    className="w-4 h-4"
-                  />
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">Outside Dhaka</div>
-                    <div className="flex items-center gap-3 text-xs text-gray-600 mt-0.5">
-                      <span className="flex items-center gap-1">
-                        <Truck className="w-3 h-3" />
-                        Tk 130
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        1-3 days
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </label>
             </div>
           </div>
 

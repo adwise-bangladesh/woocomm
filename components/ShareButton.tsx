@@ -7,7 +7,7 @@ interface ShareButtonProps {
   productId: number | string;
 }
 
-export default function ShareButton({ productId }: ShareButtonProps) {
+export default function ShareButton({}: ShareButtonProps) {
   const [copied, setCopied] = useState(false);
 
   const handleShare = () => {

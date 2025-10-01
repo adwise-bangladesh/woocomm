@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 
 interface GalleryImage {
@@ -22,10 +22,10 @@ export default function ProductImageGallery({
   const [selectedImage, setSelectedImage] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   
-  const allImages = [
+  const allImages = useMemo(() => [
     mainImage,
     ...(galleryImages?.nodes || [])
-  ];
+  ], [mainImage, galleryImages]);
 
   // Preload all images for instant switching
   useEffect(() => {

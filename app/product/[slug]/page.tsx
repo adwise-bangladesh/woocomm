@@ -5,10 +5,9 @@ import AddToCartButton from '@/components/AddToCartButton';
 import AnimatedOrderButton from '@/components/AnimatedOrderButton';
 import ShareButton from '@/components/ShareButton';
 import ProductImageGallery from '@/components/ProductImageGallery';
-import ProductReviews from '@/components/ProductReviews';
 import InfiniteProductGrid from '@/components/InfiniteProductGrid';
 import { notFound } from 'next/navigation';
-import { Phone, Star, Package, Truck, Clock } from 'lucide-react';
+import { Phone, Star, Package, Clock } from 'lucide-react';
 import Link from 'next/link';
 
 export const revalidate = 300; // ISR: Revalidate every 5 minutes
@@ -17,9 +16,9 @@ async function getProduct(slug: string) {
   try {
     const data = await graphqlClient.request(GET_PRODUCT_BY_SLUG, { slug }) as { product: Product };
     return data.product as Product;
-  } catch (error) {
+  } catch (err) {
     if (process.env.NODE_ENV === 'development') {
-      console.error('Error fetching product:', error);
+      console.error('Error fetching product:', err);
     }
     return null;
   }
@@ -37,7 +36,7 @@ async function getRelatedProducts() {
       products: data.products?.nodes || [],
       pageInfo: data.products?.pageInfo || { hasNextPage: false, endCursor: null },
     };
-  } catch (error) {
+  } catch {
     return {
       products: [],
       pageInfo: { hasNextPage: false, endCursor: null },
@@ -78,13 +77,6 @@ export default async function ProductPage({
   const isBackordersAllowed = product.stockStatus === 'ON_BACKORDER';
   const canOrder = isInStock || isBackordersAllowed;
   const discount = calculateDiscount();
-  
-  // Calculate expected delivery date (3-5 days from now)
-  const expectedDelivery = () => {
-    const date = new Date();
-    date.setDate(date.getDate() + 5);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
 
   // Generate random review stats
   const generateReviewStats = () => {

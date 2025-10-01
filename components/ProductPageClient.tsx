@@ -12,17 +12,22 @@ import Link from 'next/link';
 
 interface ProductPageClientProps {
   product: Product;
-  formatPrice: (price: string | null | undefined) => string;
   discount: number | null;
   reviewStats: { rating: number; count: number };
 }
 
 export default function ProductPageClient({
   product,
-  formatPrice,
   discount,
   reviewStats,
 }: ProductPageClientProps) {
+  // Format price function (moved to client component)
+  const formatPrice = (price: string | null | undefined) => {
+    if (!price) return 'Tk 0';
+    const num = parseFloat(price.replace(/[^0-9.-]+/g, ''));
+    if (isNaN(num) || num < 0) return 'Tk 0';
+    return `Tk ${num.toFixed(0)}`;
+  };
   const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null);
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
 

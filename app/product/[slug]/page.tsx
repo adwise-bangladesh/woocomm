@@ -207,7 +207,6 @@ export default async function ProductPage({
       <div className="min-h-screen bg-gray-50">
         <ProductPageClient
           product={product}
-          formatPrice={formatPrice}
           discount={discount}
           reviewStats={reviewStats}
         />

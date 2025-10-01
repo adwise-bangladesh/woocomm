@@ -33,8 +33,6 @@ export default function ProductPageClient({
 
   const isVariableProduct = product.type === 'VARIABLE';
   
-  // Debug logs removed for production
-  
   // Use variation data if available, otherwise use product data
   const currentProduct = selectedVariation || product;
   const currentPrice = currentProduct.salePrice || currentProduct.price || currentProduct.regularPrice;

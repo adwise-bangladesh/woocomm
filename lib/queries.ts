@@ -277,6 +277,12 @@ export const GET_PRODUCT_BY_SLUG = gql`
               sourceUrl
               altText
             }
+            attributes {
+              nodes {
+                name
+                value
+              }
+            }
             ... on ProductWithPricing {
               price
               regularPrice
@@ -285,12 +291,6 @@ export const GET_PRODUCT_BY_SLUG = gql`
             ... on InventoriedProduct {
               stockStatus
               stockQuantity
-            }
-            attributes {
-              nodes {
-                name
-                value
-              }
             }
           }
         }

@@ -21,7 +21,11 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
     if (Object.keys(selectedAttributes).length === attributes.length && attributes.length > 0) {
       const matchingVariation = variations.find((variation) => {
         return variation.attributes.nodes.every((attr) => {
-          const selectedValue = selectedAttributes[attr.name];
+          // Convert attribute name to match variation format (lowercase)
+          const attributeKey = Object.keys(selectedAttributes).find(key => 
+            key.toLowerCase() === attr.name.toLowerCase()
+          );
+          const selectedValue = attributeKey ? selectedAttributes[attributeKey] : null;
           return selectedValue && selectedValue.toLowerCase() === attr.value.toLowerCase();
         });
       });

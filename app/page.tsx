@@ -41,7 +41,7 @@ async function getHomePageData() {
         products: { nodes: [] } 
       })) as Promise<{ products: { nodes: Product[] } }>,
       
-      graphqlClient.request(GET_PRODUCTS, { first: 24, after: null }).catch((error) => {
+      graphqlClient.request(GET_PRODUCTS, { first: 30, after: null }).catch((error) => {
         if (process.env.NODE_ENV === 'development') {
           console.error('Error fetching products:', error);
         }

@@ -4,7 +4,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useCartStore } from '@/lib/store';
 import { ShoppingCart, Search, User } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface MenuItem {
   id: string;
@@ -32,6 +33,8 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
   const total = useCartStore((state) => state.total);
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const router = useRouter();
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
@@ -41,9 +44,40 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
     return `Tk ${num.toFixed(0)}`;
   };
 
+  // Live search with debouncing
+  useEffect(() => {
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // If query is empty, don't search
+    if (!searchQuery.trim()) {
+      return;
+    }
+
+    // Set new timeout for search (500ms delay)
+    searchTimeoutRef.current = setTimeout(() => {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }, 500);
+
+    // Cleanup
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery, router]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Search:', searchQuery);
+    // Immediate search on Enter key
+    if (searchQuery.trim()) {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
   };
 
   return (
@@ -103,7 +137,7 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search for products..."
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-transparent placeholder:text-gray-400 transition-all"
+                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-[5px] focus:outline-none focus:bg-white focus:border-gray-400 placeholder:text-gray-700 transition-all"
                 />
               </div>
             </form>
@@ -222,13 +256,13 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
             <div className="pb-3 animate-slideDown">
               <form onSubmit={handleSearch}>
                 <div className="relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search products..."
-                    className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-transparent placeholder:text-gray-400 transition-all"
+                    className="w-full pl-10 pr-4 py-2 text-sm text-gray-900 bg-gray-50 border border-gray-300 rounded-[5px] focus:outline-none focus:bg-white focus:border-gray-400 placeholder:text-gray-700 transition-all"
                     autoFocus
                   />
                 </div>

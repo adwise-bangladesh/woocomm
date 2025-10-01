@@ -1,0 +1,274 @@
+'use client';
+
+import { useState, useCallback } from 'react';
+import { Product, ProductVariation } from '@/lib/types';
+import VariantSelector from './VariantSelector';
+import ProductImageGallery from './ProductImageGallery';
+import AddToCartButton from './AddToCartButton';
+import AnimatedOrderButton from './AnimatedOrderButton';
+import ShareButton from './ShareButton';
+import { Phone, Star, Package, Clock } from 'lucide-react';
+import Link from 'next/link';
+
+interface ProductPageClientProps {
+  product: Product;
+  formatPrice: (price: string | null | undefined) => string;
+  discount: number | null;
+  reviewStats: { rating: number; count: number };
+}
+
+export default function ProductPageClient({
+  product,
+  formatPrice,
+  discount,
+  reviewStats,
+}: ProductPageClientProps) {
+  const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null);
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
+
+  const isVariableProduct = product.type === 'VARIABLE';
+  
+  // Use variation data if available, otherwise use product data
+  const currentProduct = selectedVariation || product;
+  const currentPrice = currentProduct.salePrice || currentProduct.price || currentProduct.regularPrice;
+  const currentRegularPrice = currentProduct.regularPrice;
+  const currentSalePrice = currentProduct.salePrice;
+  const currentStockStatus = currentProduct.stockStatus || 'OUT_OF_STOCK';
+
+  const isInStock = currentStockStatus === 'IN_STOCK';
+  const isBackordersAllowed = currentStockStatus === 'ON_BACKORDER';
+  const canOrder = isInStock || isBackordersAllowed;
+
+  // Calculate discount for current variation/product
+  const currentDiscount = () => {
+    if (!currentSalePrice || !currentRegularPrice) return null;
+    const regular = parseFloat(currentRegularPrice.replace(/[^0-9.-]+/g, ''));
+    const sale = parseFloat(currentSalePrice.replace(/[^0-9.-]+/g, ''));
+    
+    if (isNaN(regular) || isNaN(sale) || regular <= 0 || sale <= 0 || sale >= regular) {
+      return null;
+    }
+    
+    const discountValue = Math.round(((regular - sale) / regular) * 100);
+    return discountValue > 0 && discountValue < 100 ? discountValue : null;
+  };
+
+  const displayDiscount = currentDiscount();
+
+  const handleVariantChange = useCallback((variation: ProductVariation | null, attrs: Record<string, string>) => {
+    setSelectedVariation(variation);
+    setSelectedAttributes(attrs);
+  }, []);
+
+  // Get the product ID for cart operations
+  const productIdForCart = isVariableProduct && selectedVariation 
+    ? selectedVariation.databaseId 
+    : product.databaseId || 0;
+
+  // Get variation image if available
+  const currentImage = selectedVariation?.image || product.image;
+
+  return (
+    <>
+      <div className="container mx-auto px-2 py-3">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Left: Image Gallery */}
+          <div className="lg:col-span-2">
+            <div className="bg-white sticky top-4">
+              <ProductImageGallery
+                mainImage={currentImage || { sourceUrl: '/placeholder.png', altText: product.name }}
+                galleryImages={product.galleryImages}
+                productName={product.name}
+              />
+            </div>
+          </div>
+
+          {/* Right: Product Info */}
+          <div className="space-y-2">
+            {/* Product Details Card */}
+            <div className="bg-white rounded-[5px] p-3 sticky top-4">
+              {/* Title */}
+              <h1 className="text-lg font-bold text-gray-900 mb-1.5 leading-tight">
+                {product.name} {isBackordersAllowed && <span className="text-orange-600">(Pre-Order)</span>}
+              </h1>
+
+              {/* Reviews Count */}
+              <div className="flex items-center gap-2 mb-2 pb-2 border-b">
+                <div className="flex items-center gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`w-3.5 h-3.5 ${
+                        i < Math.floor(reviewStats.rating)
+                          ? 'fill-yellow-400 text-yellow-400'
+                          : 'text-gray-300'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-xs text-gray-600">
+                  {reviewStats.rating} ({reviewStats.count.toLocaleString()} reviews)
+                </span>
+              </div>
+
+              {/* Price */}
+              <div className="mb-3 pb-3 border-b">
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <span className="text-2xl font-bold text-red-600">
+                    {formatPrice(currentPrice)}
+                  </span>
+                  {currentSalePrice && currentRegularPrice && currentSalePrice !== currentRegularPrice && (
+                    <>
+                      <span className="text-base text-gray-400 line-through">
+                        {formatPrice(currentRegularPrice)}
+                      </span>
+                      {displayDiscount && (
+                        <span className="text-sm font-semibold text-white bg-red-600 px-2 py-0.5 rounded">
+                          -{displayDiscount}%
+                        </span>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Variant Selector for Variable Products */}
+              {isVariableProduct && (
+                <div className="mb-4 pb-4 border-b">
+                  <VariantSelector product={product} onVariantChange={handleVariantChange} />
+                </div>
+              )}
+
+              {/* Short Description */}
+              {product.shortDescription && (
+                <div
+                  className="text-sm text-gray-600 mb-3 pb-3 border-b prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: product.shortDescription }}
+                />
+              )}
+
+              {/* Stock Status & Delivery */}
+              <div className="space-y-2 mb-4 pb-4 border-b">
+                <div className="flex items-center gap-2">
+                  {isInStock ? (
+                    <>
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-green-600 font-semibold">In Stock</span>
+                    </>
+                  ) : isBackordersAllowed ? (
+                    <>
+                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                      <span className="text-orange-600 font-semibold">Pre-Order (Imported)</span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                      <span className="text-red-600 font-semibold">Out of Stock</span>
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 text-gray-700">
+                  <Clock className="w-3.5 h-3.5 text-teal-600" />
+                  <span className="text-xs">
+                    Delivery: <strong>{isInStock ? '1-3 days' : '10-15 days'}</strong>
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-2 mb-4">
+                <AnimatedOrderButton
+                  productId={productIdForCart}
+                  disabled={!canOrder || (isVariableProduct && !selectedVariation)}
+                />
+                <AddToCartButton
+                  productId={productIdForCart}
+                  disabled={!canOrder || (isVariableProduct && !selectedVariation)}
+                />
+              </div>
+
+              {/* Contact Options */}
+              <div className="space-y-2 mb-4 pb-4 border-b">
+                <a
+                  href="tel:01926644575"
+                  className="flex items-center justify-center gap-2 w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                >
+                  <Phone className="w-4 h-4" />
+                  <span className="font-medium">Call: 01926644575</span>
+                </a>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <a
+                    href="https://wa.me/8801926644575"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                    </svg>
+                    <span className="text-sm font-medium">WhatsApp</span>
+                  </a>
+
+                  <a
+                    href="https://m.me/zonashbd"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 0C5.373 0 0 4.975 0 11.111c0 3.497 1.745 6.616 4.472 8.652V24l4.086-2.242c1.09.301 2.246.464 3.442.464 6.627 0 12-4.974 12-11.11C24 4.975 18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26L10.732 8l3.131 3.259L19.752 8l-6.561 6.963z" />
+                    </svg>
+                    <span className="text-sm font-medium">Messenger</span>
+                  </a>
+                </div>
+              </div>
+
+              {/* Courier Charges */}
+              <div className="mb-4 pb-4 border-b">
+                <div className="flex items-center gap-2 mb-2">
+                  <Package className="w-4 h-4 text-teal-600" />
+                  <h3 className="text-sm font-semibold text-gray-900">Delivery Charges</h3>
+                </div>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Inside Dhaka:</span>
+                    <span className="font-semibold text-gray-900">Tk 80</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Outside Dhaka:</span>
+                    <span className="font-semibold text-gray-900">Tk 130</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Important Note */}
+              <Link
+                href={isBackordersAllowed ? '/policies/pre-order' : '/policies/return'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block mb-3 p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors cursor-pointer"
+              >
+                <p className="text-xs text-orange-900 font-medium mb-1">⚠️ Important Note:</p>
+                <p className="text-xs text-orange-800 leading-relaxed">
+                  {isBackordersAllowed
+                    ? '50% advance payment required. Delivery: 10-15 days. Imported products are non-refundable once ordered. Click to view full pre-order policy.'
+                    : 'Please ensure 100% certainty before ordering. Refusal to accept matching products will incur delivery charges. Click to view full return policy.'}
+                </p>
+              </Link>
+
+              {/* Product Code & Share */}
+              <div className="flex items-center justify-between text-xs text-gray-600 mb-3">
+                <span>
+                  Product Code: <strong className="text-gray-900">{product.databaseId || product.id}</strong>
+                </span>
+                <ShareButton />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+

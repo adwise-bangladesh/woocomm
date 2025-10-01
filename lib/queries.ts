@@ -245,6 +245,7 @@ export const GET_PRODUCT_BY_SLUG = gql`
       databaseId
       name
       slug
+      type
       description
       shortDescription
       image {
@@ -265,6 +266,40 @@ export const GET_PRODUCT_BY_SLUG = gql`
       ... on InventoriedProduct {
         stockStatus
         stockQuantity
+      }
+      ... on VariableProduct {
+        variations(first: 50) {
+          nodes {
+            id
+            databaseId
+            name
+            image {
+              sourceUrl
+              altText
+            }
+            ... on ProductWithPricing {
+              price
+              regularPrice
+              salePrice
+            }
+            ... on InventoriedProduct {
+              stockStatus
+              stockQuantity
+            }
+            attributes {
+              nodes {
+                name
+                value
+              }
+            }
+          }
+        }
+        attributes {
+          nodes {
+            name
+            options
+          }
+        }
       }
     }
   }

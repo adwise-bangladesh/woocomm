@@ -47,22 +47,45 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
 
   // Find matching variation based on selected attributes
   useEffect(() => {
+    console.log('Variation matching debug:', {
+      selectedAttributes,
+      attributesLength: attributes.length,
+      selectedAttributesLength: Object.keys(selectedAttributes).length,
+      variations: variations.map(v => ({
+        id: v.databaseId,
+        name: v.name,
+        attributes: v.attributes.nodes.map(a => ({ name: a.name, value: a.value }))
+      }))
+    });
+
     if (Object.keys(selectedAttributes).length === attributes.length && attributes.length > 0) {
       const matchingVariation = variations.find((variation) => {
-        return variation.attributes.nodes.every((attr) => {
+        const isMatch = variation.attributes.nodes.every((attr) => {
           // Convert attribute name to match variation format (lowercase)
           const attributeKey = Object.keys(selectedAttributes).find(key => 
             key.toLowerCase() === attr.name.toLowerCase()
           );
           const selectedValue = attributeKey ? selectedAttributes[attributeKey] : null;
-          return selectedValue && selectedValue.toLowerCase() === attr.value.toLowerCase();
+          const matches = selectedValue && selectedValue.toLowerCase() === attr.value.toLowerCase();
+          
+          console.log('Attribute matching:', {
+            variationAttr: { name: attr.name, value: attr.value },
+            selectedAttr: { key: attributeKey, value: selectedValue },
+            matches
+          });
+          
+          return matches;
         });
+        
+        console.log('Variation match result:', { variationId: variation.databaseId, isMatch });
+        return isMatch;
       });
 
       console.log('Found matching variation:', matchingVariation);
       setSelectedVariation(matchingVariation || null);
       onVariantChange(matchingVariation || null, selectedAttributes);
     } else {
+      console.log('Not enough attributes selected');
       setSelectedVariation(null);
       onVariantChange(null, selectedAttributes);
     }

@@ -44,19 +44,47 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
 
   // Check if a specific option is available based on current selections
   const isOptionAvailable = (attributeName: string, optionValue: string): boolean => {
+    // If no variations exist, allow all options (fallback)
+    if (!variations || variations.length === 0) {
+      console.log('No variations found, allowing all options');
+      return true;
+    }
+
     const testAttributes = { ...selectedAttributes, [attributeName]: optionValue };
+    console.log('Testing availability for:', attributeName, optionValue, 'with attributes:', testAttributes);
     
     // Check if there's any variation that matches these attributes
-    return variations.some((variation) => {
-      // Check if variation is in stock
-      if (variation.stockStatus === 'OUT_OF_STOCK') return false;
+    const available = variations.some((variation) => {
+      console.log('Checking variation:', variation.id, 'stockStatus:', variation.stockStatus);
       
-      // Check if all selected attributes match
-      return Object.entries(testAttributes).every(([name, value]) => {
+      // Check if variation is in stock
+      if (variation.stockStatus === 'OUT_OF_STOCK') {
+        console.log('Variation out of stock:', variation.id);
+        return false;
+      }
+      
+      // For single attribute selection, just check if this attribute value exists in any variation
+      if (Object.keys(testAttributes).length === 1) {
+        const hasAttribute = variation.attributes.nodes.some((attr) => 
+          attr.name === attributeName && attr.value.toLowerCase() === optionValue.toLowerCase()
+        );
+        console.log('Single attribute check:', hasAttribute, 'for', attributeName, optionValue);
+        return hasAttribute;
+      }
+      
+      // For multiple attributes, check if all selected attributes match
+      const allMatch = Object.entries(testAttributes).every(([name, value]) => {
         const varAttr = variation.attributes.nodes.find((a) => a.name === name);
-        return varAttr && varAttr.value.toLowerCase() === value.toLowerCase();
+        const matches = varAttr && varAttr.value.toLowerCase() === value.toLowerCase();
+        console.log('Attribute match check:', name, value, 'found:', varAttr?.value, 'matches:', matches);
+        return matches;
       });
+      
+      return allMatch;
     });
+    
+    console.log('Final availability for', attributeName, optionValue, ':', available);
+    return available;
   };
 
   console.log('VariantSelector - attributes:', attributes); // Debug log

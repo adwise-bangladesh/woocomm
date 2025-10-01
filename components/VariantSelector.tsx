@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Product, ProductVariation, ProductAttribute } from '@/lib/types';
+import { Product, ProductVariation } from '@/lib/types';
 import { CheckCircle2 } from 'lucide-react';
 import { logger } from '@/lib/utils/performance';
 

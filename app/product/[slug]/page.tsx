@@ -74,7 +74,6 @@ export async function generateMetadata({
     };
   }
 
-  const price = product.salePrice || product.price || product.regularPrice;
   const description = product.shortDescription 
     ? sanitizeText(product.shortDescription).substring(0, 160)
     : `Buy ${product.name} at the best price in Bangladesh`;
@@ -116,12 +115,6 @@ export default async function ProductPage({
     notFound();
   }
 
-  const formatPrice = (price: string | null | undefined) => {
-    if (!price) return 'Tk 0';
-    const num = parseFloat(price.replace(/[^0-9.-]+/g, ''));
-    if (isNaN(num) || num < 0) return 'Tk 0';
-    return `Tk ${num.toFixed(0)}`;
-  };
 
   const calculateDiscount = () => {
     if (!product.salePrice || !product.regularPrice) return null;
@@ -139,7 +132,6 @@ export default async function ProductPage({
   // Allow orders for IN_STOCK and ON_BACKORDER products
   const isInStock = product.stockStatus === 'IN_STOCK';
   const isBackordersAllowed = product.stockStatus === 'ON_BACKORDER';
-  const canOrder = isInStock || isBackordersAllowed;
   const discount = calculateDiscount();
 
   // Generate random review stats

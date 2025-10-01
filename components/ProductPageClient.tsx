@@ -20,7 +20,6 @@ interface ProductPageClientProps {
 
 export default function ProductPageClient({
   product,
-  discount,
   reviewStats,
 }: ProductPageClientProps) {
   // Use memoized price formatter

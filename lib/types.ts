@@ -34,6 +34,10 @@ export interface ProductVariation {
   id: string;
   databaseId: number;
   name: string;
+  image?: {
+    sourceUrl: string;
+    altText: string;
+  };
   price: string;
   regularPrice: string;
   salePrice?: string;

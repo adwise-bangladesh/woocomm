@@ -3,11 +3,7 @@
 import { Share2 } from 'lucide-react';
 import { useState } from 'react';
 
-interface ShareButtonProps {
-  productId: number | string;
-}
-
-export default function ShareButton({}: ShareButtonProps) {
+export default function ShareButton() {
   const [copied, setCopied] = useState(false);
 
   const handleShare = () => {

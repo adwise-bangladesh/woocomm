@@ -2,7 +2,7 @@ import { graphqlClient } from '@/lib/graphql-client';
 import { GET_PRODUCT_BY_SLUG, GET_PRODUCTS } from '@/lib/queries';
 import { Product } from '@/lib/types';
 import AddToCartButton from '@/components/AddToCartButton';
-import OrderNowButton from '@/components/OrderNowButton';
+import AnimatedOrderButton from '@/components/AnimatedOrderButton';
 import ShareButton from '@/components/ShareButton';
 import ProductImageGallery from '@/components/ProductImageGallery';
 import ProductReviews from '@/components/ProductReviews';
@@ -168,27 +168,10 @@ export default async function ProductPage({
 
               {/* Order Now Button with Animation */}
               <div className="mb-2">
-                <style jsx>{`
-                  @keyframes pulse-buy {
-                    0%, 100% {
-                      transform: scale(1);
-                      box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.7);
-                    }
-                    50% {
-                      transform: scale(1.02);
-                      box-shadow: 0 0 0 8px rgba(13, 148, 136, 0);
-                    }
-                  }
-                  .animate-buy-now {
-                    animation: pulse-buy 2s infinite;
-                  }
-                `}</style>
-                <div className="animate-buy-now">
-                  <OrderNowButton 
-                    productId={product.databaseId || 0} 
-                    disabled={!isInStock} 
-                  />
-                </div>
+                <AnimatedOrderButton 
+                  productId={product.databaseId || 0} 
+                  disabled={!isInStock} 
+                />
               </div>
 
               {/* Add to Cart */}

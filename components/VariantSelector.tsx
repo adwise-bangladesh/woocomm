@@ -19,20 +19,26 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
 
   // Auto-select default attributes on component mount
   useEffect(() => {
+    console.log('Default attributes:', defaultAttributes);
+    console.log('Current selected attributes:', selectedAttributes);
+    
     if (defaultAttributes.length > 0 && Object.keys(selectedAttributes).length === 0) {
       const defaultAttrs: Record<string, string> = {};
       defaultAttributes.forEach((attr) => {
+        console.log('Processing default attr:', attr);
         if (attr.name && attr.value) {
           // Find the matching attribute name (case-insensitive)
           const matchingAttribute = attributes.find(a => 
             a.name.toLowerCase() === attr.name.toLowerCase()
           );
+          console.log('Matching attribute found:', matchingAttribute);
           if (matchingAttribute) {
             defaultAttrs[matchingAttribute.name] = attr.value;
           }
         }
       });
       
+      console.log('Setting default attributes:', defaultAttrs);
       if (Object.keys(defaultAttrs).length > 0) {
         setSelectedAttributes(defaultAttrs);
       }

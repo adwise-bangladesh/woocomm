@@ -43,6 +43,17 @@ export default function ProductPageClient({
   const isInStock = currentStockStatus === 'IN_STOCK';
   const isBackordersAllowed = currentStockStatus === 'ON_BACKORDER';
   const canOrder = isInStock || isBackordersAllowed;
+  
+  // Debug logging
+  console.log('Stock status debug:', {
+    currentStockStatus,
+    isInStock,
+    isBackordersAllowed,
+    canOrder,
+    isVariableProduct,
+    selectedVariation,
+    buttonDisabled: isVariableProduct && !selectedVariation
+  });
 
   // Calculate discount for current variation/product
   const currentDiscount = () => {

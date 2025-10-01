@@ -300,6 +300,13 @@ export const GET_PRODUCT_BY_SLUG = gql`
             options
           }
         }
+        defaultAttributes {
+          nodes {
+            id
+            name
+            value
+          }
+        }
       }
     }
   }

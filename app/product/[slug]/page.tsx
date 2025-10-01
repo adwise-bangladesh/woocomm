@@ -265,7 +265,7 @@ export default async function ProductPage({
                   ) : isBackordersAllowed ? (
                     <>
                       <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                      <span className="text-orange-600 font-semibold">Pre-Order (Imported from China)</span>
+                      <span className="text-orange-600 font-semibold">Pre-Order (Imported)</span>
                     </>
                   ) : (
                     <>

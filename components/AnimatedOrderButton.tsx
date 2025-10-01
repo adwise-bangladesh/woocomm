@@ -13,10 +13,10 @@ export default function AnimatedOrderButton({ productId, disabled }: AnimatedOrd
       <style jsx>{`
         @keyframes pulse {
           0%, 100% {
-            opacity: 1;
+            transform: scale(1);
           }
           50% {
-            opacity: 0.8;
+            transform: scale(1.05);
           }
         }
         .animate-pulse-btn {

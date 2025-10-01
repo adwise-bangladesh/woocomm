@@ -106,7 +106,7 @@ export default function ReturnPolicyPage() {
                 <li>Products without original packaging</li>
                 <li>Customized or personalized items</li>
                 <li>Hygiene products (earphones, underwear, etc.)</li>
-                <li>Sale/clearance items marked as "Final Sale"</li>
+                <li>Sale/clearance items marked as &quot;Final Sale&quot;</li>
               </ul>
             </div>
           </section>

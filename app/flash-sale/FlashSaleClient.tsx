@@ -5,7 +5,7 @@ import Image from 'next/image';
 import CategoryFilters from '@/components/CategoryFilters';
 import ProductCard from '@/components/ProductCard';
 import { Product } from '@/lib/types';
-import { Zap, Clock } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import Link from 'next/link';
 
 interface Category {

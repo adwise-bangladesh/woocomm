@@ -5,7 +5,7 @@ import Image from 'next/image';
 import CategoryFilters from '@/components/CategoryFilters';
 import ProductCard from '@/components/ProductCard';
 import { Product } from '@/lib/types';
-import { Truck, Clock } from 'lucide-react';
+import { Truck } from 'lucide-react';
 import Link from 'next/link';
 
 interface Category {

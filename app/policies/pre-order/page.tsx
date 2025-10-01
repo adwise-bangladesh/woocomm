@@ -127,7 +127,7 @@ export default function PreOrderPolicyPage() {
                 </div>
               </div>
               <p className="text-sm text-gray-600">
-                <strong>Note:</strong> Timeline may vary based on customs clearance and shipping conditions. We'll keep you updated via SMS/WhatsApp.
+                <strong>Note:</strong> Timeline may vary based on customs clearance and shipping conditions. We&apos;ll keep you updated via SMS/WhatsApp.
               </p>
             </div>
           </section>
@@ -163,7 +163,7 @@ export default function PreOrderPolicyPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-3">What Happens After You Order?</h2>
             <div className="space-y-2 text-gray-700">
               <ol className="list-decimal list-inside space-y-2 ml-4">
-                <li><strong>Order Confirmation:</strong> You'll receive SMS/WhatsApp confirmation</li>
+                <li><strong>Order Confirmation:</strong> You&apos;ll receive SMS/WhatsApp confirmation</li>
                 <li><strong>Payment:</strong> Pay 50% or 100% advance via bKash/Nagad/Bank</li>
                 <li><strong>Processing:</strong> We order the product from our China supplier</li>
                 <li><strong>Shipping Updates:</strong> Regular updates via SMS/WhatsApp</li>

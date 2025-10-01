@@ -35,6 +35,7 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
   }, [selectedAttributes, variations, attributes.length, onVariantChange]);
 
   const handleAttributeSelect = (attributeName: string, value: string) => {
+    console.log('Attribute selected:', attributeName, value); // Debug log
     setSelectedAttributes((prev) => ({
       ...prev,
       [attributeName]: value,
@@ -58,6 +59,9 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
     });
   };
 
+  console.log('VariantSelector - attributes:', attributes); // Debug log
+  console.log('VariantSelector - variations:', variations); // Debug log
+  
   if (!attributes || attributes.length === 0) {
     return null;
   }

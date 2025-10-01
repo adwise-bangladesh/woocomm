@@ -3,7 +3,7 @@
  * Provides memoization and optimization helpers
  */
 
-import { useMemo, useCallback } from 'react';
+import { useCallback } from 'react';
 
 // Memoized price formatting
 export const usePriceFormatter = () => {
@@ -43,7 +43,7 @@ export const useReviewStatsGenerator = () => {
 };
 
 // Debounce utility for search and other inputs
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
@@ -56,7 +56,7 @@ export function debounce<T extends (...args: any[]) => any>(
 }
 
 // Throttle utility for scroll events
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {
@@ -87,20 +87,20 @@ export const preloadImages = (imageUrls: string[]): Promise<void[]> => {
 
 // Environment-aware logging
 export const logger = {
-  debug: (message: string, data?: any) => {
+  debug: (message: string, data?: unknown) => {
     if (process.env.NODE_ENV === 'development') {
       console.log(`[DEBUG] ${message}`, data);
     }
   },
-  info: (message: string, data?: any) => {
+  info: (message: string, data?: unknown) => {
     if (process.env.NODE_ENV === 'development') {
       console.info(`[INFO] ${message}`, data);
     }
   },
-  warn: (message: string, data?: any) => {
+  warn: (message: string, data?: unknown) => {
     console.warn(`[WARN] ${message}`, data);
   },
-  error: (message: string, error?: any) => {
+  error: (message: string, error?: unknown) => {
     console.error(`[ERROR] ${message}`, error);
   }
 };

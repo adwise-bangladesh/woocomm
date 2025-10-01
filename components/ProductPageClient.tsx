@@ -27,6 +27,7 @@ export default function ProductPageClient({
   const calculateDiscount = useDiscountCalculator();
   const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null);
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
+  const [showPolicyModal, setShowPolicyModal] = useState(false);
 
   const isVariableProduct = product.type === 'VARIABLE';
   
@@ -211,7 +212,7 @@ export default function ProductPageClient({
               <div className="space-y-2 mb-4 pb-4 border-b">
                 <a
                   href="tel:01926644575"
-                  className="flex items-center justify-center gap-2 w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  className="flex items-center justify-center gap-2 w-full py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
                 >
                   <Phone className="w-4 h-4" />
                   <span className="font-medium">Call: 01926644575</span>
@@ -219,7 +220,7 @@ export default function ProductPageClient({
 
                 <div className="grid grid-cols-2 gap-2">
                   <a
-                    href="https://wa.me/8801926644575"
+                    href={`https://wa.me/8801926644575?text=Hi, I'm interested in ${encodeURIComponent(product.name)} (Product Code: ${product.databaseId || product.id})`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
@@ -231,7 +232,7 @@ export default function ProductPageClient({
                   </a>
 
                   <a
-                    href="https://m.me/zonashbd"
+                    href="https://m.me/zonash.co"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
@@ -262,32 +263,85 @@ export default function ProductPageClient({
                 </div>
               </div>
 
-              {/* Important Note */}
-              <Link
-                href={isBackordersAllowed ? '/policies/pre-order' : '/policies/return'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block mb-3 p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors cursor-pointer"
-              >
-                <p className="text-xs text-orange-900 font-medium mb-1">⚠️ Important Note:</p>
-                <p className="text-xs text-orange-800 leading-relaxed">
-                  {isBackordersAllowed
-                    ? '50% advance payment required. Delivery: 10-15 days. Imported products are non-refundable once ordered. Click to view full pre-order policy.'
-                    : 'Please ensure 100% certainty before ordering. Refusal to accept matching products will incur delivery charges. Click to view full return policy.'}
-                </p>
-              </Link>
-
               {/* Product Code & Share */}
-              <div className="flex items-center justify-between text-xs text-gray-600 mb-3">
+              <div className="flex items-center justify-between text-xs text-gray-600 mb-3 pb-3 border-b">
                 <span>
                   Product Code: <strong className="text-gray-900">{product.databaseId || product.id}</strong>
                 </span>
                 <ShareButton />
               </div>
+
+              {/* Important Note */}
+              <div
+                onClick={() => setShowPolicyModal(true)}
+                className="block mb-3 p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors cursor-pointer"
+              >
+                <p className="text-xs text-orange-900 font-medium mb-1">⚠️ Important Note:</p>
+                <p className="text-xs text-orange-800 leading-relaxed">
+                  {isBackordersAllowed
+                    ? '50% advance payment required. Delivery: 10-15 days. Imported products are non-refundable once ordered. Click for details.'
+                    : 'Please ensure 100% certainty before ordering. Refusal to accept matching products will incur delivery charges. Click for details.'}
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Policy Modal */}
+      {showPolicyModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-4 border-b">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {isBackordersAllowed ? 'Pre-Order Policy' : 'Return Policy'}
+                </h3>
+                <button
+                  onClick={() => setShowPolicyModal(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            <div className="p-4">
+              {isBackordersAllowed ? (
+                <div className="space-y-3 text-sm text-gray-700">
+                  <p><strong>Payment:</strong> 50% or full advance payment required</p>
+                  <p><strong>Delivery Time:</strong> 10-15 working days</p>
+                  <p><strong>Product Source:</strong> Imported from China</p>
+                  <p><strong>Cancellation:</strong> Orders cannot be cancelled once confirmed</p>
+                  <p><strong>Returns:</strong> Pre-order products are non-refundable</p>
+                  <p><strong>Quality:</strong> Products are checked before shipping</p>
+                  <p className="text-orange-600 font-medium">
+                    ⚠️ Please be 100% sure before placing a pre-order as these items cannot be returned or exchanged.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3 text-sm text-gray-700">
+                  <p><strong>Order Confirmation:</strong> Please ensure 100% certainty before ordering</p>
+                  <p><strong>Delivery Charges:</strong> If you refuse to accept a matching product, you must pay delivery charges directly to the delivery person</p>
+                  <p><strong>Return Process:</strong> Products must be returned immediately upon refusal</p>
+                  <p><strong>Late Complaints:</strong> Returns/complaints after acceptance will not be entertained</p>
+                  <p><strong>Order Responsibility:</strong> Avoid unnecessary orders as your details are tracked</p>
+                  <p className="text-orange-600 font-medium">
+                    ⚠️ Your mobile number, address, and device IP are visible to prevent fraudulent orders.
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t">
+              <button
+                onClick={() => setShowPolicyModal(false)}
+                className="w-full bg-gray-900 text-white py-2 px-4 rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                I Understand
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

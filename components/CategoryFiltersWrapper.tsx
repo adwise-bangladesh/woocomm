@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import CategoryFilters, { FilterState } from './CategoryFilters';
 import ProductCard from './ProductCard';
 import { Product } from '@/lib/types';
+import { logger } from '@/lib/utils/performance';
 
 interface CategoryFiltersWrapperProps {
   initialProducts: Product[];
@@ -18,25 +19,35 @@ export default function CategoryFiltersWrapper({ initialProducts }: CategoryFilt
     rating: null,
   });
 
-  // Helper to get product rating (using same logic as ProductCard)
-  const getProductRating = (product: Product): number => {
+  // Memoize callback functions to prevent unnecessary re-renders
+  const handleSortChange = useCallback((newSortBy: string) => {
+    logger.debug('Sort changed', { from: sortBy, to: newSortBy });
+    setSortBy(newSortBy);
+  }, [sortBy]);
+
+  const handleFilterChange = useCallback((newFilters: FilterState) => {
+    logger.debug('Filters changed', { filters: newFilters });
+    setFilters(newFilters);
+  }, []);
+
+  // Memoize helper functions to prevent recalculation
+  const getProductRating = useCallback((product: Product): number => {
     const productIdHash = product.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return parseFloat((4.2 + ((productIdHash % 80) / 100)).toFixed(1));
-  };
+  }, []);
+
+  const extractPrice = useCallback((priceString: string | null | undefined): number => {
+    if (!priceString) return 0;
+    return parseFloat(priceString.replace(/[^0-9.]/g, '')) || 0;
+  }, []);
+
+  const checkIfOnSale = useCallback((product: Product): boolean => {
+    return !!(product.salePrice && product.regularPrice && 
+      extractPrice(product.salePrice) < extractPrice(product.regularPrice));
+  }, [extractPrice]);
 
   // Filter and sort products
   const filteredAndSortedProducts = useMemo(() => {
-    // Helper to extract numeric price (defined inside useMemo)
-    const extractPrice = (priceString: string | null | undefined): number => {
-      if (!priceString) return 0;
-      return parseFloat(priceString.replace(/[^0-9.]/g, '')) || 0;
-    };
-
-    // Helper to check if product is on sale
-    const checkIfOnSale = (product: Product): boolean => {
-      return !!(product.salePrice && product.regularPrice && 
-        extractPrice(product.salePrice) < extractPrice(product.regularPrice));
-    };
 
     let filtered = [...initialProducts];
 
@@ -112,11 +123,11 @@ export default function CategoryFiltersWrapper({ initialProducts }: CategoryFilt
     }
 
     return filtered;
-  }, [initialProducts, filters, sortBy]);
+  }, [initialProducts, filters, sortBy, getProductRating, extractPrice, checkIfOnSale]);
 
   return (
     <>
-      <CategoryFilters onSortChange={setSortBy} onFilterChange={setFilters} />
+      <CategoryFilters onSortChange={handleSortChange} onFilterChange={handleFilterChange} />
       
       <div className="container mx-auto px-4 py-6">
         {/* Results count */}

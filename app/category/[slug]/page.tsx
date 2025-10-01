@@ -3,6 +3,8 @@ import { gql } from 'graphql-request';
 import CategoryFiltersWrapper from '@/components/CategoryFiltersWrapper';
 import { Product } from '@/lib/types';
 import { notFound } from 'next/navigation';
+import { validateSlug } from '@/lib/utils/sanitizer';
+import { logger } from '@/lib/utils/performance';
 
 export const revalidate = 300; // 5 minutes, consistent with homepage
 
@@ -37,8 +39,14 @@ const GET_CATEGORY_PRODUCTS = gql`
 `;
 
 async function getCategoryData(slug: string) {
+  // Validate input
+  if (!validateSlug(slug)) {
+    logger.error('Invalid category slug', { slug });
+    return null;
+  }
+
   try {
-    console.log('🔍 Fetching category:', slug);
+    logger.debug('Fetching category', { slug });
     
     const data = await graphqlClient.request(GET_CATEGORY_PRODUCTS, { slug, first: 24 }) as {
       productCategory: { 
@@ -50,7 +58,7 @@ async function getCategoryData(slug: string) {
       } | null;
     };
     
-    console.log('📊 GraphQL Response:', {
+    logger.debug('GraphQL Response', {
       categoryFound: !!data.productCategory,
       categoryName: data.productCategory?.name,
       productsCount: data.productCategory?.products?.nodes?.length || 0
@@ -58,19 +66,18 @@ async function getCategoryData(slug: string) {
     
     // If category doesn't exist, return null
     if (!data.productCategory) {
-      console.error('❌ Category not found in GraphQL response:', slug);
+      logger.warn('Category not found in GraphQL response', { slug });
       return null;
     }
     
-    console.log('✅ Category data loaded successfully');
+    logger.debug('Category data loaded successfully');
     
     return {
       category: data.productCategory,
       products: data.productCategory.products?.nodes || [],
     };
   } catch (error) {
-    console.error('❌ Error fetching category:', slug);
-    console.error('Error details:', JSON.stringify(error, null, 2));
+    logger.error('Error fetching category', { slug, error });
     return null;
   }
 }

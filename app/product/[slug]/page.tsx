@@ -191,8 +191,8 @@ export default async function ProductPage({
             <div className="mt-4 bg-white rounded-[5px] p-4">
               <h2 className="text-lg font-bold text-gray-900 mb-3">Product Description</h2>
               <div
-                className="prose prose-sm max-w-none text-gray-600"
-                dangerouslySetInnerHTML={{ __html: product.description }}
+                className="prose prose-xs max-w-none text-gray-600 text-sm leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.description) }}
               />
             </div>
           </div>

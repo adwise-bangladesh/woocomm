@@ -196,6 +196,79 @@ export function ProductPageSkeleton() {
   );
 }
 
+export function CategoryPageSkeleton() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Sticky Filters & Sort Bar */}
+      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between gap-4">
+            {/* Sort Dropdown Skeleton */}
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-gray-200 animate-pulse rounded" />
+              <div className="w-32 h-8 bg-gray-200 animate-pulse rounded border" />
+            </div>
+            
+            {/* Filter Button Skeleton */}
+            <div className="w-20 h-8 bg-gray-200 animate-pulse rounded border" />
+          </div>
+        </div>
+      </div>
+
+      {/* Products Grid */}
+      <div className="container mx-auto px-4 py-6">
+        {/* Results Count Skeleton */}
+        <div className="mb-4">
+          <div className="w-40 h-5 bg-gray-200 animate-pulse rounded" />
+        </div>
+
+        {/* Product Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {[...Array(20)].map((_, i) => (
+            <div key={i} className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200">
+              {/* Product Image */}
+              <div className="aspect-square bg-gray-200 animate-pulse" />
+              
+              {/* Product Info */}
+              <div className="p-3 space-y-2">
+                {/* Product Name */}
+                <div className="h-4 bg-gray-200 animate-pulse rounded" />
+                <div className="h-4 bg-gray-200 animate-pulse rounded w-3/4" />
+                
+                {/* Price */}
+                <div className="flex items-center gap-2">
+                  <div className="w-16 h-5 bg-gray-200 animate-pulse rounded" />
+                  <div className="w-12 h-4 bg-gray-200 animate-pulse rounded" />
+                  <div className="w-8 h-4 bg-gray-200 animate-pulse rounded" />
+                </div>
+                
+                {/* Reviews */}
+                <div className="flex items-center gap-1">
+                  {[...Array(5)].map((_, j) => (
+                    <div key={j} className="w-3 h-3 bg-gray-200 animate-pulse rounded" />
+                  ))}
+                  <div className="w-12 h-3 bg-gray-200 animate-pulse rounded ml-1" />
+                </div>
+                
+                {/* Stock Status */}
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-gray-200 animate-pulse rounded-full" />
+                  <div className="w-16 h-3 bg-gray-200 animate-pulse rounded" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Load More Button Skeleton */}
+        <div className="mt-8 flex justify-center">
+          <div className="w-32 h-10 bg-gray-200 animate-pulse rounded-lg" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function PageLoadingSkeleton() {
   return (
     <div className="min-h-screen bg-gray-50">

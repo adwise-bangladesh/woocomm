@@ -65,9 +65,11 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
       
       // For single attribute selection, just check if this attribute value exists in any variation
       if (Object.keys(testAttributes).length === 1) {
-        const hasAttribute = variation.attributes.nodes.some((attr) => 
-          attr.name === attributeName && attr.value.toLowerCase() === optionValue.toLowerCase()
-        );
+        console.log('Variation attributes:', variation.attributes.nodes);
+        const hasAttribute = variation.attributes.nodes.some((attr) => {
+          console.log('Comparing:', attr.name, 'vs', attributeName, '|', attr.value, 'vs', optionValue);
+          return attr.name === attributeName && attr.value.toLowerCase() === optionValue.toLowerCase();
+        });
         console.log('Single attribute check:', hasAttribute, 'for', attributeName, optionValue);
         return hasAttribute;
       }
@@ -89,6 +91,11 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
 
   console.log('VariantSelector - attributes:', attributes); // Debug log
   console.log('VariantSelector - variations:', variations); // Debug log
+  
+  // Log the actual variation attributes structure
+  variations.forEach((variation, index) => {
+    console.log(`Variation ${index + 1} (${variation.id}):`, variation.attributes.nodes);
+  });
   
   if (!attributes || attributes.length === 0) {
     return null;

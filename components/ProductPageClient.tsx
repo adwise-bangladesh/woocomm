@@ -105,7 +105,7 @@ export default function ProductPageClient({
               </h1>
 
               {/* Reviews Count */}
-              <div className="flex items-center gap-2 mb-2 pb-2 border-b">
+              <div className="flex items-center gap-2 mb-2">
                 <div className="flex items-center gap-1">
                   {[...Array(5)].map((_, i) => (
                     <Star
@@ -264,7 +264,7 @@ export default function ProductPageClient({
               </div>
 
               {/* Product Code & Share */}
-              <div className="flex items-center justify-between text-xs text-gray-600 mb-3 pb-3 border-b">
+              <div className="flex items-center justify-between text-xs text-gray-600 mb-3">
                 <span>
                   Product Code: <strong className="text-gray-900">{product.databaseId || product.id}</strong>
                 </span>

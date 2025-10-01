@@ -59,6 +59,7 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
         });
       });
 
+      console.log('Found matching variation:', matchingVariation);
       setSelectedVariation(matchingVariation || null);
       onVariantChange(matchingVariation || null, selectedAttributes);
     } else {

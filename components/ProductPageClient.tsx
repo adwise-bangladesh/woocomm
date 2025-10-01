@@ -52,6 +52,8 @@ export default function ProductPageClient({
     canOrder,
     isVariableProduct,
     selectedVariation,
+    selectedVariationId: selectedVariation?.databaseId,
+    selectedAttributes,
     buttonDisabled: isVariableProduct && !selectedVariation
   });
 
@@ -72,6 +74,7 @@ export default function ProductPageClient({
   const displayDiscount = currentDiscount();
 
   const handleVariantChange = useCallback((variation: ProductVariation | null, attrs: Record<string, string>) => {
+    console.log('handleVariantChange called with:', { variation, attrs });
     setSelectedVariation(variation);
     setSelectedAttributes(attrs);
   }, []);

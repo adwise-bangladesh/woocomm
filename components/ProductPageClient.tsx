@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Product, ProductVariation } from '@/lib/types';
 import VariantSelector from './VariantSelector';
 import ProductImageGallery from './ProductImageGallery';
@@ -9,6 +9,8 @@ import AnimatedOrderButton from './AnimatedOrderButton';
 import ShareButton from './ShareButton';
 import { Phone, Star, Package, Clock } from 'lucide-react';
 import Link from 'next/link';
+import { usePriceFormatter, useDiscountCalculator, logger } from '@/lib/utils/performance';
+import { sanitizeHtml } from '@/lib/utils/sanitizer';
 
 interface ProductPageClientProps {
   product: Product;
@@ -21,13 +23,9 @@ export default function ProductPageClient({
   discount,
   reviewStats,
 }: ProductPageClientProps) {
-  // Format price function (moved to client component)
-  const formatPrice = (price: string | null | undefined) => {
-    if (!price) return 'Tk 0';
-    const num = parseFloat(price.replace(/[^0-9.-]+/g, ''));
-    if (isNaN(num) || num < 0) return 'Tk 0';
-    return `Tk ${num.toFixed(0)}`;
-  };
+  // Use memoized price formatter
+  const formatPrice = usePriceFormatter();
+  const calculateDiscount = useDiscountCalculator();
   const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null);
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
 
@@ -40,41 +38,36 @@ export default function ProductPageClient({
   const currentSalePrice = currentProduct.salePrice;
   const currentStockStatus = currentProduct.stockStatus || 'OUT_OF_STOCK';
 
-  const isInStock = currentStockStatus === 'IN_STOCK';
-  const isBackordersAllowed = currentStockStatus === 'ON_BACKORDER';
-  const canOrder = isInStock || isBackordersAllowed;
+  // Memoize expensive calculations
+  const stockInfo = useMemo(() => {
+    const isInStock = currentStockStatus === 'IN_STOCK';
+    const isBackordersAllowed = currentStockStatus === 'ON_BACKORDER';
+    const canOrder = isInStock || isBackordersAllowed;
+    
+    return { isInStock, isBackordersAllowed, canOrder };
+  }, [currentStockStatus]);
+
+  const { isInStock, isBackordersAllowed, canOrder } = stockInfo;
   
-  // Debug logging
-  console.log('Stock status debug:', {
+  // Debug logging (development only)
+  logger.debug('Stock status debug', {
     currentStockStatus,
     isInStock,
     isBackordersAllowed,
     canOrder,
     isVariableProduct,
-    selectedVariation,
-    selectedVariationId: selectedVariation?.databaseId,
+    selectedVariation: selectedVariation?.databaseId,
     selectedAttributes,
     buttonDisabled: isVariableProduct && !selectedVariation
   });
 
-  // Calculate discount for current variation/product
-  const currentDiscount = () => {
-    if (!currentSalePrice || !currentRegularPrice) return null;
-    const regular = parseFloat(currentRegularPrice.replace(/[^0-9.-]+/g, ''));
-    const sale = parseFloat(currentSalePrice.replace(/[^0-9.-]+/g, ''));
-    
-    if (isNaN(regular) || isNaN(sale) || regular <= 0 || sale <= 0 || sale >= regular) {
-      return null;
-    }
-    
-    const discountValue = Math.round(((regular - sale) / regular) * 100);
-    return discountValue > 0 && discountValue < 100 ? discountValue : null;
-  };
-
-  const displayDiscount = currentDiscount();
+  // Calculate discount for current variation/product (memoized)
+  const displayDiscount = useMemo(() => {
+    return calculateDiscount(currentSalePrice, currentRegularPrice);
+  }, [calculateDiscount, currentSalePrice, currentRegularPrice]);
 
   const handleVariantChange = useCallback((variation: ProductVariation | null, attrs: Record<string, string>) => {
-    console.log('handleVariantChange called with:', { variation, attrs });
+    logger.debug('handleVariantChange called', { variation: variation?.databaseId, attrs });
     setSelectedVariation(variation);
     setSelectedAttributes(attrs);
   }, []);
@@ -171,7 +164,7 @@ export default function ProductPageClient({
               {product.shortDescription && (
                 <div
                   className="text-sm text-gray-600 mb-3 pb-3 border-b prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: product.shortDescription }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.shortDescription) }}
                 />
               )}
 

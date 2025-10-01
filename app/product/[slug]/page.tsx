@@ -5,26 +5,10 @@ import ProductPageClient from '@/components/ProductPageClient';
 import InfiniteProductGrid from '@/components/InfiniteProductGrid';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { sanitizeHtml, validateSlug, sanitizeText } from '@/lib/utils/sanitizer';
+import { logger } from '@/lib/utils/performance';
 
 export const revalidate = 300; // ISR: Revalidate every 5 minutes
-
-// Input validation for slug
-function validateSlug(slug: string): boolean {
-  // Only allow alphanumeric, hyphens, and underscores
-  // Max length 200 characters
-  const slugRegex = /^[a-zA-Z0-9-_]{1,200}$/;
-  return slugRegex.test(slug);
-}
-
-// Sanitize HTML content from WordPress
-function sanitizeHtml(html: string | null | undefined): string {
-  if (!html) return '';
-  // Remove potentially dangerous tags and attributes
-  return html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
-    .replace(/on\w+\s*=\s*["'][^"']*["']/gi, ''); // Remove inline event handlers
-}
 
 async function getProduct(slug: string) {
   // Validate input
@@ -43,9 +27,7 @@ async function getProduct(slug: string) {
     
     return data.product as Product;
   } catch (err) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error fetching product:', err);
-    }
+    logger.error('Error fetching product', err);
     return null;
   }
 }
@@ -94,7 +76,7 @@ export async function generateMetadata({
 
   const price = product.salePrice || product.price || product.regularPrice;
   const description = product.shortDescription 
-    ? product.shortDescription.replace(/<[^>]*>/g, '').substring(0, 160)
+    ? sanitizeText(product.shortDescription).substring(0, 160)
     : `Buy ${product.name} at the best price in Bangladesh`;
 
   return {
@@ -176,7 +158,7 @@ export default async function ProductPage({
     '@type': 'Product',
     name: product.name,
     image: product.image?.sourceUrl || '/placeholder.png',
-    description: product.shortDescription?.replace(/<[^>]*>/g, '') || product.name,
+    description: sanitizeText(product.shortDescription) || product.name,
     sku: product.id,
     offers: {
       '@type': 'Offer',

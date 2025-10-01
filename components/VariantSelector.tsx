@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Product, ProductVariation, ProductAttribute } from '@/lib/types';
 import { CheckCircle2 } from 'lucide-react';
+import { logger } from '@/lib/utils/performance';
 
 interface VariantSelectorProps {
   product: Product;
@@ -13,32 +14,35 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
   const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null);
 
-  const attributes = product.attributes?.nodes || [];
-  const variations = product.variations?.nodes || [];
-  const defaultAttributes = product.defaultAttributes?.nodes || [];
+  // Memoize expensive data processing
+  const { attributes, variations, defaultAttributes } = useMemo(() => ({
+    attributes: product.attributes?.nodes || [],
+    variations: product.variations?.nodes || [],
+    defaultAttributes: product.defaultAttributes?.nodes || []
+  }), [product.attributes, product.variations, product.defaultAttributes]);
 
   // Auto-select default attributes on component mount
   useEffect(() => {
-    console.log('Default attributes:', defaultAttributes);
-    console.log('Current selected attributes:', selectedAttributes);
+    logger.debug('Default attributes', defaultAttributes);
+    logger.debug('Current selected attributes', selectedAttributes);
     
     if (defaultAttributes.length > 0 && Object.keys(selectedAttributes).length === 0) {
       const defaultAttrs: Record<string, string> = {};
       defaultAttributes.forEach((attr) => {
-        console.log('Processing default attr:', attr);
+        logger.debug('Processing default attr', attr);
         if (attr.name && attr.value) {
           // Find the matching attribute name (case-insensitive)
           const matchingAttribute = attributes.find(a => 
             a.name.toLowerCase() === attr.name.toLowerCase()
           );
-          console.log('Matching attribute found:', matchingAttribute);
+          logger.debug('Matching attribute found', matchingAttribute);
           if (matchingAttribute) {
             defaultAttrs[matchingAttribute.name] = attr.value;
           }
         }
       });
       
-      console.log('Setting default attributes:', defaultAttrs);
+      logger.debug('Setting default attributes', defaultAttrs);
       if (Object.keys(defaultAttrs).length > 0) {
         setSelectedAttributes(defaultAttrs);
       }
@@ -47,15 +51,11 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
 
   // Find matching variation based on selected attributes
   useEffect(() => {
-    console.log('Variation matching debug:', {
+    logger.debug('Variation matching debug', {
       selectedAttributes,
       attributesLength: attributes.length,
       selectedAttributesLength: Object.keys(selectedAttributes).length,
-      variations: variations.map(v => ({
-        id: v.databaseId,
-        name: v.name,
-        attributes: v.attributes.nodes.map(a => ({ name: a.name, value: a.value }))
-      }))
+      variationsCount: variations.length
     });
 
     if (Object.keys(selectedAttributes).length === attributes.length && attributes.length > 0) {
@@ -68,7 +68,7 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
           const selectedValue = attributeKey ? selectedAttributes[attributeKey] : null;
           const matches = selectedValue && selectedValue.toLowerCase() === attr.value.toLowerCase();
           
-          console.log('Attribute matching:', {
+          logger.debug('Attribute matching', {
             variationAttr: { name: attr.name, value: attr.value },
             selectedAttr: { key: attributeKey, value: selectedValue },
             matches
@@ -77,15 +77,15 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
           return matches;
         });
         
-        console.log('Variation match result:', { variationId: variation.databaseId, isMatch });
+        logger.debug('Variation match result', { variationId: variation.databaseId, isMatch });
         return isMatch;
       });
 
-      console.log('Found matching variation:', matchingVariation);
+      logger.debug('Found matching variation', matchingVariation?.databaseId);
       setSelectedVariation(matchingVariation || null);
       onVariantChange(matchingVariation || null, selectedAttributes);
     } else {
-      console.log('Not enough attributes selected');
+      logger.debug('Not enough attributes selected');
       setSelectedVariation(null);
       onVariantChange(null, selectedAttributes);
     }
@@ -113,7 +113,7 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
       );
     });
     
-    console.log('Checking availability:', { attributeName, optionValue, hasVariationWithValue });
+    logger.debug('Checking availability', { attributeName, optionValue, hasVariationWithValue });
     return hasVariationWithValue;
   };
 

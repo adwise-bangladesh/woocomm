@@ -5,6 +5,8 @@ import { useCartStore } from '@/lib/store';
 import { createSessionClient } from '@/lib/graphql-client';
 import { ADD_TO_CART } from '@/lib/mutations';
 import { ShoppingCart } from 'lucide-react';
+import { validateProductId } from '@/lib/utils/sanitizer';
+import { logger } from '@/lib/utils/performance';
 
 interface CartResponse {
   contents: { nodes: never[] };
@@ -29,15 +31,31 @@ export default function AddToCartButton({
   const { sessionToken, setCart } = useCartStore();
 
   const handleAddToCart = async () => {
+    // Validate inputs
+    const validProductId = validateProductId(productId);
+    const validVariationId = variationId ? validateProductId(variationId) : null;
+    
+    if (!validProductId) {
+      logger.error('Invalid product ID', { productId });
+      alert('Invalid product. Please refresh the page and try again.');
+      return;
+    }
+    
+    if (variationId && !validVariationId) {
+      logger.error('Invalid variation ID', { variationId });
+      alert('Invalid product variation. Please refresh the page and try again.');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const client = createSessionClient(sessionToken || undefined);
       
       const variables = {
         input: {
-          productId,
+          productId: validProductId,
           quantity: 1,
-          ...(variationId && { variationId }),
+          ...(validVariationId && { variationId: validVariationId }),
         },
       };
 
@@ -53,7 +71,7 @@ export default function AddToCartButton({
         setTimeout(() => setIsAdded(false), 2000);
       }
     } catch (error) {
-      console.error('Error adding to cart:', error);
+      logger.error('Error adding to cart', error);
       alert('Failed to add to cart. Please try again.');
     } finally {
       setIsLoading(false);

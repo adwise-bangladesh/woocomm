@@ -7,12 +7,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Truck, Clock } from 'lucide-react';
+import { Truck, Clock, Plus, Minus, Trash2 } from 'lucide-react';
 
 export default function CheckoutPage() {
-  const { items, total, isEmpty, sessionToken, clearCart } = useCartStore();
+  const { items, total, isEmpty, sessionToken, clearCart, setCart } = useCartStore();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [localItems, setLocalItems] = useState(items);
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -38,6 +39,57 @@ export default function CheckoutPage() {
 
   const getDeliveryTime = () => {
     return '1-3 days';
+  };
+
+  const updateQuantity = (itemKey: string, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    
+    const updatedItems = localItems.map(item => {
+      if (item.key === itemKey) {
+        const pricePerUnit = parseFloat(item.total.replace(/[^0-9.-]+/g, '')) / item.quantity;
+        const newTotal = (pricePerUnit * newQuantity).toFixed(2);
+        return {
+          ...item,
+          quantity: newQuantity,
+          total: `${newTotal}৳ `,
+        };
+      }
+      return item;
+    });
+    
+    setLocalItems(updatedItems);
+    
+    // Update cart in store
+    const newSubtotal = updatedItems.reduce((sum, item) => {
+      return sum + parseFloat(item.total.replace(/[^0-9.-]+/g, ''));
+    }, 0);
+    
+    setCart({
+      contents: { nodes: updatedItems },
+      subtotal: `${newSubtotal.toFixed(2)}৳ `,
+      total: `${newSubtotal.toFixed(2)}৳ `,
+      isEmpty: updatedItems.length === 0,
+    });
+  };
+
+  const removeItem = (itemKey: string) => {
+    const updatedItems = localItems.filter(item => item.key !== itemKey);
+    setLocalItems(updatedItems);
+    
+    if (updatedItems.length === 0) {
+      clearCart();
+    } else {
+      const newSubtotal = updatedItems.reduce((sum, item) => {
+        return sum + parseFloat(item.total.replace(/[^0-9.-]+/g, ''));
+      }, 0);
+      
+      setCart({
+        contents: { nodes: updatedItems },
+        subtotal: `${newSubtotal.toFixed(2)}৳ `,
+        total: `${newSubtotal.toFixed(2)}৳ `,
+        isEmpty: false,
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -98,7 +150,7 @@ export default function CheckoutPage() {
                   required
                   value={formData.fullName}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent placeholder:text-gray-900"
                   placeholder="Enter your full name"
                 />
               </div>
@@ -114,7 +166,7 @@ export default function CheckoutPage() {
                   required
                   value={formData.phone}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent placeholder:text-gray-900"
                   placeholder="01XXXXXXXXX"
                 />
               </div>
@@ -130,7 +182,7 @@ export default function CheckoutPage() {
                   rows={3}
                   value={formData.address}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent resize-none"
+                  className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent resize-none placeholder:text-gray-900"
                   placeholder="House/Flat no, Road, Area, City, District"
                 />
               </div>
@@ -224,29 +276,67 @@ export default function CheckoutPage() {
             </div>
           </div>
 
+          {/* Place Order Button */}
+          <button
+            type="submit"
+            disabled={isLoading || localItems.length === 0}
+            className="w-full bg-gray-900 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-2"
+          >
+            {isLoading ? 'Processing Order...' : 'Place Order'}
+          </button>
+
           {/* Order Summary Card */}
-          <div className="bg-white rounded-[5px] p-3 mb-2">
-            <h3 className="text-base font-semibold text-gray-900 mb-3">Order Summary</h3>
+          <div className="bg-white rounded-[5px] p-3">
+            <h3 className="text-base font-semibold text-gray-900 mb-3">Order Summary ({localItems.length} {localItems.length === 1 ? 'item' : 'items'})</h3>
 
             <div className="space-y-3 mb-3">
-              {items.map((item) => (
+              {localItems.map((item) => (
                 <div key={item.key} className="flex gap-2 pb-3 border-b border-gray-100 last:border-0">
-                  <div className="w-14 h-14 bg-gray-100 rounded overflow-hidden flex-shrink-0">
+                  <div className="w-16 h-16 bg-gray-100 rounded overflow-hidden flex-shrink-0">
                     <Image
                       src={item.product.node.image?.sourceUrl || '/placeholder.png'}
                       alt={item.product.node.name}
-                      width={56}
-                      height={56}
+                      width={64}
+                      height={64}
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium text-gray-900 line-clamp-2">
+                    <h4 className="text-sm font-medium text-gray-900 line-clamp-2 mb-2">
                       {item.product.node.name}
                     </h4>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-gray-600">Qty: {item.quantity}</span>
-                      <span className="text-sm font-semibold text-gray-900">{formatPrice(item.total)}</span>
+                    
+                    {/* Quantity Controls */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.key, item.quantity - 1)}
+                          className="w-6 h-6 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-100"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="text-sm font-medium text-gray-900 w-8 text-center">{item.quantity}</span>
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.key, item.quantity + 1)}
+                          className="w-6 h-6 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-100"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-900">{formatPrice(item.total)}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeItem(item.key)}
+                          className="text-red-600 hover:text-red-700 p-1"
+                          title="Remove item"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -268,15 +358,6 @@ export default function CheckoutPage() {
               </div>
             </div>
           </div>
-
-          {/* Place Order Button */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-gray-900 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Processing Order...' : 'Place Order'}
-          </button>
         </form>
       </div>
     </div>

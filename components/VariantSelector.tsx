@@ -15,6 +15,29 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
 
   const attributes = product.attributes?.nodes || [];
   const variations = product.variations?.nodes || [];
+  const defaultAttributes = product.defaultAttributes?.nodes || [];
+
+  // Auto-select default attributes on component mount
+  useEffect(() => {
+    if (defaultAttributes.length > 0 && Object.keys(selectedAttributes).length === 0) {
+      const defaultAttrs: Record<string, string> = {};
+      defaultAttributes.forEach((attr) => {
+        if (attr.name && attr.value) {
+          // Find the matching attribute name (case-insensitive)
+          const matchingAttribute = attributes.find(a => 
+            a.name.toLowerCase() === attr.name.toLowerCase()
+          );
+          if (matchingAttribute) {
+            defaultAttrs[matchingAttribute.name] = attr.value;
+          }
+        }
+      });
+      
+      if (Object.keys(defaultAttrs).length > 0) {
+        setSelectedAttributes(defaultAttrs);
+      }
+    }
+  }, [defaultAttributes, attributes, selectedAttributes]);
 
   // Find matching variation based on selected attributes
   useEffect(() => {

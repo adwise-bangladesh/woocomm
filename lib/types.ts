@@ -28,6 +28,13 @@ export interface Product {
   attributes?: {
     nodes: ProductAttribute[];
   };
+  defaultAttributes?: {
+    nodes: {
+      id: string;
+      name: string;
+      value: string;
+    }[];
+  };
 }
 
 export interface ProductVariation {

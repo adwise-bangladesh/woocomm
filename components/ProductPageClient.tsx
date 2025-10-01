@@ -193,11 +193,11 @@ export default function ProductPageClient({
               <div className="space-y-2 mb-4">
                 <AnimatedOrderButton
                   productId={productIdForCart}
-                  disabled={!canOrder || (isVariableProduct && !selectedVariation)}
+                  disabled={isVariableProduct && !selectedVariation}
                 />
                 <AddToCartButton
                   productId={productIdForCart}
-                  disabled={!canOrder || (isVariableProduct && !selectedVariation)}
+                  disabled={isVariableProduct && !selectedVariation}
                 />
               </div>
 

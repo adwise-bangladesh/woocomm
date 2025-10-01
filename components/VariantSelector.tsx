@@ -119,7 +119,8 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
           <div className="flex flex-wrap gap-2">
             {attribute.options?.map((option) => {
               const isSelected = selectedAttributes[attribute.name] === option;
-              const isAvailable = isOptionAvailable(attribute.name, option);
+              // Temporarily allow all options to be clickable for debugging
+              const isAvailable = true; // isOptionAvailable(attribute.name, option);
               const isDisabled = !isAvailable;
 
               return (

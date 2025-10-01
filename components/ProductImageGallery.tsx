@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
 interface GalleryImage {
@@ -20,23 +20,40 @@ export default function ProductImageGallery({
   productName 
 }: ProductImageGalleryProps) {
   const [selectedImage, setSelectedImage] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   
   const allImages = [
     mainImage,
     ...(galleryImages?.nodes || [])
   ];
 
+  // Preload all images for instant switching
+  useEffect(() => {
+    allImages.forEach((image) => {
+      const img = new window.Image();
+      img.src = image.sourceUrl;
+    });
+  }, [allImages]);
+
+  const handleImageChange = (index: number) => {
+    if (index === selectedImage) return;
+    setIsTransitioning(true);
+    setSelectedImage(index);
+    setTimeout(() => setIsTransitioning(false), 150);
+  };
+
   return (
     <div className="space-y-4">
       {/* Main Image */}
-      <div className="relative aspect-square rounded-lg overflow-hidden bg-white border border-gray-200">
+      <div className="relative aspect-square overflow-hidden bg-white rounded-[5px]">
         <Image
           src={allImages[selectedImage]?.sourceUrl || '/placeholder.png'}
           alt={allImages[selectedImage]?.altText || productName}
           fill
-          className="object-contain p-4"
+          className={`object-cover transition-opacity duration-150 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}
           priority
-          sizes="(max-width: 768px) 100vw, 50vw"
+          sizes="(max-width: 768px) 100vw, 66vw"
+          quality={95}
         />
       </div>
 
@@ -46,10 +63,10 @@ export default function ProductImageGallery({
           {allImages.map((image, index) => (
             <button
               key={index}
-              onClick={() => setSelectedImage(index)}
-              className={`relative aspect-square rounded-lg overflow-hidden bg-white border-2 transition-all ${
+              onClick={() => handleImageChange(index)}
+              className={`relative aspect-square overflow-hidden bg-white rounded-[5px] border-2 transition-all ${
                 selectedImage === index
-                  ? 'border-blue-500 ring-2 ring-blue-200'
+                  ? 'border-gray-400'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
@@ -57,8 +74,9 @@ export default function ProductImageGallery({
                 src={image.sourceUrl}
                 alt={image.altText || `${productName} ${index + 1}`}
                 fill
-                className="object-contain p-1"
+                className="object-cover"
                 sizes="100px"
+                quality={80}
               />
             </button>
           ))}

@@ -29,7 +29,7 @@ export default function QuickLinks() {
       title: 'Free Delivery',
       subtitle: 'On orders over Tk 500',
       icon: <Truck className="w-5 h-5" />,
-      link: '/free-shipping',
+      link: '/free-delivery',
       color: 'text-green-500',
       animation: 'animate-slide',
     },

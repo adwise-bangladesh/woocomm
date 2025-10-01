@@ -163,7 +163,7 @@ export default function ProductPageClient({
               {/* Short Description */}
               {product.shortDescription && (
                 <div
-                  className="text-sm text-gray-600 mb-3 pb-3 border-b prose prose-sm max-w-none"
+                  className="text-sm text-gray-600 mb-3 pb-3 border-b border-gray-200 prose prose-sm max-w-none"
                   dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.shortDescription) }}
                 />
               )}

@@ -222,11 +222,11 @@ export default async function ProductPage({
                 <div className="space-y-1.5 text-xs text-gray-700">
                   <div className="flex justify-between">
                     <span>Inside Dhaka:</span>
-                    <span className="font-semibold">Tk 60</span>
+                    <span className="font-semibold">Tk 80</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Outside Dhaka:</span>
-                    <span className="font-semibold">Tk 120</span>
+                    <span className="font-semibold">Tk 130</span>
                   </div>
                   <div className="flex justify-between text-teal-600">
                     <span>Free Delivery:</span>

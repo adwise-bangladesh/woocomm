@@ -238,12 +238,30 @@ export default async function ProductPage({
                 </div>
               </div>
 
-              {/* Note */}
-              <div className="mb-3 p-2.5 bg-blue-50 border border-blue-200 rounded-[5px]">
-                <p className="text-xs text-blue-800">
-                  <strong>Note:</strong> Product color & design may vary slightly due to photographic lighting or your device settings.
-                </p>
-              </div>
+              {/* Note / Policy */}
+              {isBackordersAllowed ? (
+                <Link 
+                  href="/policies/pre-order" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block mb-3 p-2.5 bg-orange-50 border border-orange-200 rounded-[5px] hover:bg-orange-100 transition-colors cursor-pointer"
+                >
+                  <p className="text-xs text-orange-800">
+                    <strong>Pre-Order Policy:</strong> 50% advance payment required. Delivery in 10-15 days after order confirmation. No cancellation after payment.
+                  </p>
+                </Link>
+              ) : (
+                <Link 
+                  href="/policies/return"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block mb-3 p-2.5 bg-blue-50 border border-blue-200 rounded-[5px] hover:bg-blue-100 transition-colors cursor-pointer"
+                >
+                  <p className="text-xs text-blue-800">
+                    <strong>Important:</strong> Confirm your order carefully. Rejected deliveries incur courier charges. Complaints must be made immediately upon delivery.
+                  </p>
+                </Link>
+              )}
 
               {/* Product Code & Share */}
               <div className="flex items-center justify-between text-xs text-gray-600 mb-3 pb-3 border-b">

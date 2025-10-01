@@ -168,9 +168,7 @@ export default function ProductPageClient({
                   {isInStock ? (
                     <>
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-green-600 font-semibold">
-                        In Stock {currentProduct.stockQuantity && currentProduct.stockQuantity > 0 && `(${currentProduct.stockQuantity})`}
-                      </span>
+                      <span className="text-green-600 font-semibold">In Stock</span>
                     </>
                   ) : isBackordersAllowed ? (
                     <>

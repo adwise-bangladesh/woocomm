@@ -118,26 +118,6 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
         </div>
       ))}
 
-      {/* Variation Info */}
-      {selectedVariation && (
-        <div className="mt-4 p-3 bg-teal-50 border border-teal-200 rounded-lg">
-          <div className="flex items-center gap-2 text-sm">
-            <CheckCircle2 className="w-4 h-4 text-teal-600" />
-            <span className="font-medium text-teal-900">
-              {selectedVariation.stockStatus === 'IN_STOCK'
-                ? 'Available'
-                : selectedVariation.stockStatus === 'ON_BACKORDER'
-                ? 'Pre-Order Available'
-                : 'Out of Stock'}
-            </span>
-            {selectedVariation.stockQuantity && selectedVariation.stockQuantity > 0 && (
-              <span className="text-teal-700">
-                ({selectedVariation.stockQuantity} in stock)
-              </span>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Warning if incomplete selection */}
       {Object.keys(selectedAttributes).length < attributes.length && (

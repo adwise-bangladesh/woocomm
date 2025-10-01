@@ -140,7 +140,6 @@ export default function ProductPageClient({
               {/* Variant Selector for Variable Products */}
               {isVariableProduct && (
                 <div className="mb-4 pb-4 border-b">
-                  <h3 className="text-sm font-semibold mb-2">Product Options:</h3>
                   <VariantSelector product={product} onVariantChange={handleVariantChange} />
                 </div>
               )}

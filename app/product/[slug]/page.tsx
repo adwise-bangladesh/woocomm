@@ -117,7 +117,7 @@ export default async function ProductPage({
             <div className="bg-white rounded-[5px] p-3 sticky top-4">
               {/* Title */}
               <h1 className="text-lg font-bold text-gray-900 mb-1.5 leading-tight">
-                {product.name}
+                {product.name} {isBackordersAllowed && <span className="text-orange-600">(Pre-Order)</span>}
               </h1>
 
               {/* Reviews Count */}

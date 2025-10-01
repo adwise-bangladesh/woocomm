@@ -90,11 +90,15 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
               return (
                 <button
                   key={option}
-                  onClick={() => handleAttributeSelect(attribute.name, option)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    console.log('Button clicked!', attribute.name, option);
+                    handleAttributeSelect(attribute.name, option);
+                  }}
                   disabled={isDisabled}
                   className={`
                     relative min-w-[60px] px-4 py-2 rounded-md border-2 text-sm font-medium
-                    transition-all duration-200
+                    transition-all duration-200 cursor-pointer
                     ${
                       isSelected
                         ? 'border-teal-600 bg-teal-50 text-teal-700'

@@ -33,6 +33,13 @@ export default function ProductPageClient({
 
   const isVariableProduct = product.type === 'VARIABLE';
   
+  // Debug logs
+  console.log('ProductPageClient - product:', product);
+  console.log('ProductPageClient - product.type:', product.type);
+  console.log('ProductPageClient - isVariableProduct:', isVariableProduct);
+  console.log('ProductPageClient - product.attributes:', product.attributes);
+  console.log('ProductPageClient - product.variations:', product.variations);
+  
   // Use variation data if available, otherwise use product data
   const currentProduct = selectedVariation || product;
   const currentPrice = currentProduct.salePrice || currentProduct.price || currentProduct.regularPrice;
@@ -140,7 +147,17 @@ export default function ProductPageClient({
               {/* Variant Selector for Variable Products */}
               {isVariableProduct && (
                 <div className="mb-4 pb-4 border-b">
+                  <h3 className="text-sm font-semibold mb-2">Product Options:</h3>
                   <VariantSelector product={product} onVariantChange={handleVariantChange} />
+                </div>
+              )}
+              
+              {/* Debug: Show if not variable */}
+              {!isVariableProduct && (
+                <div className="mb-4 pb-4 border-b bg-yellow-50 p-2 rounded">
+                  <p className="text-xs text-yellow-800">
+                    Debug: This is not a variable product (type: {product.type || 'undefined'})
+                  </p>
                 </div>
               )}
 

@@ -105,12 +105,16 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
       return true;
     }
 
-    // For now, allow all options that exist in the product attributes
-    // This is a simplified approach that works with most WooCommerce setups
-    return true;
+    // Check if there's any variation that has this attribute value
+    const hasVariationWithValue = variations.some(variation => {
+      return variation.attributes.nodes.some(attr => 
+        attr.name.toLowerCase() === attributeName.toLowerCase() && 
+        attr.value.toLowerCase() === optionValue.toLowerCase()
+      );
+    });
     
-    // TODO: Implement proper availability checking based on actual variation data
-    // This would require matching the exact attribute names and values from WooCommerce
+    console.log('Checking availability:', { attributeName, optionValue, hasVariationWithValue });
+    return hasVariationWithValue;
   };
 
   // Debug logs removed for production

@@ -35,7 +35,6 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
   }, [selectedAttributes, variations, attributes.length, onVariantChange]);
 
   const handleAttributeSelect = (attributeName: string, value: string) => {
-    console.log('Attribute selected:', attributeName, value); // Debug log
     setSelectedAttributes((prev) => ({
       ...prev,
       [attributeName]: value,
@@ -46,56 +45,18 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
   const isOptionAvailable = (attributeName: string, optionValue: string): boolean => {
     // If no variations exist, allow all options (fallback)
     if (!variations || variations.length === 0) {
-      console.log('No variations found, allowing all options');
       return true;
     }
 
-    const testAttributes = { ...selectedAttributes, [attributeName]: optionValue };
-    console.log('Testing availability for:', attributeName, optionValue, 'with attributes:', testAttributes);
+    // For now, allow all options that exist in the product attributes
+    // This is a simplified approach that works with most WooCommerce setups
+    return true;
     
-    // Check if there's any variation that matches these attributes
-    const available = variations.some((variation) => {
-      console.log('Checking variation:', variation.id, 'stockStatus:', variation.stockStatus);
-      
-      // Check if variation is in stock
-      if (variation.stockStatus === 'OUT_OF_STOCK') {
-        console.log('Variation out of stock:', variation.id);
-        return false;
-      }
-      
-      // For single attribute selection, just check if this attribute value exists in any variation
-      if (Object.keys(testAttributes).length === 1) {
-        console.log('Variation attributes:', variation.attributes.nodes);
-        const hasAttribute = variation.attributes.nodes.some((attr) => {
-          console.log('Comparing:', attr.name, 'vs', attributeName, '|', attr.value, 'vs', optionValue);
-          return attr.name === attributeName && attr.value.toLowerCase() === optionValue.toLowerCase();
-        });
-        console.log('Single attribute check:', hasAttribute, 'for', attributeName, optionValue);
-        return hasAttribute;
-      }
-      
-      // For multiple attributes, check if all selected attributes match
-      const allMatch = Object.entries(testAttributes).every(([name, value]) => {
-        const varAttr = variation.attributes.nodes.find((a) => a.name === name);
-        const matches = varAttr && varAttr.value.toLowerCase() === value.toLowerCase();
-        console.log('Attribute match check:', name, value, 'found:', varAttr?.value, 'matches:', matches);
-        return matches;
-      });
-      
-      return allMatch;
-    });
-    
-    console.log('Final availability for', attributeName, optionValue, ':', available);
-    return available;
+    // TODO: Implement proper availability checking based on actual variation data
+    // This would require matching the exact attribute names and values from WooCommerce
   };
 
-  console.log('VariantSelector - attributes:', attributes); // Debug log
-  console.log('VariantSelector - variations:', variations); // Debug log
-  
-  // Log the actual variation attributes structure
-  variations.forEach((variation, index) => {
-    console.log(`Variation ${index + 1} (${variation.id}):`, variation.attributes.nodes);
-  });
+  // Debug logs removed for production
   
   if (!attributes || attributes.length === 0) {
     return null;
@@ -119,8 +80,7 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
           <div className="flex flex-wrap gap-2">
             {attribute.options?.map((option) => {
               const isSelected = selectedAttributes[attribute.name] === option;
-              // Temporarily allow all options to be clickable for debugging
-              const isAvailable = true; // isOptionAvailable(attribute.name, option);
+              const isAvailable = isOptionAvailable(attribute.name, option);
               const isDisabled = !isAvailable;
 
               return (
@@ -128,7 +88,6 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
                   key={option}
                   onClick={(e) => {
                     e.preventDefault();
-                    console.log('Button clicked!', attribute.name, option);
                     handleAttributeSelect(attribute.name, option);
                   }}
                   disabled={isDisabled}

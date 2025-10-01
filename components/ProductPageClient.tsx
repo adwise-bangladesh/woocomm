@@ -33,12 +33,7 @@ export default function ProductPageClient({
 
   const isVariableProduct = product.type === 'VARIABLE';
   
-  // Debug logs
-  console.log('ProductPageClient - product:', product);
-  console.log('ProductPageClient - product.type:', product.type);
-  console.log('ProductPageClient - isVariableProduct:', isVariableProduct);
-  console.log('ProductPageClient - product.attributes:', product.attributes);
-  console.log('ProductPageClient - product.variations:', product.variations);
+  // Debug logs removed for production
   
   // Use variation data if available, otherwise use product data
   const currentProduct = selectedVariation || product;

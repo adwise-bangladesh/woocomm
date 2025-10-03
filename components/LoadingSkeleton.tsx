@@ -356,3 +356,50 @@ export function HomePageSkeleton() {
   );
 }
 
+export function CategoriesPageSkeleton() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Circular Categories Skeleton */}
+      <section className="py-8 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="flex flex-col items-center">
+                <div className="w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse rounded-full mb-2" />
+                <div className="w-16 h-3 bg-gray-200 animate-pulse rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Products Section Skeleton */}
+      <section className="py-6 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex-1 h-[2px] bg-gray-200" />
+            <div className="w-40 h-6 bg-gray-200 animate-pulse rounded" />
+            <div className="flex-1 h-[2px] bg-gray-200" />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-[5px] gap-y-[4px] lg:gap-x-4 lg:gap-y-4">
+            {[...Array(20)].map((_, i) => (
+              <div key={i} className="bg-white overflow-hidden rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                <div className="aspect-square bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse" />
+                <div className="p-1 space-y-2">
+                  <div className="h-4 bg-gray-200 animate-pulse rounded" />
+                  <div className="h-5 bg-gray-200 animate-pulse rounded w-20" />
+                  <div className="flex gap-1">
+                    {[...Array(5)].map((_, j) => (
+                      <div key={j} className="w-3 h-3 bg-gray-200 animate-pulse rounded" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+

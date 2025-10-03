@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Call the courier API from server-side (no CORS issues)
-    const apiUrl = `https://dash.hoorin.com/api/courier/search.php?apiKey=41730dcec62d82e18a9788&searchTerm=${phone}`;
+    const apiUrl = `https://dash.hoorin.com/api/courier/news2.php?apiKey=41730dcec62d82e18a9788&searchTerm=${phone}`;
     
     const response = await fetch(apiUrl, {
       method: 'GET',

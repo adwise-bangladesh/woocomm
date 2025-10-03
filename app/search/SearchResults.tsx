@@ -5,13 +5,13 @@ import { useState, useEffect, useMemo } from 'react';
 import { createSessionClient } from '@/lib/graphql-client';
 import { gql } from 'graphql-request';
 import ProductCard from '@/components/ProductCard';
-import CategoryFilters, { FilterState } from '@/components/CategoryFilters';
+import ModernFiltersSort, { FilterState } from '@/components/ModernFiltersSort';
 import { Product } from '@/lib/types';
 import { Search, Loader2, Package, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 const SEARCH_PRODUCTS = gql`
-  query SearchProducts($search: String!, $first: Int = 50) {
+  query SearchProducts($search: String!, $first: Int = 100) {
     products(first: $first, where: { search: $search }) {
       nodes {
         id
@@ -45,7 +45,7 @@ export default function SearchResults() {
     priceRange: [0, 999999],
     inStock: null,
     onSale: null,
-    rating: null,
+    minRating: null,
   });
 
   useEffect(() => {
@@ -63,7 +63,7 @@ export default function SearchResults() {
         const client = createSessionClient();
         const data = await client.request(SEARCH_PRODUCTS, {
           search: query,
-          first: 50,
+          first: 100,
         }) as { products: { nodes: Product[] } };
 
         setProducts(data.products?.nodes || []);
@@ -78,26 +78,31 @@ export default function SearchResults() {
     searchProducts();
   }, [query]);
 
-  // Helper to get product rating (same logic as ProductCard)
-  const getProductRating = (product: Product): number => {
+  // Helper functions (defined inside useMemo to avoid dependency issues)
+  const getProductRating = useMemo(() => (product: Product): number => {
     const productIdHash = product.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return parseFloat((4.2 + ((productIdHash % 80) / 100)).toFixed(1));
-  };
+  }, []);
+
+  const getSalesCount = useMemo(() => (product: Product): number => {
+    const productIdHash = product.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return productIdHash % 1000;
+  }, []);
+
+  const extractPrice = useMemo(() => (priceString: string | null | undefined): number => {
+    if (!priceString) return 0;
+    return parseFloat(priceString.replace(/[^0-9.]/g, '')) || 0;
+  }, []);
+
+  const checkIfOnSale = useMemo(() => (product: Product): boolean => {
+    return !!(product.salePrice && product.regularPrice && 
+      extractPrice(product.salePrice) < extractPrice(product.regularPrice));
+  }, [extractPrice]);
+
 
   // Filter and sort products
   const filteredAndSortedProducts = useMemo(() => {
-    // Helper to extract numeric price
-    const extractPrice = (priceString: string | null | undefined): number => {
-      if (!priceString) return 0;
-      return parseFloat(priceString.replace(/[^0-9.]/g, '')) || 0;
-    };
-
-    // Helper to check if product is on sale
-    const checkIfOnSale = (product: Product): boolean => {
-      return !!(product.salePrice && product.regularPrice && 
-        extractPrice(product.salePrice) < extractPrice(product.regularPrice));
-    };
-
+    // Use the helper functions
     let filtered = [...products];
 
     // Apply price filter
@@ -111,7 +116,9 @@ export default function SearchResults() {
     // Apply stock filter
     if (filters.inStock !== null) {
       filtered = filtered.filter((product) => {
-        const inStock = product.stockStatus === 'IN_STOCK';
+        const inStock = product.stockStatus === 'IN_STOCK' || 
+                       product.stockStatus === 'FAST_DELIVERY' || 
+                       product.stockStatus === 'REGULAR_DELIVERY';
         return filters.inStock ? inStock : !inStock;
       });
     }
@@ -125,10 +132,10 @@ export default function SearchResults() {
     }
 
     // Apply rating filter
-    if (filters.rating !== null) {
+    if (filters.minRating !== null) {
       filtered = filtered.filter((product) => {
         const rating = getProductRating(product);
-        return rating >= filters.rating!;
+        return rating >= filters.minRating!;
       });
     }
 
@@ -137,12 +144,17 @@ export default function SearchResults() {
       case 'popularity':
         filtered.sort((a, b) => getProductRating(b) - getProductRating(a));
         break;
+      case 'best-selling':
+        filtered.sort((a, b) => getSalesCount(b) - getSalesCount(a));
+        break;
       case 'rating':
         filtered.sort((a, b) => getProductRating(b) - getProductRating(a));
         break;
-      case 'date':
+      case 'new-arrivals':
+        // Reverse order (assuming newer products are later in the array)
+        filtered.reverse();
         break;
-      case 'price':
+      case 'price-asc':
         filtered.sort((a, b) => {
           const priceA = extractPrice(a.price || a.regularPrice);
           const priceB = extractPrice(b.price || b.regularPrice);
@@ -161,7 +173,14 @@ export default function SearchResults() {
     }
 
     return filtered;
-  }, [products, filters, sortBy]);
+  }, [products, filters, sortBy, getProductRating, getSalesCount, extractPrice, checkIfOnSale]);
+
+  // Calculate max price for slider
+  const maxPrice = useMemo(() => {
+    if (products.length === 0) return 50000;
+    const prices = products.map(p => extractPrice(p.price || p.regularPrice));
+    return Math.ceil(Math.max(...prices) / 1000) * 1000; // Round up to nearest 1000
+  }, [products, extractPrice]);
 
   if (isLoading) {
     return (
@@ -210,115 +229,114 @@ export default function SearchResults() {
 
   return (
     <>
-      {/* Only show filters if there are products */}
+      {/* Modern Filters & Sort */}
       {products.length > 0 && (
-        <CategoryFilters onSortChange={setSortBy} onFilterChange={setFilters} />
+        <ModernFiltersSort
+          searchTerm={query}
+          totalProducts={products.length}
+          filteredProducts={filteredAndSortedProducts.length}
+          sortBy={sortBy}
+          filters={filters}
+          onSortChange={setSortBy}
+          onFilterChange={setFilters}
+          maxPrice={maxPrice}
+        />
       )}
       
       <div className="container mx-auto px-4 py-6">
-        {/* Only show results count if there are products */}
-        {products.length > 0 && (
-          <div className="mb-4 text-sm text-gray-600">
-            {filteredAndSortedProducts.length === 0
-              ? `No products match your filters. Try adjusting them.`
-              : `Showing ${filteredAndSortedProducts.length} of ${products.length} products for "${query}"`}
-          </div>
-        )}
-
         {/* Results */}
         {products.length === 0 ? (
-        <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
-          {/* Icon Container */}
-          <div className="relative mb-8">
-            <div className="w-32 h-32 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-              <Package className="w-16 h-16 text-gray-400" strokeWidth={1.5} />
+          <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
+            {/* Icon Container */}
+            <div className="relative mb-8">
+              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                <Package className="w-16 h-16 text-gray-400" strokeWidth={1.5} />
+              </div>
+              <div className="absolute -top-2 -right-2 w-12 h-12 rounded-full bg-gradient-to-br from-teal-100 to-teal-200 flex items-center justify-center">
+                <Search className="w-6 h-6 text-teal-600" strokeWidth={2} />
+              </div>
             </div>
-            <div className="absolute -top-2 -right-2 w-12 h-12 rounded-full bg-gradient-to-br from-teal-100 to-teal-200 flex items-center justify-center">
-              <Search className="w-6 h-6 text-teal-600" strokeWidth={2} />
+
+            {/* Title & Description */}
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3 text-center">
+              No Products Found
+            </h2>
+            <p className="text-gray-600 mb-2 text-center max-w-md text-base">
+              We couldn&apos;t find any products matching <span className="font-semibold text-gray-900">&quot;{query}&quot;</span>
+            </p>
+            <p className="text-gray-500 mb-8 text-center max-w-md text-sm">
+              Try searching with different keywords
+            </p>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
+              <Link
+                href="/categories"
+                className="flex-1 group flex items-center justify-center gap-2 px-6 py-3.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all hover:shadow-lg font-medium"
+              >
+                <Package className="w-5 h-5" />
+                Browse All Products
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link
+                href="/"
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-white border-2 border-gray-200 text-gray-700 rounded-lg hover:border-teal-600 hover:text-teal-600 transition-all font-medium"
+              >
+                Go to Homepage
+              </Link>
+            </div>
+
+            {/* Popular Searches Suggestion */}
+            <div className="mt-10 text-center">
+              <p className="text-sm text-gray-500 mb-3">Popular searches:</p>
+              <div className="flex flex-wrap gap-2 justify-center max-w-lg">
+                {['Electronics', 'Fashion', 'Home & Kitchen', 'Sports', 'Books'].map((term) => (
+                  <Link
+                    key={term}
+                    href={`/search?q=${encodeURIComponent(term)}`}
+                    className="px-4 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-teal-50 hover:text-teal-600 transition-colors"
+                  >
+                    {term}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
-
-          {/* Title & Description */}
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3 text-center">
-            No Products Found
-          </h2>
-          <p className="text-gray-600 mb-2 text-center max-w-md text-base">
-            We couldn&apos;t find any products matching <span className="font-semibold text-gray-900">&quot;{query}&quot;</span>
-          </p>
-          <p className="text-gray-500 mb-8 text-center max-w-md text-sm">
-            Try adjusting your filters or search with different keywords
-          </p>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
-            <Link
-              href="/categories"
-              className="flex-1 group flex items-center justify-center gap-2 px-6 py-3.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all hover:shadow-lg font-medium"
+        ) : filteredAndSortedProducts.length === 0 ? (
+          // Products exist but filters hide them all
+          <div className="min-h-[40vh] flex flex-col items-center justify-center px-4">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center mb-6">
+              <Package className="w-12 h-12 text-gray-400" strokeWidth={1.5} />
+            </div>
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2 text-center">
+              No Products Match Your Filters
+            </h2>
+            <p className="text-gray-600 mb-6 text-center max-w-md text-sm">
+              Try adjusting your filters to see more results
+            </p>
+            <button
+              onClick={() => {
+                setFilters({
+                  priceRange: [0, 999999],
+                  inStock: null,
+                  onSale: null,
+                  minRating: null,
+                });
+                setSortBy('default');
+              }}
+              className="px-6 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
             >
-              <Package className="w-5 h-5" />
-              Browse All Products
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <Link
-              href="/"
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-white border-2 border-gray-200 text-gray-700 rounded-lg hover:border-teal-600 hover:text-teal-600 transition-all font-medium"
-            >
-              Go to Homepage
-            </Link>
+              Clear All Filters
+            </button>
           </div>
-
-          {/* Popular Searches Suggestion */}
-          <div className="mt-10 text-center">
-            <p className="text-sm text-gray-500 mb-3">Popular searches:</p>
-            <div className="flex flex-wrap gap-2 justify-center max-w-lg">
-              {['Electronics', 'Fashion', 'Home & Kitchen', 'Sports', 'Books'].map((term) => (
-                <Link
-                  key={term}
-                  href={`/search?q=${encodeURIComponent(term)}`}
-                  className="px-4 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-teal-50 hover:text-teal-600 transition-colors"
-                >
-                  {term}
-                </Link>
-              ))}
-            </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-[5px] gap-y-[4px] lg:gap-x-4 lg:gap-y-4">
+            {filteredAndSortedProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
           </div>
-        </div>
-      ) : filteredAndSortedProducts.length === 0 ? (
-        // Products exist but filters hide them all
-        <div className="min-h-[40vh] flex flex-col items-center justify-center px-4">
-          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center mb-6">
-            <Package className="w-12 h-12 text-gray-400" strokeWidth={1.5} />
-          </div>
-          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2 text-center">
-            No Products Match Your Filters
-          </h2>
-          <p className="text-gray-600 mb-6 text-center max-w-md text-sm">
-            Try adjusting your filters to see more results
-          </p>
-          <button
-            onClick={() => {
-              setFilters({
-                priceRange: [0, 999999],
-                inStock: null,
-                onSale: null,
-                rating: null,
-              });
-              setSortBy('default');
-            }}
-            className="px-6 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
-          >
-            Clear All Filters
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-[5px] gap-y-[4px] lg:gap-x-4 lg:gap-y-4">
-          {filteredAndSortedProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      )}
+        )}
       </div>
     </>
   );
 }
-

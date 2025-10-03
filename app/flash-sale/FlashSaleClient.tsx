@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import CategoryFilters from '@/components/CategoryFilters';
 import ProductCard from '@/components/ProductCard';
 import { Product } from '@/lib/types';
 import { Zap } from 'lucide-react';
@@ -159,9 +158,6 @@ export default function FlashSaleClient({
           </div>
         </div>
       </div>
-
-      {/* Filters */}
-      <CategoryFilters onSortChange={() => {}} onFilterChange={() => {}} />
 
       {/* Products Grid */}
       <div className="container mx-auto px-4 py-6">

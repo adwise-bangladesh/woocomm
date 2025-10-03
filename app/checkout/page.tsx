@@ -5,8 +5,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Truck, Clock, Plus, Minus, Trash2 } from 'lucide-react';
+import { Truck, Clock, Plus, Minus, Trash2, AlertTriangle } from 'lucide-react';
 import { CartItem } from '@/lib/types';
+import { verifyCustomerHistory } from '@/lib/utils/courierVerification';
 
 export default function CheckoutPage() {
   const { items, isEmpty, clearCart, setCart } = useCartStore();
@@ -25,6 +26,10 @@ export default function CheckoutPage() {
     fullName: '',
     phone: '',
   });
+
+  const [showBlockedModal, setShowBlockedModal] = useState(false);
+  const [blockedReason, setBlockedReason] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
 
   // Sync localItems with items from store
   useEffect(() => {
@@ -189,11 +194,24 @@ export default function CheckoutPage() {
     const formattedPhone = formatPhoneNumber(formData.phone);
 
     setIsLoading(true);
+    setIsVerifying(true);
 
     try {
-      // For now, simulate order placement
-      // In a real app, you'd integrate with your backend
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Step 1: Verify customer history via courier API
+      const verificationResult = await verifyCustomerHistory(formattedPhone);
+      
+      setIsVerifying(false);
+      
+      // If customer is blocked, show modal and stop
+      if (!verificationResult.allowed) {
+        setIsLoading(false);
+        setBlockedReason(verificationResult.reason);
+        setShowBlockedModal(true);
+        return;
+      }
+      
+      // Step 2: Proceed with order placement
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       const orderNumber = Math.random().toString(36).substr(2, 9).toUpperCase();
       const deliveryCharge = getDeliveryCharge();
@@ -316,7 +334,7 @@ export default function CheckoutPage() {
                   value={formData.address}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent resize-none placeholder:text-gray-500"
-                  placeholder="House/Flat no, Road, Area, City, District"
+                  placeholder="House/Flat no, Road, Area, Thana"
                 />
               </div>
 
@@ -374,7 +392,7 @@ export default function CheckoutPage() {
             disabled={isLoading || localItems.length === 0}
             className="w-full bg-teal-600 text-white px-6 py-3 rounded-[5px] text-base font-bold hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-2 shadow-sm"
           >
-            {isLoading ? 'Processing Order...' : 'Place Order'}
+            {isVerifying ? 'Verifying Customer...' : isLoading ? 'Processing Order...' : 'Place Order'}
           </button>
 
           {/* Order Summary Card */}
@@ -503,6 +521,43 @@ export default function CheckoutPage() {
           </div>
         </form>
       </div>
+
+      {/* Blocked Customer Modal */}
+      {showBlockedModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <AlertTriangle className="w-8 h-8 text-red-600" />
+              </div>
+              
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                Order Blocked
+              </h3>
+              
+              <p className="text-sm text-gray-600 mb-6">
+                {blockedReason}
+              </p>
+              
+              <div className="space-y-2 w-full">
+                <button
+                  onClick={() => setShowBlockedModal(false)}
+                  className="w-full bg-teal-600 text-white px-6 py-3 rounded-[5px] font-semibold hover:bg-teal-700 transition-colors"
+                >
+                  Understood
+                </button>
+                
+                <a
+                  href="tel:01926644575"
+                  className="block w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-[5px] font-semibold hover:bg-gray-200 transition-colors"
+                >
+                  Contact Support
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

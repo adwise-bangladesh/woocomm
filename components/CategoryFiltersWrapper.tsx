@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import CategoryFilters, { FilterState } from './CategoryFilters';
 import { Product } from '@/lib/types';
-import { logger, usePriceFormatter, useDiscountCalculator, useReviewStatsGenerator, throttle } from '@/lib/utils/performance';
+import { logger, useDiscountCalculator, useReviewStatsGenerator, throttle } from '@/lib/utils/performance';
 import { createSessionClient } from '@/lib/graphql-client';
 import { gql } from 'graphql-request';
 // Cache utilities available for future enhancements
@@ -65,8 +65,10 @@ export default function CategoryFiltersWrapper({
   initialEndCursor,
   initialHasNextPage
 }: CategoryFiltersWrapperProps) {
-  // Debug: Log initial setup
-  console.log('🔍 Category:', categorySlug, '| Database ID:', categoryDatabaseId, '| Initial products:', initialProducts.length);
+  // Debug: Log initial setup  
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 Category:', categorySlug, '| Database ID:', categoryDatabaseId, '| Initial products:', initialProducts.length);
+  }
 
   const [allProducts, setAllProducts] = useState<Product[]>(initialProducts);
   const [endCursor, setEndCursor] = useState<string | null>(initialEndCursor);

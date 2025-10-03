@@ -60,12 +60,15 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
     this.props.onError?.(error, errorInfo);
 
     // Analytics integration (if needed)
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', 'exception', {
-        description: error.name,
-        fatal: false,
-        custom_map: { custom_parameter: errorId }
-      });
+    if (typeof window !== 'undefined') {
+      const windowWithGtag = window as typeof window & { gtag?: (...args: unknown[]) => void };
+      if (windowWithGtag.gtag) {
+        windowWithGtag.gtag('event', 'exception', {
+          description: error.name,
+          fatal: false,
+          custom_map: { custom_parameter: errorId }
+        });
+      }
     }
   }
 

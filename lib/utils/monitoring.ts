@@ -5,6 +5,11 @@
 
 import { logger } from './performance';
 
+interface WebVitalMetric {
+  value: number;
+  rating: 'good' | 'needs-improvement' | 'poor';
+}
+
 interface PerformanceMetrics {
   lcp?: number; // Largest Contentful Paint
   fid?: number; // First Input Delay  
@@ -13,6 +18,12 @@ interface PerformanceMetrics {
   fcp?: number; // First Contentful Paint
   loadTime?: number; // Page load time
   memoryUsage?: number; // Memory usage
+}
+
+interface MemoryInfo {
+  usedJSHeapSize: number;
+  totalJSHeapSize: number;
+  jsHeapSizeLimit: number;
 }
 
 interface CacheMetrics {
@@ -33,12 +44,22 @@ class PerformanceMonitor {
 
   private observePerformanceMetrics(): void {
     // Observe Core Web Vitals
-    if ('web-vital' in window && (window as any).webVital) {
-      (window as any).webVital.getLCP?.(this.onLCP.bind(this));
-      (window as any).webVital.getFID?.(this.onFID.bind(this));
-      (window as any).webVital.getCLS?.(this.onCLS.bind(this));
-      (window as any).webVital.getTTFB?.(this.onTTFB.bind(this));
-      (window as any).webVital.getFCP?.(this.onFCP.bind(this));
+    const windowWithWebVital = window as typeof window & { 
+      webVital?: {
+        getLCP?: (callback: (metric: WebVitalMetric) => void) => void;
+        getFID?: (callback: (metric: WebVitalMetric) => void) => void;
+        getCLS?: (callback: (metric: WebVitalMetric) => void) => void;
+        getTTFB?: (callback: (metric: WebVitalMetric) => void) => void;
+        getFCP?: (callback: (metric: WebVitalMetric) => void) => void;
+      };
+    };
+    
+    if ('web-vital' in window && windowWithWebVital.webVital) {
+      windowWithWebVital.webVital.getLCP?.(this.onLCP.bind(this));
+      windowWithWebVital.webVital.getFID?.(this.onFID.bind(this));
+      windowWithWebVital.webVital.getCLS?.(this.onCLS.bind(this));
+      windowWithWebVital.webVital.getTTFB?.(this.onTTFB.bind(this));
+      windowWithWebVital.webVital.getFCP?.(this.onFCP.bind(this));
     }
 
     // Custom metrics
@@ -46,27 +67,27 @@ class PerformanceMonitor {
     this.measureMemoryUsage();
   }
 
-  private onLCP(metric: any): void {
+  private onLCP(metric: WebVitalMetric): void {
     this.metrics.lcp = metric.value;
     logger.debug('LCP measured', { value: metric.value, rating: metric.rating });
   }
 
-  private onFID(metric: any): void {
+  private onFID(metric: WebVitalMetric): void {
     this.metrics.fid = metric.value;
     logger.debug('FID measured', { value: metric.value, rating: metric.rating });
   }
 
-  private onCLS(metric: any): void {
+  private onCLS(metric: WebVitalMetric): void {
     this.metrics.cls = metric.value;
     logger.debug('CLS measured', { value: metric.value, rating: metric.rating });
   }
 
-  private onTTFB(metric: any): void {
+  private onTTFB(metric: WebVitalMetric): void {
     this.metrics.ttfb = metric.value;
     logger.debug('TTFB measured', { value: metric.value, rating: metric.rating });
   }
 
-  private onFCP(metric: any): void {
+  private onFCP(metric: WebVitalMetric): void {
     this.metrics.fcp = metric.value;
     logger.debug('CLS measured', { value: metric.value, rating: metric.rating });
   }
@@ -112,12 +133,15 @@ class PerformanceMonitor {
     });
 
     // Send to analytics (Google Analytics, etc.)
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', 'custom_metric', {
-        custom_metric_name: name,
-        custom_metric_value: value,
-        ...context
-      });
+    if (typeof window !== 'undefined') {
+      const windowWithGtag = window as typeof window & { gtag?: (...args: unknown[]) => void };
+      if (windowWithGtag.gtag) {
+        windowWithGtag.gtag('event', 'custom_metric', {
+          custom_metric_name: name,
+          custom_metric_value: value,
+          ...context
+        });
+      }
     }
   }
 
@@ -197,31 +221,13 @@ export const getPerformanceMetrics = () => performanceMonitor.getMetrics();
 
 export const generateReport = () => performanceMonitor.generatePerformanceReport();
 
-// React import for component wrapper
-let React: any;
-
-// Component performance wrapper  
-export const withPerformanceTracking = <P extends object>(
-  Component: React.ComponentType<P>, 
-  componentName: string
-) => {
-  if (typeof React === 'undefined') {
-    React = require('react');
-  }
-  
-  const ForwardedComponent = React.forwardRef((props: P, ref: any) => {
-    React.useEffect(() => {
-      const startTime = performance.now();
-      
-      return () => {
-        const endTime = performance.now();
-        trackMetric(`component_render_${componentName}`, endTime - startTime);
-      };
-    });
-
-    return React.createElement(Component, { ...props, ref });
-  });
-  
-  ForwardedComponent.displayName = `withPerformanceTracking(${componentName})`;
-  return ForwardedComponent;
+// Simple performance wrapper - use in components manually
+export const createPerformanceTracer = (componentName: string) => {
+  return {
+    startTrace: () => performance.now(),
+    endTrace: (startTime: number) => {
+      const endTime = performance.now();
+      trackMetric(`component_render_${componentName}`, endTime - startTime);
+    }
+  };
 };

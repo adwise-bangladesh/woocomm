@@ -95,10 +95,24 @@ export default async function CategoryPage({
     notFound();
   }
 
-  const { products } = data;
+  const { products, category } = data;
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Category Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="w-full lg:container lg:mx-auto lg:px-4">
+          <div className="flex items-center justify-between px-4 py-4 lg:px-0">
+            <h1 className="text-lg font-semibold text-gray-900 capitalize">
+              {category.name}
+            </h1>
+            <span className="text-sm text-gray-500 font-medium">
+              {category.count} items
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* Filters & Sort - Sticky under header */}
       <ErrorBoundary>
         <CategoryFiltersWrapper initialProducts={products} />

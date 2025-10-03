@@ -10,8 +10,11 @@ import { Loader2 } from 'lucide-react';
 import { gql } from 'graphql-request';
 
 const LOAD_MORE_CATEGORY_PRODUCTS = gql`
-  query LoadMoreCategoryProducts($slug: ID!, $first: Int = 20, $after: String) {
-    productCategory(id: $slug, idType: SLUG) {
+  query LoadMoreCategoryProducts($categoryId: ID!, $first: Int = 20, $after: String) {
+    productCategory(id: $categoryId) {
+      id
+      name
+      slug
       products(first: $first, after: $after) {
         pageInfo {
           endCursor
@@ -44,6 +47,7 @@ interface CategoryFiltersWrapperProps {
   categoryName?: string;
   totalCount?: number;
   categorySlug: string;
+  categoryId: string;
   initialEndCursor: string | null;
   initialHasNextPage: boolean;
 }
@@ -53,13 +57,16 @@ export default function CategoryFiltersWrapper({
   categoryName, 
   totalCount,
   categorySlug,
+  categoryId,
   initialEndCursor,
   initialHasNextPage
 }: CategoryFiltersWrapperProps) {
   console.log('🔍 CategoryFiltersWrapper initialized with slug:', categorySlug);
+  console.log('🔍 CategoryFiltersWrapper initialized with id:', categoryId);
   console.log('🔍 Initial products count:', initialProducts.length);
   console.log('🔍 Initial endCursor:', initialEndCursor);
   console.log('🔍 Initial hasNextPage:', initialHasNextPage);
+  console.log('🔍 Initial products:', initialProducts.map(p => p.name));
 
   const [allProducts, setAllProducts] = useState<Product[]>(initialProducts);
   const [endCursor, setEndCursor] = useState<string | null>(initialEndCursor);
@@ -89,12 +96,13 @@ export default function CategoryFiltersWrapper({
     setLastLoadTime(now);
     
     try {
+      // Debug: Check if this is loading correctly
       console.log('🔍 Loading more products for category:', categorySlug);
       console.log('🔍 Using endCursor:', endCursor);
       
       const client = createSessionClient();
       const data = await client.request(LOAD_MORE_CATEGORY_PRODUCTS, {
-        slug: categorySlug,
+        categoryId: categoryId,
         first: 20,
         after: endCursor,
       }) as {
@@ -107,6 +115,7 @@ export default function CategoryFiltersWrapper({
       };
 
       console.log('🔍 GraphQL Response:', data);
+      console.log('🔍 Response productCategory:', data.productCategory);
       
       if (data.productCategory?.products) {
         const newProducts = data.productCategory.products.nodes;

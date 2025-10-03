@@ -15,6 +15,7 @@ const GET_CATEGORY_PRODUCTS = gql`
       productCategory(id: $slug, idType: SLUG) {
       id
       name
+      slug
       description
       count
       products(first: $first) {
@@ -116,6 +117,7 @@ export default async function CategoryPage({
             categoryName={category.name}
             totalCount={category.count}
             categorySlug={slug}
+            categoryId={category.id}
             initialEndCursor={pageInfo.endCursor}
             initialHasNextPage={pageInfo.hasNextPage}
           />

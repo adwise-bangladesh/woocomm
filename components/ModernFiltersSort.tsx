@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { SlidersHorizontal, X } from 'lucide-react';
 
 export interface FilterState {
@@ -50,7 +50,7 @@ export default function ModernFiltersSort({
         console.warn('Failed to parse saved filters:', error);
       }
     }
-  }, []);
+  }, [onSortChange, onFilterChange, sortBy]);
 
   // Save preferences to localStorage
   useEffect(() => {
@@ -66,6 +66,20 @@ export default function ModernFiltersSort({
   const [maxPriceValue, setMaxPriceValue] = useState(
     filters.priceRange[1] === 999999 ? maxPrice : filters.priceRange[1]
   );
+
+  // Debounced price update
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (minPrice !== filters.priceRange[0] || maxPriceValue !== filters.priceRange[1]) {
+        setLocalFilters(prev => ({
+          ...prev,
+          priceRange: [minPrice, maxPriceValue === maxPrice ? 999999 : maxPriceValue]
+        }));
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [minPrice, maxPriceValue, maxPrice, filters.priceRange]);
 
   const handleApplyFilters = () => {
     onFilterChange({
@@ -91,6 +105,37 @@ export default function ModernFiltersSort({
     filters.priceRange[1] !== 999999 ||
     filters.minRating !== null;
 
+  // Generate filter chips
+  const filterChips = useMemo(() => {
+    const chips = [];
+    
+    if (filters.priceRange[0] !== 0 || filters.priceRange[1] !== 999999) {
+      chips.push({
+        id: 'price',
+        label: `Tk ${filters.priceRange[0].toLocaleString()} - Tk ${filters.priceRange[1].toLocaleString()}`,
+        onRemove: () => {
+          const newFilters = { ...filters, priceRange: [0, 999999] as [number, number] };
+          setLocalFilters(newFilters);
+          onFilterChange(newFilters);
+        }
+      });
+    }
+    
+    if (filters.minRating !== null) {
+      chips.push({
+        id: 'rating',
+        label: `${filters.minRating}+ Stars`,
+        onRemove: () => {
+          const newFilters = { ...filters, minRating: null };
+          setLocalFilters(newFilters);
+          onFilterChange(newFilters);
+        }
+      });
+    }
+    
+    return chips;
+  }, [filters, onFilterChange]);
+
   return (
     <div className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
       <div className="container mx-auto px-4">
@@ -115,7 +160,7 @@ export default function ModernFiltersSort({
             </div>
             <button
               onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors text-sm font-medium text-gray-700"
+              className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors text-sm font-medium text-gray-700 touch-manipulation"
             >
               <SlidersHorizontal className="w-4 h-4" />
               Filters
@@ -130,6 +175,35 @@ export default function ModernFiltersSort({
             </button>
           </div>
         </div>
+
+        {/* Filter Chips */}
+        {filterChips.length > 0 && (
+          <div className="py-3">
+            <div className="flex flex-wrap gap-2">
+              {filterChips.map((chip) => (
+                <div
+                  key={chip.id}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-orange-100 text-orange-800 rounded-full text-sm font-medium"
+                >
+                  <span>{chip.label}</span>
+                  <button
+                    onClick={chip.onRemove}
+                    className="hover:bg-orange-200 rounded-full p-0.5 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={handleClearFilters}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-gray-600 hover:text-gray-800 text-sm font-medium transition-colors"
+              >
+                <X className="w-3 h-3" />
+                Clear All
+              </button>
+            </div>
+          </div>
+        )}
 
       </div>
 
@@ -166,7 +240,7 @@ export default function ModernFiltersSort({
                     <button
                       key={option.value}
                       onClick={() => onSortChange(option.value)}
-                      className={`px-3 py-1.5 text-sm font-medium rounded-[5px] transition-colors ${
+                      className={`px-3 py-2 text-sm font-medium rounded-[5px] transition-colors touch-manipulation min-h-[44px] ${
                         sortBy === option.value
                           ? 'text-white'
                           : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-orange-300'
@@ -259,7 +333,7 @@ export default function ModernFiltersSort({
                           minRating: option.value,
                         })
                       }
-                      className={`px-3 py-1.5 text-sm font-medium rounded-[5px] transition-colors flex items-center gap-1 ${
+                      className={`px-3 py-2 text-sm font-medium rounded-[5px] transition-colors flex items-center gap-1 touch-manipulation min-h-[44px] ${
                         localFilters.minRating === option.value
                           ? 'text-white'
                           : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-orange-300'

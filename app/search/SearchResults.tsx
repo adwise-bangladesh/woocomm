@@ -161,7 +161,7 @@ export default function SearchResults() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto py-8">
         <div className="flex flex-col items-center justify-center py-20">
           <Loader2 className="w-12 h-12 animate-spin mb-4" style={{ color: '#fe6c06' }} />
           <p className="text-gray-600">Searching for &quot;{query}&quot;...</p>
@@ -172,7 +172,7 @@ export default function SearchResults() {
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto py-8">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
           <p className="text-red-600 mb-4">{error}</p>
           <Link
@@ -191,7 +191,7 @@ export default function SearchResults() {
 
   if (!query.trim()) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto py-8">
         <div className="flex flex-col items-center justify-center py-20">
           <Search className="w-16 h-16 text-gray-300 mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Search for Products</h2>
@@ -226,7 +226,7 @@ export default function SearchResults() {
         />
       )}
       
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto py-6">
         {/* Results */}
         {products.length === 0 ? (
           <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">

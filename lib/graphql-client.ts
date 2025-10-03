@@ -34,3 +34,42 @@ export const extractSessionToken = (response: Response): string | null => {
   }
   return null;
 };
+
+// Client-side fetch with session token extraction
+export async function fetchWithSession(
+  query: string,
+  variables?: Record<string, unknown>,
+  sessionToken?: string
+): Promise<{ data: Record<string, unknown>; sessionToken: string | null }> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  if (sessionToken) {
+    headers['woocommerce-session'] = `Session ${sessionToken}`;
+  }
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ query, variables }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  const data = await response.json();
+  
+  if (data.errors) {
+    throw new Error(data.errors[0]?.message || 'GraphQL Error');
+  }
+
+  // Extract session token from response headers
+  const newSessionToken = extractSessionToken(response);
+
+  return {
+    data: data.data,
+    sessionToken: newSessionToken,
+  };
+}

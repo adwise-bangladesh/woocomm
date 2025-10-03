@@ -2,18 +2,10 @@
 
 import { useState } from 'react';
 import { useCartStore } from '@/lib/store';
-import { createSessionClient } from '@/lib/graphql-client';
-import { ADD_TO_CART } from '@/lib/mutations';
+import { fetchWithSession } from '@/lib/graphql-client';
 import { ShoppingCart } from 'lucide-react';
 import { validateProductId } from '@/lib/utils/sanitizer';
 import { logger } from '@/lib/utils/performance';
-
-interface CartResponse {
-  contents: { nodes: never[] };
-  subtotal: string;
-  total: string;
-  isEmpty: boolean;
-}
 
 interface AddToCartButtonProps {
   productId: number;
@@ -28,7 +20,7 @@ export default function AddToCartButton({
 }: AddToCartButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
-  const { sessionToken, setCart } = useCartStore();
+  const { sessionToken, setSessionToken, setCart } = useCartStore();
 
   const handleAddToCart = async () => {
     // Validate inputs
@@ -49,7 +41,56 @@ export default function AddToCartButton({
 
     setIsLoading(true);
     try {
-      const client = createSessionClient(sessionToken || undefined);
+      const ADD_TO_CART_QUERY = `
+        mutation AddToCart($input: AddToCartInput!) {
+          addToCart(input: $input) {
+            cart {
+              contents {
+                nodes {
+                  key
+                  quantity
+                  total
+                  subtotal
+                  product {
+                    node {
+                      id
+                      databaseId
+                      name
+                      slug
+                      image {
+                        sourceUrl
+                        altText
+                      }
+                      ... on ProductWithPricing {
+                        price
+                      }
+                      ... on InventoriedProduct {
+                        stockStatus
+                        stockQuantity
+                      }
+                    }
+                  }
+                  variation {
+                    node {
+                      id
+                      databaseId
+                      name
+                      price
+                      ... on InventoriedProduct {
+                        stockStatus
+                        stockQuantity
+                      }
+                    }
+                  }
+                }
+              }
+              subtotal
+              total
+              isEmpty
+            }
+          }
+        }
+      `;
       
       const variables = {
         input: {
@@ -59,13 +100,19 @@ export default function AddToCartButton({
         },
       };
 
-      const response = await client.request(ADD_TO_CART, variables) as { addToCart: { cart: CartResponse } };
+      const { data, sessionToken: newSessionToken } = await fetchWithSession(
+        ADD_TO_CART_QUERY,
+        variables,
+        sessionToken || undefined
+      );
 
-      // Extract session token if available
-      // Note: With graphql-request, we need to handle this differently
-      // For now, we'll store it when available
+      // Store the new session token
+      if (newSessionToken) {
+        setSessionToken(newSessionToken);
+      }
       
-      if (response.addToCart.cart) {
+      const response = data as { addToCart: { cart: Record<string, unknown> } };
+      if (response.addToCart?.cart) {
         setCart(response.addToCart.cart as never);
         setIsAdded(true);
         setTimeout(() => setIsAdded(false), 2000);
@@ -74,7 +121,7 @@ export default function AddToCartButton({
       logger.error('Error adding to cart', error);
       
       // Check if it's a stock status error
-      const errorMessage = (error as { response?: { errors?: { message?: string }[] }; message?: string })?.response?.errors?.[0]?.message || (error as Error)?.message || 'Unknown error';
+      const errorMessage = (error as Error)?.message || 'Unknown error';
       
       if (errorMessage.toLowerCase().includes('stock') || errorMessage.toLowerCase().includes('inventory')) {
         alert('This product is currently out of stock but available for pre-order. Please use the "Order Now" button to place a pre-order.');

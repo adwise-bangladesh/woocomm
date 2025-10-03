@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShoppingBag, Loader2 } from 'lucide-react';
-import { createSessionClient } from '@/lib/graphql-client';
-import { ADD_TO_CART } from '@/lib/mutations';
+import { fetchWithSession } from '@/lib/graphql-client';
 import { useCartStore } from '@/lib/store';
 
 interface OrderNowButtonProps {
@@ -16,7 +15,7 @@ interface OrderNowButtonProps {
 export default function OrderNowButton({ productId, variationId, disabled = false }: OrderNowButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { sessionToken, setCart } = useCartStore();
+  const { sessionToken, setSessionToken, setCart } = useCartStore();
 
   const handleOrderNow = async () => {
     if (disabled || isLoading) return;
@@ -24,7 +23,56 @@ export default function OrderNowButton({ productId, variationId, disabled = fals
     setIsLoading(true);
     
     try {
-      const client = createSessionClient(sessionToken || undefined);
+      const ADD_TO_CART_QUERY = `
+        mutation AddToCart($input: AddToCartInput!) {
+          addToCart(input: $input) {
+            cart {
+              contents {
+                nodes {
+                  key
+                  quantity
+                  total
+                  subtotal
+                  product {
+                    node {
+                      id
+                      databaseId
+                      name
+                      slug
+                      image {
+                        sourceUrl
+                        altText
+                      }
+                      ... on ProductWithPricing {
+                        price
+                      }
+                      ... on InventoriedProduct {
+                        stockStatus
+                        stockQuantity
+                      }
+                    }
+                  }
+                  variation {
+                    node {
+                      id
+                      databaseId
+                      name
+                      price
+                      ... on InventoriedProduct {
+                        stockStatus
+                        stockQuantity
+                      }
+                    }
+                  }
+                }
+              }
+              subtotal
+              total
+              isEmpty
+            }
+          }
+        }
+      `;
       
       const variables = {
         input: {
@@ -34,18 +82,30 @@ export default function OrderNowButton({ productId, variationId, disabled = fals
         },
       };
       
-      const data = await client.request(ADD_TO_CART, variables) as { addToCart: { cart: { contents: { nodes: [] }; subtotal: string; total: string; isEmpty: boolean } } };
+      const { data, sessionToken: newSessionToken } = await fetchWithSession(
+        ADD_TO_CART_QUERY,
+        variables,
+        sessionToken || undefined
+      );
+
+      // Store the new session token
+      if (newSessionToken) {
+        setSessionToken(newSessionToken);
+      }
 
       // Update cart state
-      setCart(data.addToCart.cart);
-      
-      // Redirect to checkout
-      router.push('/checkout');
+      const response = data as { addToCart: { cart: Record<string, unknown> } };
+      if (response.addToCart?.cart) {
+        setCart(response.addToCart.cart as never);
+        
+        // Redirect to checkout
+        router.push('/checkout');
+      }
     } catch (error) {
       console.error('Error adding to cart:', error);
       
       // Check if it's a stock status error
-      const errorMessage = (error as { response?: { errors?: { message?: string }[] }; message?: string })?.response?.errors?.[0]?.message || (error as Error)?.message || 'Unknown error';
+      const errorMessage = (error as Error)?.message || 'Unknown error';
       
       if (errorMessage.toLowerCase().includes('stock') || errorMessage.toLowerCase().includes('inventory')) {
         alert('This product is currently out of stock but available for pre-order. We are processing your request...');

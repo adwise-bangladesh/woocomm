@@ -7,7 +7,6 @@ import { validateSlug } from '@/lib/utils/sanitizer';
 import { logger } from '@/lib/utils/performance';
 import { EnhancedErrorBoundary } from '@/components/EnhancedErrorBoundary';
 import { Suspense } from 'react';
-import { headers } from 'next/headers';
 
 // Enhanced ISR with tag-based revalidation
 export const revalidate = 300; // 5 minutes ISR

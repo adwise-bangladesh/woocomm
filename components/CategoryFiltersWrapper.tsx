@@ -276,7 +276,7 @@ export default function CategoryFiltersWrapper({
             {/* End of results */}
             {!hasNextPage && filteredAndSortedProducts.length > 0 && (
               <div className="mt-8 text-center text-gray-500">
-                You've reached the end of the catalog
+                You&apos;ve reached the end of the catalog
               </div>
             )}
           </div>

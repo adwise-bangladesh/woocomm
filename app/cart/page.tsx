@@ -163,9 +163,16 @@ export default function CartPage() {
                             {/* Product Title & Delete Button */}
                             <div className="flex items-start justify-between mb-2">
                               <Link href={`/product/${item.product.node.slug}`}>
-                                <h4 className="text-sm font-medium text-gray-900 line-clamp-2 flex-1 pr-2 hover:text-teal-600 cursor-pointer">
-                                  {item.product.node.name}
-                                </h4>
+                                <div className="flex-1 pr-2">
+                                  <h4 className="text-sm font-medium text-gray-900 line-clamp-2 hover:text-teal-600 cursor-pointer">
+                                    {item.product.node.name}
+                                  </h4>
+                                  {item.variation?.node?.name && (
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                      {item.variation.node.name.replace(item.product.node.name + ' - ', '')}
+                                    </p>
+                                  )}
+                                </div>
                               </Link>
                               <button
                                 type="button"

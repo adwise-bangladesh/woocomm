@@ -39,21 +39,23 @@ export default function ProductPageClient({
 
   // Memoize expensive calculations
   const stockInfo = useMemo(() => {
-    const isInStock = currentStockStatus === 'IN_STOCK';
-    const isBackordersAllowed = currentStockStatus === 'ON_BACKORDER';
-    const isPreOrder = currentStockStatus === 'OUT_OF_STOCK';
-    const canOrder = isInStock || isBackordersAllowed || isPreOrder; // Allow all three statuses
+    // Support both old and new stock status formats
+    const isFastDelivery = currentStockStatus === 'FAST_DELIVERY' || currentStockStatus === 'IN_STOCK';
+    const isRegularDelivery = currentStockStatus === 'REGULAR_DELIVERY' || currentStockStatus === 'ON_BACKORDER';
+    const isGlobalDelivery = currentStockStatus === 'GLOBAL_DELIVERY' || currentStockStatus === 'OUT_OF_STOCK';
+    const canOrder = true; // Allow all statuses to be ordered
     
-    return { isInStock, isBackordersAllowed, canOrder };
+    return { isFastDelivery, isRegularDelivery, isGlobalDelivery, canOrder };
   }, [currentStockStatus]);
 
-  const { isInStock, isBackordersAllowed, canOrder } = stockInfo;
+  const { isFastDelivery, isRegularDelivery, isGlobalDelivery, canOrder } = stockInfo;
   
   // Debug logging (development only)
   logger.debug('Stock status debug', {
     currentStockStatus,
-    isInStock,
-    isBackordersAllowed,
+    isFastDelivery,
+    isRegularDelivery,
+    isGlobalDelivery,
     canOrder,
     isVariableProduct,
     selectedVariation: selectedVariation?.databaseId,
@@ -102,7 +104,7 @@ export default function ProductPageClient({
             <div className="bg-white rounded-[5px] p-3 sticky top-4">
               {/* Title */}
               <h1 className="text-lg font-bold text-gray-900 mb-1.5 leading-tight">
-                {product.name} {currentStockStatus === 'OUT_OF_STOCK' && <span className="text-red-600">(Pre-Order)</span>}
+                {product.name} {isGlobalDelivery && <span className="text-red-600">(Pre-Order)</span>}
               </h1>
 
               {/* Reviews Count */}
@@ -163,12 +165,12 @@ export default function ProductPageClient({
               {/* Stock Status & Delivery */}
               <div className="flex items-center justify-between text-sm mb-4 pb-4 border-b">
                 <div className="flex items-center gap-2">
-                  {isInStock ? (
+                  {isFastDelivery ? (
                     <>
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                       <span className="text-green-600 font-semibold">Stock Available</span>
                     </>
-                  ) : isBackordersAllowed ? (
+                  ) : isRegularDelivery ? (
                     <>
                       <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                       <span className="text-orange-600 font-semibold">Stock Available</span>
@@ -182,17 +184,17 @@ export default function ProductPageClient({
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Clock className={`w-3.5 h-3.5 ${
-                    isInStock ? 'text-green-600' : 
-                    isBackordersAllowed ? 'text-orange-600' : 
+                    isFastDelivery ? 'text-green-600' : 
+                    isRegularDelivery ? 'text-orange-600' : 
                     'text-red-600'
                   }`} />
                   <span className={`text-xs font-medium ${
-                    isInStock ? 'text-green-600' : 
-                    isBackordersAllowed ? 'text-orange-600' : 
+                    isFastDelivery ? 'text-green-600' : 
+                    isRegularDelivery ? 'text-orange-600' : 
                     'text-red-600'
                   }`}>
-                    {isInStock ? 'Fast Delivery (1-3 days)' : 
-                     isBackordersAllowed ? 'Regular Delivery (3-5 days)' : 
+                    {isFastDelivery ? 'Fast Delivery (1-3 days)' : 
+                     isRegularDelivery ? 'Regular Delivery (3-5 days)' : 
                      'Global Delivery (10-15 days)'}
                   </span>
                 </div>
@@ -282,7 +284,7 @@ export default function ProductPageClient({
               >
                 <p className="text-xs text-orange-900 font-medium mb-1">⚠️ Important Note:</p>
                 <p className="text-xs text-orange-800 leading-relaxed">
-                  {isBackordersAllowed
+                  {isGlobalDelivery
                     ? '50% advance payment required. Delivery: 10-15 days. Imported products are non-refundable once ordered. Click for details.'
                     : 'Please ensure 100% certainty before ordering. Refusal to accept matching products will incur delivery charges. Click for details.'}
                 </p>
@@ -299,7 +301,7 @@ export default function ProductPageClient({
             <div className="p-4 border-b">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  {isBackordersAllowed ? 'Pre-Order Policy' : 'Return Policy'}
+                  {isGlobalDelivery ? 'Pre-Order Policy' : 'Return Policy'}
                 </h3>
                 <button
                   onClick={() => setShowPolicyModal(false)}
@@ -310,7 +312,7 @@ export default function ProductPageClient({
               </div>
             </div>
             <div className="p-4">
-              {isBackordersAllowed ? (
+              {isGlobalDelivery ? (
                 <div className="space-y-3 text-sm text-gray-700">
                   <p><strong>Payment:</strong> 50% or full advance payment required</p>
                   <p><strong>Delivery Time:</strong> 10-15 working days</p>

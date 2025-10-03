@@ -94,7 +94,7 @@ export async function generateMetadata({
       images: product.image?.sourceUrl ? [product.image.sourceUrl] : [],
     },
     robots: {
-      index: product.stockStatus !== 'OUT_OF_STOCK',
+      index: product.stockStatus !== 'OUT_OF_STOCK' && product.stockStatus !== 'GLOBAL_DELIVERY',
       follow: true,
     },
   };
@@ -129,9 +129,7 @@ export default async function ProductPage({
     return discount > 0 && discount < 100 ? discount : null;
   };
 
-  // Allow orders for IN_STOCK and ON_BACKORDER products
-  const isInStock = product.stockStatus === 'IN_STOCK';
-  const isBackordersAllowed = product.stockStatus === 'ON_BACKORDER';
+  // These variables are no longer used - moved to ProductPageClient
   const discount = calculateDiscount();
 
   // Generate random review stats
@@ -156,9 +154,10 @@ export default async function ProductPage({
       '@type': 'Offer',
       price: parseFloat((product.salePrice || product.price || product.regularPrice || '0').replace(/[^0-9.-]+/g, '')),
       priceCurrency: 'BDT',
-      availability: isInStock 
+      availability: 
+        product.stockStatus === 'FAST_DELIVERY' || product.stockStatus === 'IN_STOCK'
         ? 'https://schema.org/InStock' 
-        : isBackordersAllowed 
+        : product.stockStatus === 'REGULAR_DELIVERY' || product.stockStatus === 'ON_BACKORDER'
         ? 'https://schema.org/PreOrder'
         : 'https://schema.org/OutOfStock',
       url: `https://zonash.com/product/${product.slug}`,

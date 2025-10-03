@@ -102,11 +102,15 @@ export default function CheckoutPage() {
   const getDeliveryTime = (stockStatus?: string) => {
     if (!stockStatus) return { text: 'Fast Delivery (1-3 days)', color: 'text-green-600' };
     
+    // Support both old and new stock status formats
     switch (stockStatus) {
+      case 'FAST_DELIVERY':
       case 'IN_STOCK':
         return { text: 'Fast Delivery (1-3 days)', color: 'text-green-600' };
+      case 'REGULAR_DELIVERY':
       case 'ON_BACKORDER':
         return { text: 'Regular Delivery (3-5 days)', color: 'text-orange-600' };
+      case 'GLOBAL_DELIVERY':
       case 'OUT_OF_STOCK':
         return { text: 'Global Delivery (10-15 days)', color: 'text-red-600' };
       default:

@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import CategoryFilters, { FilterState } from './CategoryFilters';
-import ProductCard from './ProductCard';
 import { Product } from '@/lib/types';
-import { logger } from '@/lib/utils/performance';
+import { logger, usePriceFormatter, useDiscountCalculator, useReviewStatsGenerator, throttle } from '@/lib/utils/performance';
 import { createSessionClient } from '@/lib/graphql-client';
-import { Loader2 } from 'lucide-react';
 import { gql } from 'graphql-request';
+import { productCache, generateProductsByCategoryKey } from '@/lib/utils/cache';
+import ProgressiveProductGrid from './ProgressiveProductGrid';
 
   const LOAD_MORE_CATEGORY_PRODUCTS = gql`
     query LoadMoreCategoryProducts($slug: String!, $first: Int = 20, $after: String) {
@@ -73,7 +73,7 @@ export default function CategoryFiltersWrapper({
   const [hasNextPage, setHasNextPage] = useState(initialHasNextPage);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [lastLoadTime, setLastLoadTime] = useState(0);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
+  // ProgressiveProductGrid now handles load more detection internally
   const MIN_LOAD_INTERVAL = 500;
   const [sortBy, setSortBy] = useState('default');
   const [filters, setFilters] = useState<FilterState>({
@@ -126,26 +126,22 @@ export default function CategoryFiltersWrapper({
     }
   }, [isLoadingMore, hasNextPage, categorySlug, endCursor, lastLoadTime]);
 
-  // Infinite scroll effect
+  // Throttled infinite scroll effect for better performance
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    const throttledLoadMore = throttle(() => {
+      if (
+        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 1200 &&
+        !isLoadingMore &&
+        hasNextPage
+      ) {
+        loadMore();
+      }
+    }, 150);
     
-    const handleScroll = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        if (
-          window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 1200 &&
-          !isLoadingMore &&
-          hasNextPage
-        ) {
-          loadMore();
-        }
-      }, 150);
-    };
+    const handleScroll = () => throttledLoadMore();
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
-      clearTimeout(timeoutId);
       window.removeEventListener('scroll', handleScroll);
     };
   }, [loadMore, isLoadingMore, hasNextPage]);
@@ -161,21 +157,24 @@ export default function CategoryFiltersWrapper({
     setFilters(newFilters);
   }, []);
 
-  // Helper functions (don't need useCallback since not passed as props)
-  const getProductRating = (product: Product): number => {
-    const productIdHash = product.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return parseFloat((4.2 + ((productIdHash % 80) / 100)).toFixed(1));
-  };
+  // Memoized helper functions for better performance
+  const priceFormatter = usePriceFormatter();
+  const discountCalculator = useDiscountCalculator();
+  const reviewStatsGenerator = useReviewStatsGenerator();
 
-  const extractPrice = (priceString: string | null | undefined): number => {
+  const getProductRating = useCallback((product: Product): number => {
+    return reviewStatsGenerator(product.id).rating;
+  }, [reviewStatsGenerator]);
+
+  const extractPrice = useCallback((priceString: string | null | undefined): number => {
     if (!priceString) return 0;
     return parseFloat(priceString.replace(/[^0-9.]/g, '')) || 0;
-  };
+  }, []);
 
-  const checkIfOnSale = (product: Product): boolean => {
-    return !!(product.salePrice && product.regularPrice && 
-      extractPrice(product.salePrice) < extractPrice(product.regularPrice));
-  };
+  const checkIfOnSale = useCallback((product: Product): boolean => {
+    const discount = discountCalculator(product.salePrice, product.regularPrice);
+    return discount !== null && discount > 0;
+  }, [discountCalculator]);
 
   // Pre-calculate expensive values to avoid recalculating in filters
   const productsWithMetadata = useMemo(() => {
@@ -247,52 +246,13 @@ export default function CategoryFiltersWrapper({
           </div>
         )}
 
-        {/* Products Grid */}
-        {filteredAndSortedProducts.length === 0 ? (
-          <div className="text-center py-12 px-4">
-            <p className="text-gray-600 text-lg mb-2">No products found</p>
-            <p className="text-sm text-gray-500">Try adjusting your filters</p>
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-[5px] gap-y-[4px] lg:gap-x-4 lg:gap-y-4">
-              {filteredAndSortedProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-              
-              {/* Show skeleton loaders while loading */}
-              {isLoadingMore && (
-                <>
-                  {[...Array(10)].map((_, i) => (
-                    <div key={`skeleton-${i}`} className="bg-white overflow-hidden">
-                      <div className="aspect-square bg-gray-200 animate-pulse"></div>
-                      <div className="p-3 space-y-2">
-                        <div className="h-4 bg-gray-200 animate-pulse rounded w-full"></div>
-                        <div className="h-4 bg-gray-200 animate-pulse rounded w-2/3"></div>
-                        <div className="h-3 bg-gray-200 animate-pulse rounded w-1/2"></div>
-                      </div>
-                    </div>
-                  ))}
-                </>
-              )}
-            </div>
-
-            {/* Loading indicator */}
-            {isLoadingMore && (
-              <div className="flex justify-center items-center py-4">
-                <Loader2 className="w-5 h-5 animate-spin text-teal-600" />
-                <span className="ml-2 text-xs text-gray-500">Loading more products...</span>
-              </div>
-            )}
-
-            {/* End message */}
-            {!hasNextPage && allProducts.length > 0 && (
-              <div className="text-center py-8">
-                <p className="text-sm text-gray-500">You&apos;ve seen all products</p>
-              </div>
-            )}
-          </>
-        )}
+        {/* Enhanced Progressive Product Grid */}
+        <ProgressiveProductGrid
+          products={filteredAndSortedProducts}
+          isLoadingMore={isLoadingMore}
+          hasNextPage={hasNextPage}
+          onLoadMore={loadMore}
+        />
       </div>
     </>
   );

@@ -41,9 +41,20 @@ export default function OrderNowButton({ productId, variationId, disabled = fals
       
       // Redirect to checkout
       router.push('/checkout');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding to cart:', error);
-      alert('Failed to add product to cart. Please try again.');
+      
+      // Check if it's a stock status error
+      const errorMessage = error?.response?.errors?.[0]?.message || error?.message || 'Unknown error';
+      
+      if (errorMessage.toLowerCase().includes('stock') || errorMessage.toLowerCase().includes('inventory')) {
+        alert('This product is currently out of stock but available for pre-order. We are processing your request...');
+        // For pre-orders, we might want to redirect to a special pre-order form
+        // For now, let's redirect to contact
+        router.push('/');
+      } else {
+        alert(`Failed to process order: ${errorMessage}`);
+      }
     } finally {
       setIsLoading(false);
     }

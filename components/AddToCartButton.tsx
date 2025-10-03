@@ -70,9 +70,17 @@ export default function AddToCartButton({
         setIsAdded(true);
         setTimeout(() => setIsAdded(false), 2000);
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error adding to cart', error);
-      alert('Failed to add to cart. Please try again.');
+      
+      // Check if it's a stock status error
+      const errorMessage = error?.response?.errors?.[0]?.message || error?.message || 'Unknown error';
+      
+      if (errorMessage.toLowerCase().includes('stock') || errorMessage.toLowerCase().includes('inventory')) {
+        alert('This product is currently out of stock but available for pre-order. Please use the "Order Now" button to place a pre-order.');
+      } else {
+        alert(`Failed to add to cart: ${errorMessage}`);
+      }
     } finally {
       setIsLoading(false);
     }

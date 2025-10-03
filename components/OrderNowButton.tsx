@@ -4,53 +4,19 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShoppingBag, Loader2 } from 'lucide-react';
 import { createSessionClient } from '@/lib/graphql-client';
-import { gql } from 'graphql-request';
+import { ADD_TO_CART } from '@/lib/mutations';
 import { useCartStore } from '@/lib/store';
 
 interface OrderNowButtonProps {
   productId: number;
+  variationId?: number;
   disabled?: boolean;
 }
 
-const ADD_TO_CART = gql`
-  mutation AddToCart($input: AddToCartInput!) {
-    addToCart(input: $input) {
-      cart {
-        contents {
-          nodes {
-            key
-            quantity
-            total
-            subtotal
-            product {
-              node {
-                id
-                databaseId
-                name
-                slug
-                image {
-                  sourceUrl
-                  altText
-                }
-                ... on ProductWithPricing {
-                  price
-                }
-              }
-            }
-          }
-        }
-        subtotal
-        total
-        isEmpty
-      }
-    }
-  }
-`;
-
-export default function OrderNowButton({ productId, disabled = false }: OrderNowButtonProps) {
+export default function OrderNowButton({ productId, variationId, disabled = false }: OrderNowButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const setCart = useCartStore((state) => state.setCart);
+  const { sessionToken, setCart } = useCartStore();
 
   const handleOrderNow = async () => {
     if (disabled || isLoading) return;
@@ -58,13 +24,17 @@ export default function OrderNowButton({ productId, disabled = false }: OrderNow
     setIsLoading(true);
     
     try {
-      const client = createSessionClient();
-      const data = await client.request(ADD_TO_CART, {
+      const client = createSessionClient(sessionToken || undefined);
+      
+      const variables = {
         input: {
           productId,
           quantity: 1,
+          ...(variationId && { variationId }),
         },
-      }) as { addToCart: { cart: { contents: { nodes: [] }; subtotal: string; total: string; isEmpty: boolean } } };
+      };
+      
+      const data = await client.request(ADD_TO_CART, variables) as { addToCart: { cart: { contents: { nodes: [] }; subtotal: string; total: string; isEmpty: boolean } } };
 
       // Update cart state
       setCart(data.addToCart.cart);

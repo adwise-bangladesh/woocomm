@@ -42,12 +42,13 @@ export default function ProductPageClient({
   const stockInfo = useMemo(() => {
     const isInStock = currentStockStatus === 'IN_STOCK';
     const isBackordersAllowed = currentStockStatus === 'ON_BACKORDER';
-    const canOrder = isInStock || isBackordersAllowed;
+    const isPreOrder = currentStockStatus === 'OUT_OF_STOCK';
+    const canOrder = isInStock || isBackordersAllowed || isPreOrder; // Allow all three statuses
     
-    return { isInStock, isBackordersAllowed, canOrder };
+    return { isInStock, isBackordersAllowed, isPreOrder, canOrder };
   }, [currentStockStatus]);
 
-  const { isInStock, isBackordersAllowed, canOrder } = stockInfo;
+  const { isInStock, isBackordersAllowed, isPreOrder, canOrder } = stockInfo;
   
   // Debug logging (development only)
   logger.debug('Stock status debug', {
@@ -72,10 +73,11 @@ export default function ProductPageClient({
     setSelectedAttributes(attrs);
   }, []);
 
-  // Get the product ID for cart operations
-  const productIdForCart = isVariableProduct && selectedVariation 
+  // Get the product ID and variation ID for cart operations
+  const productIdForCart = product.databaseId || 0;
+  const variationIdForCart = isVariableProduct && selectedVariation 
     ? selectedVariation.databaseId 
-    : product.databaseId || 0;
+    : undefined;
 
   // Get variation image if available
   const currentImage = selectedVariation?.image || product.image;
@@ -201,10 +203,12 @@ export default function ProductPageClient({
               <div className="space-y-2 mb-4">
                 <AnimatedOrderButton
                   productId={productIdForCart}
+                  variationId={variationIdForCart}
                   disabled={isVariableProduct && !selectedVariation}
                 />
                 <AddToCartButton
                   productId={productIdForCart}
+                  variationId={variationIdForCart}
                   disabled={isVariableProduct && !selectedVariation}
                 />
               </div>

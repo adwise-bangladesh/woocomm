@@ -24,6 +24,10 @@ export const ADD_TO_CART = gql`
                 ... on ProductWithPricing {
                   price
                 }
+                ... on InventoriedProduct {
+                  stockStatus
+                  stockQuantity
+                }
               }
             }
             variation {
@@ -32,6 +36,10 @@ export const ADD_TO_CART = gql`
                 databaseId
                 name
                 price
+                ... on InventoriedProduct {
+                  stockStatus
+                  stockQuantity
+                }
               }
             }
           }

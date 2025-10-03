@@ -4,10 +4,11 @@ import OrderNowButton from './OrderNowButton';
 
 interface AnimatedOrderButtonProps {
   productId: number;
+  variationId?: number;
   disabled?: boolean;
 }
 
-export default function AnimatedOrderButton({ productId, disabled }: AnimatedOrderButtonProps) {
+export default function AnimatedOrderButton({ productId, variationId, disabled }: AnimatedOrderButtonProps) {
   return (
     <>
       <style jsx>{`
@@ -25,7 +26,8 @@ export default function AnimatedOrderButton({ productId, disabled }: AnimatedOrd
       `}</style>
       <div className="animate-pulse-btn">
         <OrderNowButton 
-          productId={productId} 
+          productId={productId}
+          variationId={variationId}
           disabled={disabled} 
         />
       </div>

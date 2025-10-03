@@ -107,6 +107,7 @@ export default async function CategoryPage({
             initialProducts={products} 
             categoryName={category.name}
             totalCount={category.count}
+            categorySlug={slug}
           />
         </Suspense>
       </ErrorBoundary>

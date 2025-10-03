@@ -7,7 +7,6 @@ import { Product } from '@/lib/types';
 import { logger } from '@/lib/utils/performance';
 import { createSessionClient } from '@/lib/graphql-client';
 import { Loader2 } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
 import { gql } from 'graphql-request';
 
 const LOAD_MORE_CATEGORY_PRODUCTS = gql`
@@ -44,15 +43,15 @@ interface CategoryFiltersWrapperProps {
   initialProducts: Product[];
   categoryName?: string;
   totalCount?: number;
+  categorySlug: string;
 }
 
 export default function CategoryFiltersWrapper({ 
   initialProducts, 
   categoryName, 
-  totalCount 
+  totalCount,
+  categorySlug
 }: CategoryFiltersWrapperProps) {
-  const searchParams = useSearchParams();
-  const categorySlug = searchParams.get('slug') || '';
 
   const [allProducts, setAllProducts] = useState<Product[]>(initialProducts);
   const [endCursor, setEndCursor] = useState<string | null>(null);

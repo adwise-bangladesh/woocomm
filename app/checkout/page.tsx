@@ -37,8 +37,19 @@ export default function CheckoutPage() {
     return formData.deliveryZone === 'dhaka' ? 80 : 130;
   };
 
-  const getDeliveryTime = () => {
-    return '1-3 days';
+  const getDeliveryTime = (stockStatus?: string) => {
+    if (!stockStatus) return '1-3 days';
+    
+    switch (stockStatus) {
+      case 'IN_STOCK':
+        return '1-3 days';
+      case 'ON_BACKORDER':
+        return '3-5 days';
+      case 'OUT_OF_STOCK':
+        return '10-15 days';
+      default:
+        return '1-3 days';
+    }
   };
 
   const updateQuantity = (itemKey: string, newQuantity: number) => {
@@ -143,10 +154,12 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-2 py-3">
+      <div className="lg:container lg:mx-auto px-2 py-2 lg:py-4">
         <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
+          <h1 className="text-xl font-bold text-gray-900 mb-3 px-1">Checkout</h1>
+          
           {/* Customer Information Card */}
-          <div className="bg-white rounded-[5px] p-3 mb-2">
+          <div className="bg-white rounded-[5px] p-4 mb-2 shadow-sm">
             <h2 className="text-base font-semibold text-gray-900 mb-3">Customer Information</h2>
             
             <div className="space-y-3">
@@ -218,28 +231,28 @@ export default function CheckoutPage() {
           </div>
 
           {/* Payment Method Card */}
-          <div className="bg-white rounded-[5px] p-3 mb-2">
+          <div className="bg-white rounded-[5px] p-4 mb-2 shadow-sm">
             <h3 className="text-base font-semibold text-gray-900 mb-3">Payment Method</h3>
             <div className="space-y-2">
-              <label className="flex items-center p-3 border border-gray-200 rounded cursor-pointer hover:border-gray-300">
+              <label className="flex items-center p-3 border-2 border-teal-500 bg-teal-50 rounded-[5px] cursor-pointer">
                 <input
                   type="radio"
                   name="paymentMethod"
                   value="cod"
                   checked={formData.paymentMethod === 'cod'}
                   onChange={handleInputChange}
-                  className="w-4 h-4 mr-2"
+                  className="w-4 h-4 mr-3 text-teal-600"
                 />
                 <span className="text-sm font-medium text-gray-900">Cash on Delivery</span>
               </label>
               
-              <label className="flex items-center p-3 border border-gray-200 rounded cursor-not-allowed opacity-50">
+              <label className="flex items-center p-3 border border-gray-200 rounded-[5px] cursor-not-allowed opacity-50">
                 <input
                   type="radio"
                   name="paymentMethod"
                   value="bkash"
                   disabled
-                  className="w-4 h-4 mr-2"
+                  className="w-4 h-4 mr-3"
                 />
                 <span className="text-sm font-medium text-gray-500">bKash (Coming Soon)</span>
               </label>
@@ -250,80 +263,101 @@ export default function CheckoutPage() {
           <button
             type="submit"
             disabled={isLoading || localItems.length === 0}
-            className="w-full bg-gray-900 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-2"
+            className="w-full bg-teal-600 text-white px-6 py-3 rounded-[5px] text-base font-bold hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-2 shadow-sm"
           >
             {isLoading ? 'Processing Order...' : 'Place Order'}
           </button>
 
           {/* Order Summary Card */}
-          <div className="bg-white rounded-[5px] p-3">
-            <h3 className="text-base font-semibold text-gray-900 mb-3">Order Summary ({localItems.length} {localItems.length === 1 ? 'item' : 'items'})</h3>
+          <div className="bg-white rounded-[5px] p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold text-gray-900">Order Summary</h3>
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                {localItems.length} {localItems.length === 1 ? 'item' : 'items'}
+              </span>
+            </div>
 
-            <div className="space-y-3 mb-3">
-              {localItems.map((item) => (
-                <div key={item.key} className="flex gap-2 pb-3 border-b border-gray-100 last:border-0">
-                  <div className="w-16 h-16 bg-gray-100 rounded overflow-hidden flex-shrink-0">
-                    <Image
-                      src={item.product.node.image?.sourceUrl || '/placeholder.png'}
-                      alt={item.product.node.name}
-                      width={64}
-                      height={64}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium text-gray-900 line-clamp-2 mb-2">
-                      {item.product.node.name}
-                    </h4>
-                    
-                    {/* Quantity Controls */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => updateQuantity(item.key, item.quantity - 1)}
-                          className="w-6 h-6 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-100"
-                        >
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <span className="text-sm font-medium text-gray-900 w-8 text-center">{item.quantity}</span>
-                        <button
-                          type="button"
-                          onClick={() => updateQuantity(item.key, item.quantity + 1)}
-                          className="w-6 h-6 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-100"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
+            <div className="space-y-3 mb-4">
+              {localItems.map((item) => {
+                // Default to 1-3 days for in-stock items
+                // You can extend cart items to include stock status if needed
+                const deliveryTime = '1-3 days';
+                
+                return (
+                  <div key={item.key} className="flex gap-3 pb-3 border-b border-gray-100 last:border-0">
+                    <div className="w-20 h-20 bg-gray-100 rounded-[5px] overflow-hidden flex-shrink-0">
+                      <Image
+                        src={item.product.node.image?.sourceUrl || '/placeholder.png'}
+                        alt={item.product.node.name}
+                        width={80}
+                        height={80}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
+                        {item.product.node.name}
+                      </h4>
+                      
+                      {/* Delivery Time Badge */}
+                      <div className="flex items-center gap-1 mb-2">
+                        <Clock className="w-3 h-3 text-teal-600" />
+                        <span className="text-xs text-teal-600 font-medium">{deliveryTime}</span>
                       </div>
                       
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-gray-900">{formatPrice(item.total)}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeItem(item.key)}
-                          className="text-red-600 hover:text-red-700 p-1"
-                          title="Remove item"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      {/* Quantity Controls & Price */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.key, item.quantity - 1)}
+                            className="w-7 h-7 flex items-center justify-center border border-gray-300 rounded-[5px] hover:bg-gray-50 transition-colors"
+                          >
+                            <Minus className="w-3.5 h-3.5 text-gray-600" />
+                          </button>
+                          <span className="text-sm font-semibold text-gray-900 w-8 text-center">{item.quantity}</span>
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.key, item.quantity + 1)}
+                            className="w-7 h-7 flex items-center justify-center border border-gray-300 rounded-[5px] hover:bg-gray-50 transition-colors"
+                          >
+                            <Plus className="w-3.5 h-3.5 text-gray-600" />
+                          </button>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <span className="text-base font-bold text-red-600">{formatPrice(item.total)}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeItem(item.key)}
+                            className="text-red-600 hover:text-red-700 p-1 hover:bg-red-50 rounded transition-colors"
+                            title="Remove item"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            <div className="space-y-2 pt-3 border-t border-gray-200">
-              <div className="flex justify-between text-sm">
+            {/* Price Breakdown */}
+            <div className="space-y-2 pt-3 border-t-2 border-gray-200">
+              <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-600">Subtotal</span>
-                <span className="text-gray-900">{formatPrice(total)}</span>
+                <span className="font-medium text-gray-900">{formatPrice(total)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Delivery Charge</span>
-                <span className="text-gray-900">Tk {getDeliveryCharge()}</span>
+              <div className="flex justify-between items-center text-sm">
+                <div className="flex items-center gap-1">
+                  <Truck className="w-3.5 h-3.5 text-gray-500" />
+                  <span className="text-gray-600">Delivery Charge</span>
+                </div>
+                <span className="font-medium text-gray-900">Tk {getDeliveryCharge()}</span>
               </div>
-              <div className="flex justify-between text-base font-bold text-gray-900 pt-2 border-t">
-                <span>Total</span>
+              <div className="flex justify-between items-center text-lg font-bold pt-2 border-t border-gray-200">
+                <span className="text-gray-900">Total</span>
                 <span className="text-red-600">Tk {parseInt(total?.replace(/[^0-9]/g, '') || '0') + getDeliveryCharge()}</span>
               </div>
             </div>

@@ -30,11 +30,54 @@ export default function CheckoutPage() {
   const [showBlockedModal, setShowBlockedModal] = useState(false);
   const [blockedReason, setBlockedReason] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationResult, setVerificationResult] = useState<{ allowed: boolean; reason: string } | null>(null);
+  const [verificationError, setVerificationError] = useState('');
 
   // Sync localItems with items from store
   useEffect(() => {
     setLocalItems(items);
   }, [items]);
+
+  // Auto-verify customer when phone number is entered (with debounce)
+  useEffect(() => {
+    const verifyPhone = async () => {
+      const phoneError = validatePhone(formData.phone);
+      
+      // Only verify if phone is valid
+      if (!phoneError && formData.phone) {
+        const formattedPhone = formatPhoneNumber(formData.phone);
+        
+        setIsVerifying(true);
+        setVerificationError('');
+        
+        try {
+          const result = await verifyCustomerHistory(formattedPhone);
+          setVerificationResult(result);
+          
+          if (!result.allowed) {
+            setVerificationError(result.reason);
+          }
+        } catch (error) {
+          console.error('Verification error:', error);
+          setVerificationResult({ allowed: true, reason: 'Verification unavailable' });
+        } finally {
+          setIsVerifying(false);
+        }
+      } else {
+        setVerificationResult(null);
+        setVerificationError('');
+      }
+    };
+
+    // Debounce verification (wait 1 second after user stops typing)
+    const timeoutId = setTimeout(() => {
+      if (formData.phone.length >= 10) {
+        verifyPhone();
+      }
+    }, 1000);
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.phone]);
 
   const formatPrice = (price: string | null | undefined) => {
     if (!price) return 'Tk 0';
@@ -193,24 +236,32 @@ export default function CheckoutPage() {
 
     const formattedPhone = formatPhoneNumber(formData.phone);
 
+    // Check if customer is already verified and blocked
+    if (verificationResult && !verificationResult.allowed) {
+      setBlockedReason(verificationResult.reason);
+      setShowBlockedModal(true);
+      return;
+    }
+
     setIsLoading(true);
-    setIsVerifying(true);
 
     try {
-      // Step 1: Verify customer history via courier API
-      const verificationResult = await verifyCustomerHistory(formattedPhone);
-      
-      setIsVerifying(false);
-      
-      // If customer is blocked, show modal and stop
-      if (!verificationResult.allowed) {
-        setIsLoading(false);
-        setBlockedReason(verificationResult.reason);
-        setShowBlockedModal(true);
-        return;
+      // If not already verified, verify now
+      if (!verificationResult) {
+        setIsVerifying(true);
+        const result = await verifyCustomerHistory(formattedPhone);
+        setIsVerifying(false);
+        
+        // If customer is blocked, show modal and stop
+        if (!result.allowed) {
+          setIsLoading(false);
+          setBlockedReason(result.reason);
+          setShowBlockedModal(true);
+          return;
+        }
       }
       
-      // Step 2: Proceed with order placement
+      // Proceed with order placement
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       const orderNumber = Math.random().toString(36).substr(2, 9).toUpperCase();
@@ -314,11 +365,34 @@ export default function CheckoutPage() {
                   required
                   value={formData.phone}
                   onChange={handleInputChange}
-                  className={`w-full px-3 py-2 text-sm text-gray-900 border ${errors.phone ? 'border-red-500' : 'border-gray-200'} rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent placeholder:text-gray-500`}
+                  className={`w-full px-3 py-2 text-sm text-gray-900 border ${
+                    errors.phone ? 'border-red-500' : 
+                    verificationError ? 'border-red-500' :
+                    verificationResult?.allowed ? 'border-green-500' :
+                    'border-gray-200'
+                  } rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent placeholder:text-gray-500`}
                   placeholder="01XXXXXXXXX"
                 />
                 {errors.phone && (
                   <p className="text-xs text-red-600 mt-1">{errors.phone}</p>
+                )}
+                {isVerifying && formData.phone.length >= 10 && (
+                  <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                    <span className="inline-block w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></span>
+                    Verifying customer...
+                  </p>
+                )}
+                {verificationResult?.allowed && !isVerifying && (
+                  <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                    <span className="inline-block">✓</span>
+                    Verified - You can place order
+                  </p>
+                )}
+                {verificationError && !isVerifying && (
+                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    {verificationError}
+                  </p>
                 )}
               </div>
 

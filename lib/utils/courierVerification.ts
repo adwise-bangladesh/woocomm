@@ -117,7 +117,7 @@ function canPlaceOrder(totals: OrderTotals, successRate: number): VerificationRe
     } else {
       return { 
         allowed: false, 
-        reason: `Your success rate is ${successRate.toFixed(1)}%. We require at least 30% for customers with 1-3 orders. Please contact support if you believe this is an error.`,
+        reason: `Your current success rate is ${successRate.toFixed(1)}%. A minimum success rate of 30% is required. Due to multiple order cancellations, we are unable to process your order at this time.`,
         totals,
         successRate
       };
@@ -136,7 +136,7 @@ function canPlaceOrder(totals: OrderTotals, successRate: number): VerificationRe
     } else {
       return { 
         allowed: false, 
-        reason: `Your success rate is ${successRate.toFixed(1)}%. We require at least 50% for customers with 4+ orders. Due to repeated order cancellations, we cannot process your order at this time.`,
+        reason: `Your current success rate is ${successRate.toFixed(1)}%. A minimum success rate of 50% is required. Due to multiple order cancellations, we are unable to process your order at this time.`,
         totals,
         successRate
       };

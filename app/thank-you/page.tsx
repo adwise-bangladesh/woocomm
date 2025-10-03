@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle, Package, MapPin, Phone, Calendar, CreditCard } from 'lucide-react';
+import { CheckCircle, Package, MapPin, Phone, CreditCard } from 'lucide-react';
 import { Suspense } from 'react';
 
 function ThankYouContent() {
@@ -39,8 +39,8 @@ function ThankYouContent() {
             </div>
             <div className="absolute inset-0 w-24 h-24 bg-green-200 rounded-full animate-ping opacity-20"></div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Order Placed Successfully!</h1>
-          <p className="text-gray-600">Thank you for your purchase, {customerName}</p>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Order Placed !</h2>
+          <p className="text-gray-600">We'll call you to confirm your order</p>
         </div>
 
         {/* Order Details Card */}
@@ -51,8 +51,8 @@ function ThankYouContent() {
                 <p className="text-sm text-gray-500 mb-1">Order Number</p>
                 <p className="text-xl font-bold text-gray-900">#{orderNumber}</p>
               </div>
-              <div className="bg-green-100 text-green-700 px-4 py-2 rounded-[5px] text-sm font-semibold">
-                Confirmed
+              <div className="bg-gray-100 text-gray-700 px-4 py-2 rounded-[5px] text-sm font-semibold">
+                Pending
               </div>
             </div>
           </div>
@@ -93,15 +93,6 @@ function ThankYouContent() {
                 <p className="text-base font-medium text-gray-900">Cash on Delivery</p>
               </div>
             </div>
-
-            {/* Expected Delivery */}
-            <div className="flex items-start gap-3">
-              <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
-              <div>
-                <p className="text-sm text-gray-500">Expected Delivery</p>
-                <p className="text-base font-medium text-gray-900">1-3 Business Days</p>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -124,37 +115,11 @@ function ThankYouContent() {
           </div>
         </div>
 
-        {/* Important Note */}
-        <div className="bg-orange-50 border border-orange-200 rounded-[5px] p-4 mb-4">
-          <p className="text-sm text-orange-900 font-medium mb-2">📦 What&apos;s Next?</p>
-          <ul className="text-sm text-orange-800 space-y-1">
-            <li>• We&apos;ll call you to confirm your order</li>
-            <li>• Your order will be shipped within 24 hours</li>
-            <li>• Please keep your phone reachable</li>
-            <li>• Payment will be collected on delivery</li>
-          </ul>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-3">
-          <Link
-            href="/"
-            className="block text-center bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-[5px] font-semibold hover:bg-gray-50 transition-colors"
-          >
-            Continue Shopping
-          </Link>
-          <a
-            href="tel:01926644575"
-            className="block text-center bg-teal-600 text-white px-6 py-3 rounded-[5px] font-semibold hover:bg-teal-700 transition-colors"
-          >
-            Contact Support
-          </a>
-        </div>
 
         {/* Order Number Reminder */}
         <div className="text-center mt-6">
           <p className="text-sm text-gray-500">
-            Please save your order number: <span className="font-semibold text-gray-900">#{orderNumber}</span>
+           Thank you for your purchase
           </p>
         </div>
       </div>

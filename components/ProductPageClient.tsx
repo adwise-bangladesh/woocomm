@@ -165,34 +165,34 @@ export default function ProductPageClient({
                   {isInStock ? (
                     <>
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-green-600 font-semibold">In Stock</span>
+                      <span className="text-green-600 font-semibold">Stock Available</span>
                     </>
                   ) : isBackordersAllowed ? (
                     <>
-                      <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                      <span className="text-yellow-600 font-semibold">Pre-Order (Imported)</span>
+                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                      <span className="text-orange-600 font-semibold">Stock Available</span>
                     </>
                   ) : (
                     <>
-                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                      <span className="text-orange-600 font-semibold">Out of Stock</span>
+                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                      <span className="text-red-600 font-semibold">Pre-Order Available</span>
                     </>
                   )}
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Clock className={`w-3.5 h-3.5 ${
                     isInStock ? 'text-green-600' : 
-                    isBackordersAllowed ? 'text-yellow-600' : 
-                    'text-orange-600'
+                    isBackordersAllowed ? 'text-orange-600' : 
+                    'text-red-600'
                   }`} />
                   <span className={`text-xs font-medium ${
                     isInStock ? 'text-green-600' : 
-                    isBackordersAllowed ? 'text-yellow-600' : 
-                    'text-orange-600'
+                    isBackordersAllowed ? 'text-orange-600' : 
+                    'text-red-600'
                   }`}>
                     {isInStock ? 'Fast Delivery (1-3 days)' : 
                      isBackordersAllowed ? 'Regular Delivery (3-5 days)' : 
-                     'Pre Order (10-15 days)'}
+                     'Global Delivery (10-15 days)'}
                   </span>
                 </div>
               </div>

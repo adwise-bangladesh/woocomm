@@ -106,9 +106,9 @@ export default function CheckoutPage() {
       case 'IN_STOCK':
         return { text: 'Fast Delivery (1-3 days)', color: 'text-green-600' };
       case 'ON_BACKORDER':
-        return { text: 'Regular Delivery (3-5 days)', color: 'text-yellow-600' };
+        return { text: 'Regular Delivery (3-5 days)', color: 'text-orange-600' };
       case 'OUT_OF_STOCK':
-        return { text: 'Pre Order (10-15 days)', color: 'text-orange-600' };
+        return { text: 'Global Delivery (10-15 days)', color: 'text-red-600' };
       default:
         return { text: 'Fast Delivery (1-3 days)', color: 'text-green-600' };
     }
@@ -426,8 +426,8 @@ export default function CheckoutPage() {
                         <div className="flex items-center gap-1 mb-3">
                           <div className={`w-1.5 h-1.5 rounded-full ${
                             stockStatus === 'IN_STOCK' ? 'bg-green-500' : 
-                            stockStatus === 'ON_BACKORDER' ? 'bg-yellow-500' : 
-                            'bg-orange-500'
+                            stockStatus === 'ON_BACKORDER' ? 'bg-orange-500' : 
+                            'bg-red-500'
                           }`}></div>
                           <Clock className={`w-3 h-3 ${deliveryInfo.color}`} />
                           <span className={`text-xs ${deliveryInfo.color} font-medium`}>{deliveryInfo.text}</span>

@@ -13,6 +13,7 @@ export interface FilterState {
   inStock: boolean | null;
   onSale: boolean | null;
   rating: number | null;
+  
 }
 
 const sortOptions = [

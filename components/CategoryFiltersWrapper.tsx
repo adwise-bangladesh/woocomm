@@ -226,7 +226,7 @@ export default function CategoryFiltersWrapper({
                 {categoryName}
               </h1>
               <span className="text-sm text-gray-500 font-medium">
-                {totalCount || allProducts.length} items
+                {totalCount} items
               </span>
             </div>
           </div>

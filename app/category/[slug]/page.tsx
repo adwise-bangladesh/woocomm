@@ -36,8 +36,8 @@ export async function generateMetadata({
   };
 }
 
-const GET_CATEGORY_AND_PRODUCTS = gql`
-  query GetCategoryAndProducts($slug: [String], $first: Int = 30) {
+const GET_CATEGORY = gql`
+  query GetCategory($slug: [String]) {
     productCategories(where: { slug: $slug }) {
       nodes {
         id
@@ -46,28 +46,37 @@ const GET_CATEGORY_AND_PRODUCTS = gql`
         slug
         description
         count
-        products(first: $first) {
-          pageInfo {
-            endCursor
-            hasNextPage
-          }
-          nodes {
-            id
-            name  
-            slug
-            image {
-              sourceUrl
-              altText
-            }
-            ... on ProductWithPricing {
-              price
-              regularPrice
-              salePrice
-            }
-            ... on InventoriedProduct {
-              stockStatus
-            }
-          }
+      }
+    }
+  }
+`;
+
+const GET_PRODUCTS_BY_CATEGORY = gql`
+  query GetProductsByCategory($categorySlug: String!, $first: Int = 30, $after: String) {
+    products(
+      first: $first
+      after: $after
+      where: { category: $categorySlug }
+    ) {
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
+      nodes {
+        id
+        name  
+        slug
+        image {
+          sourceUrl
+          altText
+        }
+        ... on ProductWithPricing {
+          price
+          regularPrice
+          salePrice
+        }
+        ... on InventoriedProduct {
+          stockStatus
         }
       }
     }
@@ -84,10 +93,9 @@ async function getCategoryData(slug: string) {
   try {
     serverLogger.debug('Fetching category data from API', { slug });
     
-    // Fetch category and products in a single nested query
-    const data = await graphqlClient.request(GET_CATEGORY_AND_PRODUCTS, { 
-      slug: [slug],
-      first: 30
+    // First, fetch category info
+    const categoryData = await graphqlClient.request(GET_CATEGORY, { 
+      slug: [slug]
     }) as {
       productCategories: {
         nodes: Array<{
@@ -97,25 +105,32 @@ async function getCategoryData(slug: string) {
           slug: string;
           description?: string;
           count: number;
-          products: {
-            pageInfo: { endCursor: string | null; hasNextPage: boolean };
-            nodes: Product[];
-          };
         }>;
       };
     };
     
     // Validate category exists
-    const category = data.productCategories?.nodes?.[0];
+    const category = categoryData.productCategories?.nodes?.[0];
     if (!category) {
       serverLogger.warn('Category not found in GraphQL response', { slug });
       return null;
     }
     
+    // Now fetch products filtered by category slug
+    const productsData = await graphqlClient.request(GET_PRODUCTS_BY_CATEGORY, {
+      categorySlug: slug,
+      first: 30
+    }) as {
+      products: {
+        pageInfo: { endCursor: string | null; hasNextPage: boolean };
+        nodes: Product[];
+      };
+    };
+    
     serverLogger.debug('Category data loaded successfully', { 
       slug, 
       categoryId: category.databaseId,
-      productsCount: category.products?.nodes?.length || 0
+      productsCount: productsData.products?.nodes?.length || 0
     });
     
     return {
@@ -127,8 +142,8 @@ async function getCategoryData(slug: string) {
         description: category.description,
         count: category.count,
       },
-      products: category.products?.nodes || [],
-      pageInfo: category.products?.pageInfo || { endCursor: null, hasNextPage: false },
+      products: productsData.products?.nodes || [],
+      pageInfo: productsData.products?.pageInfo || { endCursor: null, hasNextPage: false },
     };
   } catch (error) {
     serverLogger.error('Error fetching category data', { 

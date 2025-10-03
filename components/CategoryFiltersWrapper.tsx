@@ -30,21 +30,21 @@ export default function CategoryFiltersWrapper({ initialProducts }: CategoryFilt
     setFilters(newFilters);
   }, []);
 
-  // Memoize helper functions to prevent recalculation
-  const getProductRating = useCallback((product: Product): number => {
+  // Helper functions (don't need useCallback since not passed as props)
+  const getProductRating = (product: Product): number => {
     const productIdHash = product.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return parseFloat((4.2 + ((productIdHash % 80) / 100)).toFixed(1));
-  }, []);
+  };
 
-  const extractPrice = useCallback((priceString: string | null | undefined): number => {
+  const extractPrice = (priceString: string | null | undefined): number => {
     if (!priceString) return 0;
     return parseFloat(priceString.replace(/[^0-9.]/g, '')) || 0;
-  }, []);
+  };
 
-  const checkIfOnSale = useCallback((product: Product): boolean => {
+  const checkIfOnSale = (product: Product): boolean => {
     return !!(product.salePrice && product.regularPrice && 
       extractPrice(product.salePrice) < extractPrice(product.regularPrice));
-  }, [extractPrice]);
+  };
 
   // Filter and sort products
   const filteredAndSortedProducts = useMemo(() => {

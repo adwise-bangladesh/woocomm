@@ -36,7 +36,6 @@ const priceRanges = [
 const ratingOptions = [5, 4, 3, 2, 1];
 
 export default function CategoryFilters({ onSortChange, onFilterChange }: CategoryFiltersProps) {
-  const [sortBy, setSortBy] = useState('default');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     priceRange: [0, 999999],
@@ -46,7 +45,6 @@ export default function CategoryFilters({ onSortChange, onFilterChange }: Catego
   });
 
   const handleSortChange = (value: string) => {
-    setSortBy(value);
     onSortChange(value);
   };
 
@@ -96,7 +94,6 @@ export default function CategoryFilters({ onSortChange, onFilterChange }: Catego
           <div className="flex-1 max-w-xs">
             <div className="relative">
               <select
-                value={sortBy}
                 onChange={(e) => handleSortChange(e.target.value)}
                 className="w-full appearance-none bg-gray-100 hover:bg-gray-200 border-0 rounded-lg px-4 py-2 pr-10 text-sm font-medium cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
               >

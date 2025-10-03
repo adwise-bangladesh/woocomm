@@ -84,7 +84,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* Reviews */}
         <div className="flex items-center gap-1">
-          <div className="relative flex items-center">
+          <div className="flex items-center relative">
             {/* Background stars (empty) */}
             <div className="flex text-gray-300">
               {[...Array(5)].map((_, i) => (

@@ -5,6 +5,7 @@ import { Product } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import { validateSlug } from '@/lib/utils/sanitizer';
 import { logger } from '@/lib/utils/performance';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export const revalidate = 300; // 5 minutes, consistent with homepage
 
@@ -99,7 +100,9 @@ export default async function CategoryPage({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Filters & Sort - Sticky under header */}
-      <CategoryFiltersWrapper initialProducts={products} />
+      <ErrorBoundary>
+        <CategoryFiltersWrapper initialProducts={products} />
+      </ErrorBoundary>
     </div>
   );
 }

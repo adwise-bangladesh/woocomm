@@ -308,11 +308,14 @@ export default function CheckoutPage() {
       };
       localStorage.setItem('customerInfo', JSON.stringify(customerInfo));
       
-      clearCart();
-      
-      // Redirect to thank you page with order details
+      // Redirect to thank you page with order details (clear cart after navigation)
       const thankYouUrl = `/thank-you?orderNumber=${orderNumber}&name=${encodeURIComponent(formData.fullName)}&phone=${formattedPhone}&address=${encodeURIComponent(formData.address)}&total=${totalAmount.toFixed(0)}&delivery=${deliveryCharge}&items=${localItems.length}`;
       router.push(thankYouUrl);
+      
+      // Clear cart after a small delay to avoid showing empty state
+      setTimeout(() => {
+        clearCart();
+      }, 100);
     } catch (error) {
       console.error('Checkout error:', error);
       alert('Failed to complete checkout. Please try again.');

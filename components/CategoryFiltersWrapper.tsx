@@ -9,40 +9,40 @@ import { createSessionClient } from '@/lib/graphql-client';
 import { Loader2 } from 'lucide-react';
 import { gql } from 'graphql-request';
 
-const LOAD_MORE_CATEGORY_PRODUCTS = gql`
-  query LoadMoreCategoryProducts($categoryId: Int!, $first: Int = 20, $after: String) {
-    products(
-      first: $first
-      after: $after
-      where: { 
-        categoryId: $categoryId
-        orderby: { field: DATE, order: DESC }
-      }
-    ) {
-      pageInfo {
-        endCursor
-        hasNextPage
-      }
-      nodes {
-        id
-        name
-        slug
-        image {
-          sourceUrl
-          altText
+  const LOAD_MORE_CATEGORY_PRODUCTS = gql`
+    query LoadMoreCategoryProducts($slug: String!, $first: Int = 20, $after: String) {
+      products(
+        first: $first
+        after: $after
+        where: { 
+          category: $slug
+          orderby: { field: DATE, order: DESC }
         }
-        ... on ProductWithPricing {
-          price
-          regularPrice
-          salePrice
+      ) {
+        pageInfo {
+          endCursor
+          hasNextPage
         }
-        ... on InventoriedProduct {
-          stockStatus
+        nodes {
+          id
+          name
+          slug
+          image {
+            sourceUrl
+            altText
+          }
+          ... on ProductWithPricing {
+            price
+            regularPrice
+            salePrice
+          }
+          ... on InventoriedProduct {
+            stockStatus
+          }
         }
       }
     }
-  }
-`;
+  `;
 
 interface CategoryFiltersWrapperProps {
   initialProducts: Product[];
@@ -96,11 +96,11 @@ export default function CategoryFiltersWrapper({
     setLastLoadTime(now);
     
     try {
-      console.log('🔍 Loading more products for:', categorySlug, 'with database ID:', categoryDatabaseId);
+      console.log('🔍 Loading more products for:', categorySlug);
       
       const client = createSessionClient();
       const data = await client.request(LOAD_MORE_CATEGORY_PRODUCTS, {
-        categoryId: categoryDatabaseId,
+        slug: categorySlug,
         first: 20,
         after: endCursor,
       }) as {
@@ -124,7 +124,7 @@ export default function CategoryFiltersWrapper({
     } finally {
       setIsLoadingMore(false);
     }
-  }, [isLoadingMore, hasNextPage, categorySlug, categoryDatabaseId, endCursor, lastLoadTime]);
+  }, [isLoadingMore, hasNextPage, categorySlug, endCursor, lastLoadTime]);
 
   // Infinite scroll effect
   useEffect(() => {

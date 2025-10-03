@@ -21,6 +21,7 @@ export default function CheckoutPage() {
     deliveryZone: 'outside', // Default to outside Dhaka
     paymentMethod: 'cod',
   });
+  const [isFormLoaded, setIsFormLoaded] = useState(false);
   
   const [errors, setErrors] = useState({
     fullName: '',
@@ -32,6 +33,26 @@ export default function CheckoutPage() {
   const [blockedReason, setBlockedReason] = useState('');
   const [verificationResult, setVerificationResult] = useState<{ allowed: boolean; reason: string } | null>(null);
 
+  // Load saved customer info from localStorage on mount
+  useEffect(() => {
+    const savedCustomerInfo = localStorage.getItem('customerInfo');
+    if (savedCustomerInfo) {
+      try {
+        const parsedInfo = JSON.parse(savedCustomerInfo);
+        setFormData((prev) => ({
+          ...prev,
+          fullName: parsedInfo.fullName || '',
+          phone: parsedInfo.phone || '',
+          address: parsedInfo.address || '',
+          deliveryZone: parsedInfo.deliveryZone || 'outside',
+        }));
+      } catch (error) {
+        console.error('Error loading saved customer info:', error);
+      }
+    }
+    setIsFormLoaded(true);
+  }, []);
+
   // Sync localItems with items from store
   useEffect(() => {
     setLocalItems(items);
@@ -39,6 +60,9 @@ export default function CheckoutPage() {
 
   // Auto-verify customer when phone number is entered (with debounce)
   useEffect(() => {
+    // Skip verification on initial load when form is being populated from localStorage
+    if (!isFormLoaded) return;
+
     const verifyPhone = async () => {
       const phoneError = validatePhone(formData.phone);
       
@@ -66,7 +90,7 @@ export default function CheckoutPage() {
     }, 1000);
 
     return () => clearTimeout(timeoutId);
-  }, [formData.phone]);
+  }, [formData.phone, isFormLoaded]);
 
   const formatPrice = (price: string | null | undefined) => {
     if (!price) return 'Tk 0';
@@ -274,6 +298,15 @@ export default function CheckoutPage() {
       }, 0);
       
       const totalAmount = subtotalAmount + deliveryCharge;
+      
+      // Save customer info to localStorage for future orders
+      const customerInfo = {
+        fullName: formData.fullName,
+        phone: formattedPhone,
+        address: formData.address,
+        deliveryZone: formData.deliveryZone,
+      };
+      localStorage.setItem('customerInfo', JSON.stringify(customerInfo));
       
       clearCart();
       

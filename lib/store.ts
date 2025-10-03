@@ -67,6 +67,7 @@ export const useCartStore = create<CartState>()(
           subtotal: '0',
           total: '0',
           isEmpty: true,
+          sessionToken: null, // Clear session token to start fresh
         }),
     }),
     {

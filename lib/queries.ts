@@ -80,27 +80,6 @@ export const GET_SLIDER_IMAGES = gql`
   }
 `;
 
-// Alternative: Query for ACF options page slider (if using ACF Options)
-export const GET_SLIDER_FROM_OPTIONS = gql`
-  query GetSliderFromOptions {
-    acfOptionsHomepage {
-      homepage {
-        heroSlider {
-          image {
-            node {
-              sourceUrl
-              altText
-            }
-          }
-          title
-          subtitle
-          link
-          buttonText
-        }
-      }
-    }
-  }
-`;
 
 // Alternative: Query for Page with ACF slider fields
 export const GET_HOMEPAGE_SLIDER = gql`
@@ -162,34 +141,6 @@ export const GET_PRODUCTS = gql`
   }
 `;
 
-// Query to get popular products (by sales/popularity)
-export const GET_POPULAR_PRODUCTS = gql`
-  query GetPopularProducts($first: Int!) {
-    products(
-      first: $first
-      where: { orderby: { field: POPULARITY, order: DESC } }
-    ) {
-      nodes {
-        id
-        name
-        slug
-        featured
-        image {
-          sourceUrl
-          altText
-        }
-        ... on ProductWithPricing {
-          price
-          regularPrice
-          salePrice
-        }
-        ... on InventoriedProduct {
-          stockStatus
-        }
-      }
-    }
-  }
-`;
 
 // Simpler products query without inline fragments (use if above fails)
 export const GET_PRODUCTS_SIMPLE = gql`

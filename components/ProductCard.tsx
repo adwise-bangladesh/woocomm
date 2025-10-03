@@ -35,7 +35,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     <Link
       href={`/product/${product.slug}`}
       className="group block bg-white hover:shadow-md transition-shadow overflow-hidden relative"
-      prefetch={true}
+      prefetch={false}
     >
       {/* Discount Badge */}
       {discount && (
@@ -84,30 +84,22 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* Reviews */}
         <div className="flex items-center gap-1">
-          <div className="flex items-center relative">
-            {[...Array(5)].map((_, i) => {
-              const fillPercentage = Math.min(Math.max(rating - i, 0), 1) * 100;
-              
-              return (
-                <div key={i} className="relative w-4 h-4">
-                  {/* Background star (empty) */}
-                  <Star className="w-4 h-4 text-gray-300 absolute" />
-                  {/* Foreground star (filled) with clip-path */}
-                  {fillPercentage > 0 && (
-                    <div 
-                      style={{ 
-                        clipPath: `inset(0 ${100 - fillPercentage}% 0 0)`,
-                        position: 'absolute',
-                        width: '100%',
-                        height: '100%'
-                      }}
-                    >
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          <div className="relative flex items-center">
+            {/* Background stars (empty) */}
+            <div className="flex text-gray-300">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-4 h-4" />
+              ))}
+            </div>
+            {/* Foreground stars (filled) with gradient */}
+            <div 
+              className="absolute top-0 left-0 flex overflow-hidden text-yellow-400"
+              style={{ width: `${(rating / 5) * 100}%` }}
+            >
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-4 h-4 fill-current" />
+              ))}
+            </div>
           </div>
           <span className="text-xs text-gray-600">
             {rating} ({reviewCount})

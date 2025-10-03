@@ -1,5 +1,5 @@
 import { graphqlClient } from '@/lib/graphql-client';
-import { GET_PRODUCTS, GET_CATEGORIES, GET_SLIDER_IMAGES, GET_POPULAR_PRODUCTS } from '@/lib/queries';
+import { GET_PRODUCTS, GET_CATEGORIES, GET_SLIDER_IMAGES } from '@/lib/queries';
 import HeroSlider from '@/components/HeroSlider';
 import QuickLinks from '@/components/QuickLinks';
 import CircularCategories from '@/components/CircularCategories';
@@ -28,7 +28,7 @@ export const revalidate = 300; // ISR: Revalidate every 5 minutes (optimized for
 async function getHomePageData() {
   try {
     // Fetch all data in parallel for better performance
-    const [categoriesData, sliderData, popularData, productsData] = await Promise.all([
+    const [categoriesData, sliderData, productsData] = await Promise.all([
       graphqlClient.request(GET_CATEGORIES).catch(() => ({ 
         productCategories: { nodes: [] } 
       })) as Promise<CategoriesResponse>,
@@ -36,10 +36,6 @@ async function getHomePageData() {
       graphqlClient.request(GET_SLIDER_IMAGES).catch(() => ({ 
         sliders: { nodes: [] } 
       })) as Promise<SliderResponse>,
-      
-      graphqlClient.request(GET_POPULAR_PRODUCTS, { first: 12 }).catch(() => ({ 
-        products: { nodes: [] } 
-      })) as Promise<{ products: { nodes: Product[] } }>,
       
       graphqlClient.request(GET_PRODUCTS, { first: 30, after: null }).catch((error) => {
         if (process.env.NODE_ENV === 'development') {
@@ -54,45 +50,14 @@ async function getHomePageData() {
       }) as Promise<ProductsData>,
     ]);
 
-    // Get all products
+    // Get all products and sort efficiently
     const allProducts = productsData.products?.nodes || [];
-    const popularProductsList = popularData.products?.nodes || [];
     
-    // Optimized sorting: Use Set for O(1) lookups
-    const usedIds = new Set<string>();
-    const sortedProducts: Product[] = [];
-    
-    // 1. Add first 8 as recent
-    const recentCount = Math.min(8, allProducts.length);
-    for (let i = 0; i < recentCount; i++) {
-      sortedProducts.push(allProducts[i]);
-      usedIds.add(allProducts[i].id);
-    }
-    
-    // 2. Add featured products (excluding recent)
-    for (const product of allProducts) {
-      if (product.featured && !usedIds.has(product.id)) {
-        sortedProducts.push(product);
-        usedIds.add(product.id);
-      }
-    }
-    
-    // 3. Add popular products (excluding recent and featured)
-    const popularCount = Math.min(12, popularProductsList.length);
-    for (let i = 0; i < popularCount; i++) {
-      const product = popularProductsList[i];
-      if (!usedIds.has(product.id)) {
-        sortedProducts.push(product);
-        usedIds.add(product.id);
-      }
-    }
-    
-    // 4. Add remaining products
-    for (const product of allProducts) {
-      if (!usedIds.has(product.id)) {
-        sortedProducts.push(product);
-      }
-    }
+    // Simple sorting: featured products first, then rest (O(n))
+    const sortedProducts = [
+      ...allProducts.filter(p => p.featured),
+      ...allProducts.filter(p => !p.featured),
+    ];
 
     return {
       products: sortedProducts,

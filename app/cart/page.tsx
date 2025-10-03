@@ -9,12 +9,19 @@ import { CartItem } from '@/lib/types';
 
 export default function CartPage() {
   const { items, isEmpty, clearCart, setCart } = useCartStore();
-  const [localItems, setLocalItems] = useState(items);
+  const [localItems, setLocalItems] = useState<CartItem[]>([]);
 
   // Sync localItems with items from store
   useEffect(() => {
     setLocalItems(items);
   }, [items]);
+
+  // Initial load - ensure we have the latest cart
+  useEffect(() => {
+    if (items.length > 0 && localItems.length === 0) {
+      setLocalItems(items);
+    }
+  }, [items, localItems.length]);
 
   const formatPrice = (price: string | null | undefined) => {
     if (!price) return 'Tk 0';
@@ -88,12 +95,6 @@ export default function CartPage() {
     }
   };
 
-  const handleClearCart = () => {
-    if (confirm('Are you sure you want to clear your cart?')) {
-      clearCart();
-    }
-  };
-
   if (isEmpty || items.length === 0 || localItems.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -120,17 +121,6 @@ export default function CartPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="lg:container lg:mx-auto px-2 py-2 lg:py-4">
         <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-3 px-1">
-            <h1 className="text-xl font-bold text-gray-900">Shopping Cart</h1>
-            <button
-              onClick={handleClearCart}
-              className="text-sm text-red-600 hover:text-red-700 font-medium"
-            >
-              Clear Cart
-            </button>
-          </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
             {/* Cart Items */}
             <div className="lg:col-span-2">
@@ -185,11 +175,6 @@ export default function CartPage() {
 
                             {/* Delivery Time Badge */}
                             <div className="flex items-center gap-1 mb-3">
-                              <div className={`w-1.5 h-1.5 rounded-full ${
-                                stockStatus === 'IN_STOCK' ? 'bg-green-500' : 
-                                stockStatus === 'ON_BACKORDER' ? 'bg-orange-500' : 
-                                'bg-red-500'
-                              }`}></div>
                               <Clock className={`w-3 h-3 ${deliveryInfo.color}`} />
                               <span className={`text-xs ${deliveryInfo.color} font-medium`}>{deliveryInfo.text}</span>
                             </div>

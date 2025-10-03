@@ -424,11 +424,6 @@ export default function CheckoutPage() {
 
                         {/* Delivery Time Badge */}
                         <div className="flex items-center gap-1 mb-3">
-                          <div className={`w-1.5 h-1.5 rounded-full ${
-                            stockStatus === 'IN_STOCK' ? 'bg-green-500' : 
-                            stockStatus === 'ON_BACKORDER' ? 'bg-orange-500' : 
-                            'bg-red-500'
-                          }`}></div>
                           <Clock className={`w-3 h-3 ${deliveryInfo.color}`} />
                           <span className={`text-xs ${deliveryInfo.color} font-medium`}>{deliveryInfo.text}</span>
                         </div>

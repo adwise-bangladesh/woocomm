@@ -46,98 +46,70 @@ export default function CategoryFiltersWrapper({ initialProducts }: CategoryFilt
       extractPrice(product.salePrice) < extractPrice(product.regularPrice));
   };
 
+  // Pre-calculate expensive values to avoid recalculating in filters
+  const productsWithMetadata = useMemo(() => {
+    return initialProducts.map(product => ({
+      product,
+      price: extractPrice(product.price || product.regularPrice),
+      isOnSale: checkIfOnSale(product),
+      rating: getProductRating(product),
+      isInStock: product.stockStatus === 'IN_STOCK' || product.stockStatus === 'FAST_DELIVERY' || product.stockStatus === 'REGULAR_DELIVERY'
+    }));
+  }, [initialProducts]);
+
+
   // Filter and sort products
   const filteredAndSortedProducts = useMemo(() => {
+    let filtered = [...productsWithMetadata];
 
-    let filtered = [...initialProducts];
-
-    // Apply price filter
+    // Apply filters
     if (filters.priceRange[0] !== 0 || filters.priceRange[1] !== 999999) {
-      filtered = filtered.filter((product) => {
-        const price = extractPrice(product.price || product.regularPrice);
-        return price >= filters.priceRange[0] && price <= filters.priceRange[1];
-      });
+      filtered = filtered.filter(p => p.price >= filters.priceRange[0] && p.price <= filters.priceRange[1]);
     }
 
-    // Apply stock filter
     if (filters.inStock !== null) {
-      filtered = filtered.filter((product) => {
-        const inStock = product.stockStatus === 'IN_STOCK';
-        return filters.inStock ? inStock : !inStock;
-      });
+      filtered = filtered.filter(p => filters.inStock ? p.isInStock : !p.isInStock);
     }
 
-    // Apply sale filter
     if (filters.onSale !== null) {
-      filtered = filtered.filter((product) => {
-        const onSale = checkIfOnSale(product);
-        return filters.onSale ? onSale : !onSale;
-      });
+      filtered = filtered.filter(p => filters.onSale ? p.isOnSale : !p.isOnSale);
     }
 
-    // Apply rating filter
     if (filters.rating !== null) {
-      filtered = filtered.filter((product) => {
-        const rating = getProductRating(product);
-        return rating >= filters.rating!;
-      });
+      filtered = filtered.filter(p => p.rating >= filters.rating!);
     }
 
     // Sort products
     switch (sortBy) {
       case 'popularity':
-        // Sort by rating (popularity proxy)
-        filtered.sort((a, b) => getProductRating(b) - getProductRating(a));
-        break;
-      
       case 'rating':
-        // Sort by rating
-        filtered.sort((a, b) => getProductRating(b) - getProductRating(a));
+        filtered.sort((a, b) => b.rating - a.rating);
         break;
-      
-      case 'date':
-        // Keep original order (latest first from GraphQL)
-        break;
-      
       case 'price':
-        // Low to high
-        filtered.sort((a, b) => {
-          const priceA = extractPrice(a.price || a.regularPrice);
-          const priceB = extractPrice(b.price || b.regularPrice);
-          return priceA - priceB;
-        });
+        filtered.sort((a, b) => a.price - b.price);
         break;
-      
       case 'price-desc':
-        // High to low
-        filtered.sort((a, b) => {
-          const priceA = extractPrice(a.price || a.regularPrice);
-          const priceB = extractPrice(b.price || b.regularPrice);
-          return priceB - priceA;
-        });
+        filtered.sort((a, b) => b.price - a.price);
         break;
-      
-      default:
-        // Default - keep original order
-        break;
+      // Default and 'date' keep original order
     }
 
-    return filtered;
-  }, [initialProducts, filters, sortBy, getProductRating, extractPrice, checkIfOnSale]);
+    return filtered.map(item => item.product); // Return back to Product[] type
+  }, [productsWithMetadata, filters, sortBy]);
 
   return (
     <>
       <CategoryFilters onSortChange={handleSortChange} onFilterChange={handleFilterChange} />
       
-      <div className="container mx-auto px-4 py-6">
+      <div className="w-full lg:container lg:mx-auto lg:px-4 py-6">
         {/* Results count */}
-        <div className="mb-4 text-sm text-gray-600">
+        <div className="mb-4 text-sm text-gray-600 px-4 lg:px-0">
           Showing {filteredAndSortedProducts.length} of {initialProducts.length} products
         </div>
 
         {/* Products Grid */}
         {filteredAndSortedProducts.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="text-center py-12 px-4">
             <p className="text-gray-600 text-lg mb-2">No products found</p>
             <p className="text-sm text-gray-500">Try adjusting your filters</p>
           </div>

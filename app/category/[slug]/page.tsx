@@ -10,8 +10,8 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 export const revalidate = 300; // 5 minutes, consistent with homepage
 
 const GET_CATEGORY_PRODUCTS = gql`
-  query GetCategoryProducts($slug: ID!, $first: Int = 12) {
-    productCategory(id: $slug, idType: SLUG) {
+  query GetCategoryProducts($slug: ID!, $first: Int = 30) {
+      productCategory(id: $slug, idType: SLUG) {
       id
       name
       description
@@ -49,7 +49,7 @@ async function getCategoryData(slug: string) {
   try {
     logger.debug('Fetching category', { slug });
     
-    const data = await graphqlClient.request(GET_CATEGORY_PRODUCTS, { slug, first: 24 }) as {
+    const data = await graphqlClient.request(GET_CATEGORY_PRODUCTS, { slug, first: 30 }) as {
       productCategory: { 
         id: string; 
         name: string; 

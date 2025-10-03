@@ -1,13 +1,19 @@
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import CategoryFilters, { FilterState } from './CategoryFilters';
+import ProductCard from './ProductCard';
 import { Product } from '@/lib/types';
 import { logger } from '@/lib/utils/performance';
 import { createSessionClient } from '@/lib/graphql-client';
-import { gql } from 'graphql-request';
-import ProductCard from './ProductCard';
 import { Loader2 } from 'lucide-react';
+import { gql } from 'graphql-request';
+
+export interface FilterState {
+  priceRange: [number, number];
+  inStock: boolean | null;
+  onSale: boolean | null;
+  rating: number | null;
+}
 
   const LOAD_MORE_CATEGORY_PRODUCTS = gql`
     query LoadMoreCategoryProducts($slug: String!, $first: Int = 20, $after: String) {
@@ -63,17 +69,14 @@ export default function CategoryFiltersWrapper({
   initialEndCursor,
   initialHasNextPage
 }: CategoryFiltersWrapperProps) {
-  // Debug: Log initial setup  
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🔍 Category:', categorySlug, '| Database ID:', categoryDatabaseId, '| Initial products:', initialProducts.length);
-  }
+  // Debug: Log initial setup
+  console.log('🔍 Category:', categorySlug, '| Database ID:', categoryDatabaseId, '| Initial products:', initialProducts.length);
 
   const [allProducts, setAllProducts] = useState<Product[]>(initialProducts);
   const [endCursor, setEndCursor] = useState<string | null>(initialEndCursor);
   const [hasNextPage, setHasNextPage] = useState(initialHasNextPage);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [lastLoadTime, setLastLoadTime] = useState(0);
-  // ProgressiveProductGrid now handles load more detection internally
   const MIN_LOAD_INTERVAL = 500;
   const [sortBy, setSortBy] = useState('default');
   const [filters, setFilters] = useState<FilterState>({
@@ -128,48 +131,43 @@ export default function CategoryFiltersWrapper({
 
   // Infinite scroll effect
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
     const handleScroll = () => {
-      if (
-        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 1200 &&
-        !isLoadingMore &&
-        hasNextPage
-      ) {
-        loadMore();
-      }
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        if (
+          window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 1200 &&
+          !isLoadingMore &&
+          hasNextPage
+        ) {
+          loadMore();
+        }
+      }, 150);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
+      clearTimeout(timeoutId);
       window.removeEventListener('scroll', handleScroll);
     };
   }, [loadMore, isLoadingMore, hasNextPage]);
 
-  // Memoize callback functions to prevent unnecessary re-renders
-  const handleSortChange = useCallback((newSortBy: string) => {
-    logger.debug('Sort changed', { from: sortBy, to: newSortBy });
-    setSortBy(newSortBy);
-  }, [sortBy]);
-
-  const handleFilterChange = useCallback((newFilters: FilterState) => {
-    logger.debug('Filters changed', { filters: newFilters });
-    setFilters(newFilters);
-  }, []);
-
   // Helper functions (don't need useCallback since not passed as props)
-  const getProductRating = useCallback((product: Product): number => {
+  const getProductRating = (product: Product): number => {
     const productIdHash = product.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return parseFloat((4.2 + ((productIdHash % 80) / 100)).toFixed(1));
-  }, []);
+  };
 
-  const extractPrice = useCallback((priceString: string | null | undefined): number => {
+  const extractPrice = (priceString: string | null | undefined): number => {
     if (!priceString) return 0;
     return parseFloat(priceString.replace(/[^0-9.]/g, '')) || 0;
-  }, []);
+  };
 
-  const checkIfOnSale = useCallback((product: Product): boolean => {
+  const checkIfOnSale = (product: Product): boolean => {
     return !!(product.salePrice && product.regularPrice && 
       extractPrice(product.salePrice) < extractPrice(product.regularPrice));
-  }, [extractPrice]);
+  };
 
   // Pre-calculate expensive values to avoid recalculating in filters
   const productsWithMetadata = useMemo(() => {
@@ -180,7 +178,7 @@ export default function CategoryFiltersWrapper({
       rating: getProductRating(product),
       isInStock: product.stockStatus === 'IN_STOCK' || product.stockStatus === 'FAST_DELIVERY' || product.stockStatus === 'REGULAR_DELIVERY'
     }));
-  }, [allProducts, extractPrice, checkIfOnSale, getProductRating]);
+  }, [allProducts]);
 
 
   // Filter and sort products
@@ -224,8 +222,6 @@ export default function CategoryFiltersWrapper({
 
   return (
     <>
-      <CategoryFilters onSortChange={handleSortChange} onFilterChange={handleFilterChange} />
-      
       <div className="w-full lg:container lg:mx-auto lg:px-4 py-6">
         {/* Category Info */}
         {categoryName && (
@@ -241,47 +237,53 @@ export default function CategoryFiltersWrapper({
           </div>
         )}
 
-        {/* Enhanced Progressive Product Grid */}
-          <div className="w-full lg:container lg:mx-auto lg:px-4 py-6">
-            {/* Products Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-3 lg:gap-4">
+        {/* Products Grid */}
+        {filteredAndSortedProducts.length === 0 ? (
+          <div className="text-center py-12 px-4">
+            <p className="text-gray-600 text-lg mb-2">No products found</p>
+            <p className="text-sm text-gray-500">Try adjusting your filters</p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-[5px] gap-y-[4px] lg:gap-x-4 lg:gap-y-4">
               {filteredAndSortedProducts.map((product) => (
-                <div key={product.id}>
-                  <ProductCard 
-                    product={product}
-                  />
-                </div>
+                <ProductCard key={product.id} product={product} />
               ))}
+              
+              {/* Show skeleton loaders while loading */}
+              {isLoadingMore && (
+                <>
+                  {[...Array(10)].map((_, i) => (
+                    <div key={`skeleton-${i}`} className="bg-white overflow-hidden">
+                      <div className="aspect-square bg-gray-200 animate-pulse"></div>
+                      <div className="p-3 space-y-2">
+                        <div className="h-4 bg-gray-200 animate-pulse rounded w-full"></div>
+                        <div className="h-4 bg-gray-200 animate-pulse rounded w-2/3"></div>
+                        <div className="h-3 bg-gray-200 animate-pulse rounded w-1/2"></div>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
 
-            {/* Infinite loading trigger */}
-            {hasNextPage && (
-              <div className="mt-8 flex justify-center">
-                {isLoadingMore ? (
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Loading more products...</span>
-                  </div>
-                ) : (
-                  <button
-                    onClick={loadMore}
-                    className="bg-gray-200 hover:bg-gray-300 px-6 py-3 rounded-lg text-gray-700 font-medium transition-colors"
-                  >
-                    Load More Products
-                  </button>
-                )}
+            {/* Loading indicator */}
+            {isLoadingMore && (
+              <div className="flex justify-center items-center py-4">
+                <Loader2 className="w-5 h-5 animate-spin text-teal-600" />
+                <span className="ml-2 text-xs text-gray-500">Loading more products...</span>
               </div>
             )}
 
-            {/* End of results */}
-            {!hasNextPage && filteredAndSortedProducts.length > 0 && (
-              <div className="mt-8 text-center text-gray-500">
-                You&apos;ve reached the end of the catalog
+            {/* End message */}
+            {!hasNextPage && allProducts.length > 0 && (
+              <div className="text-center py-8">
+                <p className="text-sm text-gray-500">You&apos;ve seen all products</p>
               </div>
             )}
-          </div>
+          </>
+        )}
       </div>
     </>
   );
 }
-

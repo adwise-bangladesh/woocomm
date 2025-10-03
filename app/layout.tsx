@@ -19,7 +19,12 @@ interface SiteSettings {
   logoAlt?: string;
 }
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap',
+  fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+  adjustFontFallback: true,
+});
 
 export const metadata: Metadata = {
   title: 'Zonash Shop - Fast E-commerce',

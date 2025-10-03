@@ -36,47 +36,38 @@ export async function generateMetadata({
   };
 }
 
-const GET_CATEGORY_INFO = gql`
-  query GetCategoryInfo($slug: ID!) {
-    productCategory(id: $slug, idType: SLUG) {
-      id
-      databaseId
-      name
-      slug
-      description
-      count
-    }
-  }
-`;
-
-const GET_CATEGORY_PRODUCTS = gql`
-  query GetCategoryProducts($slug: String!, $first: Int = 30) {
-    products(
-      first: $first
-      where: { 
-        category: $slug
-        orderby: { field: DATE, order: DESC }
-      }
-    ) {
-      pageInfo {
-        endCursor
-        hasNextPage
-      }
+const GET_CATEGORY_AND_PRODUCTS = gql`
+  query GetCategoryAndProducts($slug: [String], $first: Int = 30) {
+    productCategories(where: { slug: $slug }) {
       nodes {
         id
-        name  
+        databaseId
+        name
         slug
-        image {
-          sourceUrl
-          altText
-        }
-        ... on ProductWithPricing {
-          price
-          regularPrice
-          salePrice
-        }
-        ... on InventoriedProduct {
-          stockStatus
+        description
+        count
+        products(first: $first) {
+          pageInfo {
+            endCursor
+            hasNextPage
+          }
+          nodes {
+            id
+            name  
+            slug
+            image {
+              sourceUrl
+              altText
+            }
+            ... on ProductWithPricing {
+              price
+              regularPrice
+              salePrice
+            }
+            ... on InventoriedProduct {
+              stockStatus
+            }
+          }
         }
       }
     }
@@ -93,41 +84,50 @@ async function getCategoryData(slug: string) {
   try {
     serverLogger.debug('Fetching category data from API', { slug });
     
-    // Fetch category info and products separately for better reliability
-    const [categoryData, productsData] = await Promise.all([
-      graphqlClient.request(GET_CATEGORY_INFO, { slug }) as Promise<{
-        productCategory: {
+    // Fetch category and products in a single query using productCategories
+    const data = await graphqlClient.request(GET_CATEGORY_AND_PRODUCTS, { 
+      slug: [slug], 
+      first: 30 
+    }) as {
+      productCategories: {
+        nodes: Array<{
           id: string;
           databaseId: number;
           name: string;
           slug: string;
           description?: string;
           count: number;
-        } | null;
-      }>,
-      graphqlClient.request(GET_CATEGORY_PRODUCTS, { slug, first: 30 }) as Promise<{
-        products: {
-          pageInfo: { endCursor: string | null; hasNextPage: boolean };
-          nodes: Product[];
-        };
-      }>
-    ]);
+          products: {
+            pageInfo: { endCursor: string | null; hasNextPage: boolean };
+            nodes: Product[];
+          };
+        }>;
+      };
+    };
     
     // Validate category exists
-    if (!categoryData.productCategory) {
+    const category = data.productCategories?.nodes?.[0];
+    if (!category) {
       serverLogger.warn('Category not found in GraphQL response', { slug });
       return null;
     }
     
     serverLogger.debug('Category data loaded successfully', { 
       slug, 
-      productsCount: productsData.products?.nodes?.length || 0
+      productsCount: category.products?.nodes?.length || 0
     });
     
     return {
-      category: categoryData.productCategory,
-      products: productsData.products?.nodes || [],
-      pageInfo: productsData.products?.pageInfo || { endCursor: null, hasNextPage: false },
+      category: {
+        id: category.id,
+        databaseId: category.databaseId,
+        name: category.name,
+        slug: category.slug,
+        description: category.description,
+        count: category.count,
+      },
+      products: category.products?.nodes || [],
+      pageInfo: category.products?.pageInfo || { endCursor: null, hasNextPage: false },
     };
   } catch (error) {
     serverLogger.error('Error fetching category data', { 
@@ -177,15 +177,7 @@ export default async function CategoryPage({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Enhanced Error Boundary with security and performance features */}
-      <EnhancedErrorBoundary 
-        onError={(error, errorInfo) => {
-          serverLogger.error('Category page error', { 
-            slug, 
-            error: error.message,
-            componentStack: errorInfo.componentStack?.split('\n')[0]
-          });
-        }}
-      >
+      <EnhancedErrorBoundary>
         <Suspense 
           fallback={
             <div className="px-4 py-6">

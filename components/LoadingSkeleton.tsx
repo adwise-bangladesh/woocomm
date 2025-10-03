@@ -286,7 +286,7 @@ export function HomePageSkeleton() {
     <div className="min-h-screen bg-gray-50">
       {/* Hero Slider Skeleton */}
       <section className="container mx-auto px-4 py-4 md:py-6">
-        <div className="relative h-[200px] md:h-[300px] lg:h-[400px] bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse rounded-lg overflow-hidden">
+        <div className="relative h-[150px] md:h-[300px] lg:h-[400px] bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse rounded-[5px] overflow-hidden shadow-md">
           <div className="absolute inset-0 bg-gradient-to-r from-gray-200/50 to-transparent" />
           <div className="absolute bottom-4 left-4 right-4">
             <div className="h-6 md:h-8 bg-gray-300 animate-pulse rounded w-3/4 mb-2" />

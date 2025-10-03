@@ -1,7 +1,9 @@
 import { graphqlClient } from '@/lib/graphql-client';
-import { GET_CATEGORIES } from '@/lib/queries';
-import Link from 'next/link';
-import Image from 'next/image';
+import { GET_CATEGORIES, GET_PRODUCTS } from '@/lib/queries';
+import CircularCategories from '@/components/CircularCategories';
+import InfiniteProductGrid from '@/components/InfiniteProductGrid';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { Product } from '@/lib/types';
 
 export const revalidate = 300; // 5 minutes, consistent with homepage
 
@@ -12,13 +14,26 @@ interface Category {
   count: number;
   image?: {
     sourceUrl: string;
-    altText?: string;
+    altText: string;
+  };
+}
+
+interface CategoriesData {
+  productCategories: {
+    nodes: Category[];
+  };
+}
+
+interface ProductsData {
+  products: {
+    nodes: Product[];
+    pageInfo: { hasNextPage: boolean; endCursor: string | null };
   };
 }
 
 async function getCategories() {
   try {
-    const data = await graphqlClient.request(GET_CATEGORIES) as { productCategories: { nodes: Category[] } };
+    const data = await graphqlClient.request(GET_CATEGORIES) as CategoriesData;
     return data.productCategories.nodes || [];
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
@@ -28,37 +43,59 @@ async function getCategories() {
   }
 }
 
+async function getProducts() {
+  try {
+    const data = await graphqlClient.request(GET_PRODUCTS, { first: 30, after: null }) as ProductsData;
+    return {
+      products: data.products?.nodes || [],
+      pageInfo: data.products?.pageInfo || { hasNextPage: false, endCursor: null }
+    };
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error fetching products:', error);
+    }
+    return {
+      products: [],
+      pageInfo: { hasNextPage: false, endCursor: null }
+    };
+  }
+}
+
 export default async function CategoriesPage() {
-  const categories = await getCategories();
+  const [categories, { products, pageInfo }] = await Promise.all([
+    getCategories(),
+    getProducts()
+  ]);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-8">All Categories</h1>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {categories.map((category) => (
-            <Link
-              key={category.id}
-              href={`/category/${category.slug}`}
-              className="group block bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden"
-            >
-              <div className="relative aspect-square overflow-hidden bg-gray-100">
-                <Image
-                  src={category.image?.sourceUrl || '/placeholder.png'}
-                  alt={category.image?.altText || category.name}
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-300"
-                  sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                />
+      {/* Categories */}
+      <ErrorBoundary>
+        <CircularCategories categories={categories} />
+      </ErrorBoundary>
+
+      {/* All Products */}
+      <ErrorBoundary>
+        {products.length > 0 ? (
+          <InfiniteProductGrid
+            initialProducts={products}
+            initialEndCursor={pageInfo.endCursor}
+            initialHasNextPage={pageInfo.hasNextPage}
+          />
+        ) : (
+          <section className="py-8 bg-white">
+            <div className="container mx-auto px-4">
+              <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-6">Products For You</h2>
+              <div className="text-center py-12">
+                <p className="text-gray-500 mb-4">Unable to load products. Please check WooGraphQL plugin installation.</p>
+                <p className="text-sm text-gray-400">
+                  Make sure &quot;WPGraphQL for WooCommerce&quot; plugin is installed and activated.
+                </p>
               </div>
-              <div className="p-4 text-center">
-                <h3 className="font-semibold text-gray-900 mb-1">{category.name}</h3>
-                <p className="text-sm text-gray-500">{category.count} items</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
+            </div>
+          </section>
+        )}
+      </ErrorBoundary>
     </div>
   );
 }

@@ -55,6 +55,37 @@ export const GET_CATEGORIES = gql`
   }
 `;
 
+// Query to get all categories with their children for the categories page
+export const GET_ALL_CATEGORIES = gql`
+  query GetAllCategories {
+    productCategories(first: 50, where: { hideEmpty: true }) {
+      nodes {
+        id
+        name
+        slug
+        count
+        parentId
+        image {
+          sourceUrl
+          altText
+        }
+        children(first: 20, where: { hideEmpty: true }) {
+          nodes {
+            id
+            name
+            slug
+            count
+            image {
+              sourceUrl
+              altText
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
 // Query to get slider/banner images from ACF
 // This assumes you have a "Slider" post type with ACF fields
 export const GET_SLIDER_IMAGES = gql`

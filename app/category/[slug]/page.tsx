@@ -84,10 +84,10 @@ async function getCategoryData(slug: string) {
   try {
     serverLogger.debug('Fetching category data from API', { slug });
     
-    // Fetch category and products in a single query using productCategories
+    // Fetch category and products in a single nested query
     const data = await graphqlClient.request(GET_CATEGORY_AND_PRODUCTS, { 
-      slug: [slug], 
-      first: 30 
+      slug: [slug],
+      first: 30
     }) as {
       productCategories: {
         nodes: Array<{
@@ -114,6 +114,7 @@ async function getCategoryData(slug: string) {
     
     serverLogger.debug('Category data loaded successfully', { 
       slug, 
+      categoryId: category.databaseId,
       productsCount: category.products?.nodes?.length || 0
     });
     

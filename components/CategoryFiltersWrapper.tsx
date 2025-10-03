@@ -66,7 +66,7 @@ export default function CategoryFiltersWrapper({
   initialHasNextPage
 }: CategoryFiltersWrapperProps) {
   // Debug: Log initial setup
-  console.log('🔍 Category:', categorySlug, '| Database ID:', categoryDatabaseId, '| Initial products:', initialProducts.length);
+  console.log('🔍 Category ID:', categoryDatabaseId, '| Slug:', categorySlug, '| Initial products:', initialProducts.length);
 
   const [allProducts, setAllProducts] = useState<Product[]>(initialProducts);
   const [endCursor, setEndCursor] = useState<string | null>(initialEndCursor);
@@ -88,7 +88,7 @@ export default function CategoryFiltersWrapper({
     setLastLoadTime(now);
     
     try {
-      console.log('🔍 Loading more products for:', categorySlug);
+      console.log('🔍 Loading more products for category:', categorySlug);
       
       const client = createSessionClient();
       const data = await client.request(LOAD_MORE_CATEGORY_PRODUCTS, {
@@ -109,7 +109,7 @@ export default function CategoryFiltersWrapper({
       const category = data.productCategories?.nodes?.[0];
       if (category?.products) {
         const newProducts = category.products.nodes;
-        console.log('🔍 Loaded', newProducts.length, 'more products for category:', categorySlug);
+        console.log('🔍 Loaded', newProducts.length, 'more products');
         setAllProducts(prev => [...prev, ...newProducts]);
         setEndCursor(category.products.pageInfo.endCursor);
         setHasNextPage(category.products.pageInfo.hasNextPage);

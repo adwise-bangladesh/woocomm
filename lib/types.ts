@@ -79,6 +79,8 @@ export interface CartItem {
         altText: string;
       };
       price: string;
+      stockStatus?: string;
+      stockQuantity?: number;
     };
   };
   variation?: {
@@ -87,6 +89,8 @@ export interface CartItem {
       databaseId: number;
       name: string;
       price: string;
+      stockStatus?: string;
+      stockQuantity?: number;
     };
   };
 }

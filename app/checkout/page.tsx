@@ -3,7 +3,7 @@
 import { useCartStore } from '@/lib/store';
 import { createSessionClient } from '@/lib/graphql-client';
 import { CHECKOUT } from '@/lib/mutations';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -26,6 +26,11 @@ export default function CheckoutPage() {
     fullName: '',
     phone: '',
   });
+
+  // Sync localItems with items from store
+  useEffect(() => {
+    setLocalItems(items);
+  }, [items]);
 
   const formatPrice = (price: string | null | undefined) => {
     if (!price) return 'Tk 0';
@@ -215,15 +220,31 @@ export default function CheckoutPage() {
     }
   };
 
-  if (isEmpty || items.length === 0) {
+  if (isEmpty || items.length === 0 || localItems.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Your cart is empty</h1>
-          <p className="text-gray-600 mb-8">Add some products before checking out!</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="mb-6">
+            <svg
+              className="mx-auto h-24 w-24 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+              />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Your Cart is Empty</h1>
+          <p className="text-gray-600 mb-8">Add some products to get started!</p>
           <Link
             href="/"
-            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            className="inline-block bg-teal-600 text-white px-8 py-3 rounded-[5px] font-semibold hover:bg-teal-700 transition-colors shadow-sm"
           >
             Continue Shopping
           </Link>
@@ -366,8 +387,9 @@ export default function CheckoutPage() {
 
             <div className="space-y-3 mb-4">
               {localItems.map((item) => {
-                // Default to fast delivery for in-stock items
-                const deliveryInfo = getDeliveryTime('IN_STOCK');
+                // Get stock status from variation or product
+                const stockStatus = (item.variation?.node as any)?.stockStatus || (item.product.node as any)?.stockStatus || 'IN_STOCK';
+                const deliveryInfo = getDeliveryTime(stockStatus);
                 
                 return (
                   <div key={item.key} className="pb-3 border-b border-gray-100 last:border-0">

@@ -25,6 +25,7 @@ export default function CheckoutPage() {
   const [errors, setErrors] = useState({
     fullName: '',
     phone: '',
+    address: '',
   });
 
   const [showBlockedModal, setShowBlockedModal] = useState(false);
@@ -133,12 +134,19 @@ export default function CheckoutPage() {
     return cleanedDigits;
   };
 
+  const validateAddress = (address: string) => {
+    if (address.trim().length < 10) {
+      return 'Please enter your complete address ';
+    }
+    return '';
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     
     // Clear error when user types
-    if (name === 'fullName' || name === 'phone') {
+    if (name === 'fullName' || name === 'phone' || name === 'address') {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
   };
@@ -227,10 +235,17 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Validate and format phone
+    // Validate phone
     const phoneError = validatePhone(formData.phone);
     if (phoneError) {
       setErrors((prev) => ({ ...prev, phone: phoneError }));
+      return;
+    }
+
+    // Validate address
+    const addressError = validateAddress(formData.address);
+    if (addressError) {
+      setErrors((prev) => ({ ...prev, address: addressError }));
       return;
     }
 
@@ -275,15 +290,10 @@ export default function CheckoutPage() {
       const totalAmount = subtotalAmount + deliveryCharge;
       
       clearCart();
-      alert(
-        `Order placed successfully! Order #${orderNumber}\n\n` +
-        `Phone: ${formattedPhone}\n` +
-        `Delivery Zone: ${formData.deliveryZone === 'dhaka' ? 'Inside Dhaka' : 'Outside Dhaka'}\n` +
-        `Delivery Charge: Tk ${deliveryCharge}\n` +
-        `Total Amount: Tk ${totalAmount.toFixed(0)}\n\n` +
-        `We'll contact you within 24 hours to confirm your order.`
-      );
-      router.push('/');
+      
+      // Redirect to thank you page with order details
+      const thankYouUrl = `/thank-you?orderNumber=${orderNumber}&name=${encodeURIComponent(formData.fullName)}&phone=${formattedPhone}&address=${encodeURIComponent(formData.address)}&total=${totalAmount.toFixed(0)}&delivery=${deliveryCharge}&items=${localItems.length}`;
+      router.push(thankYouUrl);
     } catch (error) {
       console.error('Checkout error:', error);
       alert('Failed to complete checkout. Please try again.');
@@ -384,9 +394,12 @@ export default function CheckoutPage() {
                   rows={3}
                   value={formData.address}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent resize-none placeholder:text-gray-500"
+                  className={`w-full px-3 py-2 text-sm text-gray-900 border ${errors.address ? 'border-red-500' : 'border-gray-200'} rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent resize-none placeholder:text-gray-500`}
                   placeholder="House/Flat no, Road, Area, Thana"
                 />
+                {errors.address && (
+                  <p className="text-xs text-red-600 mt-1">{errors.address}</p>
+                )}
               </div>
 
               <div>
@@ -449,12 +462,10 @@ export default function CheckoutPage() {
           {/* Order Summary Card */}
           <div className="bg-white rounded-[5px] p-4 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-semibold text-gray-900">Order Summary</h3>
-                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                  {localItems.length} {localItems.length === 1 ? 'item' : 'items'}
-                </span>
-              </div>
+              <h3 className="text-base font-semibold text-gray-900">Order Summary</h3>
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                {localItems.length} {localItems.length === 1 ? 'item' : 'items'}
+              </span>
             </div>
 
             <div className="space-y-3 mb-4">

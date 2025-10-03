@@ -199,70 +199,64 @@ export function ProductPageSkeleton() {
 export function CategoryPageSkeleton() {
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sticky Filters & Sort Bar */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between gap-4">
-            {/* Sort Dropdown Skeleton */}
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-gray-200 animate-pulse rounded" />
-              <div className="w-32 h-8 bg-gray-200 animate-pulse rounded border" />
+      {/* Category Header Skeleton */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="container mx-auto px-4 py-6 lg:py-8">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              {/* Category Name */}
+              <div className="h-8 md:h-10 bg-gray-200 animate-pulse rounded w-48 md:w-64 mb-2" />
+              {/* Category Description */}
+              <div className="space-y-2 max-w-3xl">
+                <div className="h-4 bg-gray-200 animate-pulse rounded w-full" />
+                <div className="h-4 bg-gray-200 animate-pulse rounded w-3/4" />
+              </div>
             </div>
-            
-            {/* Filter Button Skeleton */}
-            <div className="w-20 h-8 bg-gray-200 animate-pulse rounded border" />
+            {/* Total Count */}
+            <div className="text-right flex-shrink-0">
+              <div className="h-4 bg-gray-200 animate-pulse rounded w-20 mb-2" />
+              <div className="h-8 bg-gray-200 animate-pulse rounded w-16" />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Products Grid */}
+      {/* Products Section */}
       <div className="container mx-auto px-4 py-6">
-        {/* Results Count Skeleton */}
+        {/* Results Info Skeleton */}
         <div className="mb-4">
-          <div className="w-40 h-5 bg-gray-200 animate-pulse rounded" />
+          <div className="h-5 bg-gray-200 animate-pulse rounded w-48" />
         </div>
 
-        {/* Product Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        {/* Product Grid - Match actual grid styling */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-[5px] gap-y-[4px] lg:gap-x-4 lg:gap-y-4">
           {[...Array(20)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200">
+            <div key={i} className="bg-white overflow-hidden">
               {/* Product Image */}
               <div className="aspect-square bg-gray-200 animate-pulse" />
               
               {/* Product Info */}
-              <div className="p-3 space-y-2">
+              <div className="p-2 space-y-2">
                 {/* Product Name */}
                 <div className="h-4 bg-gray-200 animate-pulse rounded" />
-                <div className="h-4 bg-gray-200 animate-pulse rounded w-3/4" />
                 
                 {/* Price */}
-                <div className="flex items-center gap-2">
-                  <div className="w-16 h-5 bg-gray-200 animate-pulse rounded" />
-                  <div className="w-12 h-4 bg-gray-200 animate-pulse rounded" />
-                  <div className="w-8 h-4 bg-gray-200 animate-pulse rounded" />
-                </div>
+                <div className="h-5 bg-gray-200 animate-pulse rounded w-20" />
                 
                 {/* Reviews */}
                 <div className="flex items-center gap-1">
                   {[...Array(5)].map((_, j) => (
                     <div key={j} className="w-3 h-3 bg-gray-200 animate-pulse rounded" />
                   ))}
-                  <div className="w-12 h-3 bg-gray-200 animate-pulse rounded ml-1" />
-                </div>
-                
-                {/* Stock Status */}
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-gray-200 animate-pulse rounded-full" />
-                  <div className="w-16 h-3 bg-gray-200 animate-pulse rounded" />
                 </div>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Load More Button Skeleton */}
-        <div className="mt-8 flex justify-center">
-          <div className="w-32 h-10 bg-gray-200 animate-pulse rounded-lg" />
+        {/* Loading More Skeleton */}
+        <div className="flex justify-center items-center py-8 mt-4">
+          <div className="w-6 h-6 bg-gray-200 animate-pulse rounded-full" />
         </div>
       </div>
     </div>

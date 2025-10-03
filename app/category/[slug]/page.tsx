@@ -5,39 +5,15 @@ import { Product } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import { validateSlug } from '@/lib/utils/sanitizer';
 import { serverLogger } from '@/lib/utils/server-logger';
-import { EnhancedErrorBoundary } from '@/components/EnhancedErrorBoundary';
-import { Suspense } from 'react';
+import { Metadata } from 'next';
 
-// Enhanced ISR with tag-based revalidation
-export const revalidate = 300; // 5 minutes ISR
+// ISR Configuration: 5 minutes cache with on-demand revalidation
+export const revalidate = 300;
 
-// Generate dynamic tags for selective revalidation
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
-  
-  return {
-    title: `${slug.charAt(0).toUpperCase() + slug.slice(1)} Products - Zonash`,
-    description: `Browse ${slug} products at Zonash with fast delivery and great prices.`,
-    robots: {
-      index: true,
-      follow: true,
-      googleBot: {
-        index: true,
-        follow: true,
-        'max-video-preview': -1,
-        'max-image-preview': 'large',
-        'max-snippet': -1,
-      },
-    },
-  };
-}
-
-const GET_CATEGORY = gql`
-  query GetCategory($slug: [String]) {
+// GraphQL Queries - Optimized for performance
+const GET_CATEGORY_AND_PRODUCTS = gql`
+  query GetCategoryAndProducts($slug: [String]!, $categorySlug: String!, $first: Int = 30) {
+    # Fetch category info
     productCategories(where: { slug: $slug }) {
       nodes {
         id
@@ -48,14 +24,10 @@ const GET_CATEGORY = gql`
         count
       }
     }
-  }
-`;
-
-const GET_PRODUCTS_BY_CATEGORY = gql`
-  query GetProductsByCategory($categorySlug: String!, $first: Int = 30, $after: String) {
+    
+    # Fetch products filtered by category
     products(
       first: $first
-      after: $after
       where: { category: $categorySlug }
     ) {
       pageInfo {
@@ -64,7 +36,7 @@ const GET_PRODUCTS_BY_CATEGORY = gql`
       }
       nodes {
         id
-        name  
+        name
         slug
         image {
           sourceUrl
@@ -83,19 +55,80 @@ const GET_PRODUCTS_BY_CATEGORY = gql`
   }
 `;
 
-async function getCategoryData(slug: string) {
-  // Enhanced input validation
+// Type definitions
+interface CategoryData {
+  category: {
+    id: string;
+    databaseId: number;
+    name: string;
+    slug: string;
+    description?: string;
+    count: number;
+  };
+  products: Product[];
+  pageInfo: {
+    endCursor: string | null;
+    hasNextPage: boolean;
+  };
+}
+
+// Generate SEO-optimized metadata
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  
+  // Validate and sanitize slug for metadata
+  const sanitizedSlug = slug.replace(/[^a-z0-9-]/gi, '');
+  const categoryName = sanitizedSlug
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+  
+  return {
+    title: `${categoryName} - Shop Best Products | Zonash`,
+    description: `Discover amazing ${categoryName.toLowerCase()} products at Zonash. Fast delivery, great prices, and quality guaranteed. Shop now!`,
+    openGraph: {
+      title: `${categoryName} Products - Zonash`,
+      description: `Browse our collection of ${categoryName.toLowerCase()} products with fast delivery and great prices.`,
+      type: 'website',
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+    },
+  };
+}
+
+// Data fetching function with comprehensive error handling
+async function getCategoryData(slug: string): Promise<CategoryData | null> {
+  // Security: Validate slug format
   if (!validateSlug(slug)) {
-    serverLogger.error('Invalid category slug', { slug });
+    serverLogger.warn('Invalid category slug format', { slug });
+    return null;
+  }
+
+  // Security: Additional length check
+  if (slug.length > 200) {
+    serverLogger.warn('Category slug too long', { slug: slug.substring(0, 50) });
     return null;
   }
 
   try {
-    serverLogger.debug('Fetching category data from API', { slug });
-    
-    // First, fetch category info
-    const categoryData = await graphqlClient.request(GET_CATEGORY, { 
-      slug: [slug]
+    // Performance: Single parallel GraphQL request for both category and products
+    const data = await graphqlClient.request(GET_CATEGORY_AND_PRODUCTS, { 
+      slug: [slug],
+      categorySlug: slug,
+      first: 30
     }) as {
       productCategories: {
         nodes: Array<{
@@ -107,31 +140,26 @@ async function getCategoryData(slug: string) {
           count: number;
         }>;
       };
-    };
-    
-    // Validate category exists
-    const category = categoryData.productCategories?.nodes?.[0];
-    if (!category) {
-      serverLogger.warn('Category not found in GraphQL response', { slug });
-      return null;
-    }
-    
-    // Now fetch products filtered by category slug
-    const productsData = await graphqlClient.request(GET_PRODUCTS_BY_CATEGORY, {
-      categorySlug: slug,
-      first: 30
-    }) as {
       products: {
         pageInfo: { endCursor: string | null; hasNextPage: boolean };
         nodes: Product[];
       };
     };
     
-    serverLogger.debug('Category data loaded successfully', { 
-      slug, 
-      categoryId: category.databaseId,
-      productsCount: productsData.products?.nodes?.length || 0
-    });
+    // Validate category exists
+    const category = data.productCategories?.nodes?.[0];
+    if (!category) {
+      serverLogger.info('Category not found', { slug });
+      return null;
+    }
+    
+    // Production logging (only basic info)
+    if (process.env.NODE_ENV === 'development') {
+      serverLogger.debug('Category data loaded', { 
+        slug, 
+        productsCount: data.products?.nodes?.length || 0
+      });
+    }
     
     return {
       category: {
@@ -142,10 +170,11 @@ async function getCategoryData(slug: string) {
         description: category.description,
         count: category.count,
       },
-      products: productsData.products?.nodes || [],
-      pageInfo: productsData.products?.pageInfo || { endCursor: null, hasNextPage: false },
+      products: data.products?.nodes || [],
+      pageInfo: data.products?.pageInfo || { endCursor: null, hasNextPage: false },
     };
   } catch (error) {
+    // Security: Don't expose internal error details to client
     serverLogger.error('Error fetching category data', { 
       slug, 
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -155,6 +184,7 @@ async function getCategoryData(slug: string) {
   }
 }
 
+// Main page component
 export default async function CategoryPage({
   params,
 }: {
@@ -162,67 +192,32 @@ export default async function CategoryPage({
 }) {
   const { slug } = await params;
   
-  // Enhanced security: Validate slug and extract client info
-  if (!slug || typeof slug !== 'string' || slug.length > 255) {
-    serverLogger.warn('Invalid slug detected', { slug });
+  // Security: Comprehensive input validation
+  if (!slug || typeof slug !== 'string' || slug.length < 1 || slug.length > 200) {
     notFound();
   }
 
+  // Fetch data
   const data = await getCategoryData(slug);
 
-  if (!data || typeof data !== 'object' || !('category' in data)) {
+  // Handle not found
+  if (!data) {
     notFound();
   }
 
-  const { products, category, pageInfo } = data as {
-    category: {
-      id: string;
-      databaseId: number;
-      name: string;
-      slug: string;
-      description?: string;
-      count: number;
-    };
-    products: Product[];
-    pageInfo: {
-      endCursor: string | null;
-      hasNextPage: boolean;
-    };
-  };
+  const { products, category, pageInfo } = data;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Enhanced Error Boundary with security and performance features */}
-      <EnhancedErrorBoundary>
-        <Suspense 
-          fallback={
-            <div className="px-4 py-6">
-              <div className="animate-pulse space-y-4">
-                <div className="h-6 bg-gray-200 rounded w-1/3"></div>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                  {[...Array(10)].map((_, i) => (
-                    <div key={i} className="space-y-2">
-                      <div className="aspect-square bg-gray-200 rounded"></div>
-                      <div className="h-4 bg-gray-200 rounded"></div>
-                      <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          }
-        >
-          <CategoryFiltersWrapper 
-            initialProducts={products} 
-            categoryName={category.name}
-            totalCount={category.count}
-            categorySlug={slug}
-            categoryDatabaseId={category.databaseId}
-            initialEndCursor={pageInfo.endCursor}
-            initialHasNextPage={pageInfo.hasNextPage}
-          />
-        </Suspense>
-      </EnhancedErrorBoundary>
+      <CategoryFiltersWrapper 
+        initialProducts={products} 
+        categoryName={category.name}
+        categoryDescription={category.description}
+        totalCount={category.count}
+        categorySlug={slug}
+        initialEndCursor={pageInfo.endCursor}
+        initialHasNextPage={pageInfo.hasNextPage}
+      />
     </div>
   );
 }

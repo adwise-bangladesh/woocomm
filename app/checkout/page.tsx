@@ -322,7 +322,8 @@ export default function CheckoutPage() {
     }
   };
 
-  if (isEmpty || items.length === 0 || localItems.length === 0) {
+  // Don't show empty state if we're currently processing the order
+  if (!isLoading && (isEmpty || items.length === 0 || localItems.length === 0)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="text-center max-w-md">

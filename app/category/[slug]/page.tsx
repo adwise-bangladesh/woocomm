@@ -8,7 +8,7 @@ import { logger } from '@/lib/utils/performance';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Suspense } from 'react';
 
-export const revalidate = 300; // 5 minutes, consistent with homepage
+export const revalidate = 300; // 5 minutes, consistent with homepag
 
 const GET_CATEGORY_PRODUCTS = gql`
   query GetCategoryProducts($slug: ID!, $first: Int = 30) {

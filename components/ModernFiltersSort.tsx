@@ -1,12 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { SlidersHorizontal, X, ChevronDown } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { SlidersHorizontal, X } from 'lucide-react';
 
 export interface FilterState {
   priceRange: [number, number];
-  inStock: boolean | null;
-  onSale: boolean | null;
   minRating: number | null;
 }
 
@@ -29,10 +27,39 @@ export default function ModernFiltersSort({
   filters,
   onSortChange,
   onFilterChange,
-  maxPrice = 50000,
+  maxPrice = 200000,
 }: ModernFiltersSortProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [localFilters, setLocalFilters] = useState<FilterState>(filters);
+
+  // Load saved preferences from localStorage
+  useEffect(() => {
+    const savedSort = localStorage.getItem('productSort');
+    const savedFilters = localStorage.getItem('productFilters');
+    
+    if (savedSort && savedSort !== sortBy) {
+      onSortChange(savedSort);
+    }
+    
+    if (savedFilters) {
+      try {
+        const parsedFilters = JSON.parse(savedFilters);
+        setLocalFilters(parsedFilters);
+        onFilterChange(parsedFilters);
+      } catch (error) {
+        console.warn('Failed to parse saved filters:', error);
+      }
+    }
+  }, []);
+
+  // Save preferences to localStorage
+  useEffect(() => {
+    localStorage.setItem('productSort', sortBy);
+  }, [sortBy]);
+
+  useEffect(() => {
+    localStorage.setItem('productFilters', JSON.stringify(filters));
+  }, [filters]);
 
   // Price range slider values
   const [minPrice, setMinPrice] = useState(filters.priceRange[0]);
@@ -51,8 +78,6 @@ export default function ModernFiltersSort({
   const handleClearFilters = () => {
     const clearedFilters: FilterState = {
       priceRange: [0, 999999],
-      inStock: null,
-      onSale: null,
       minRating: null,
     };
     setLocalFilters(clearedFilters);
@@ -64,8 +89,6 @@ export default function ModernFiltersSort({
   const hasActiveFilters =
     filters.priceRange[0] !== 0 ||
     filters.priceRange[1] !== 999999 ||
-    filters.inStock !== null ||
-    filters.onSale !== null ||
     filters.minRating !== null;
 
   return (
@@ -77,15 +100,15 @@ export default function ModernFiltersSort({
             <div className="flex-1">
               {searchTerm ? (
                 <div>
-                  <h1 className="text-xl md:text-2xl font-bold text-gray-900">
-                    Search Results
+                  <h1 className="text-lg md:text-xl font-bold text-gray-900">
+                    {searchTerm}
                   </h1>
-                  <p className="text-sm text-gray-600 mt-1">
-                    for &quot;<span className="font-semibold text-gray-900">{searchTerm}</span>&quot;
+                  <p className="text-xs text-gray-600 mt-1">
+                    Showing {filteredProducts} of {totalProducts} products
                   </p>
                 </div>
               ) : (
-                <h1 className="text-xl md:text-2xl font-bold text-gray-900">
+                <h1 className="text-lg md:text-xl font-bold text-gray-900">
                   Products
                 </h1>
               )}
@@ -97,11 +120,9 @@ export default function ModernFiltersSort({
               <SlidersHorizontal className="w-4 h-4" />
               Filters
               {hasActiveFilters && (
-                <span className="ml-1 px-2 py-0.5 bg-teal-600 text-white text-xs rounded-full">
+                <span className="ml-1 px-2 py-0.5 text-white text-xs rounded-full" style={{ backgroundColor: '#fe6c06' }}>
                   {[
                     filters.priceRange[0] !== 0 || filters.priceRange[1] !== 999999,
-                    filters.inStock !== null,
-                    filters.onSale !== null,
                     filters.minRating !== null,
                   ].filter(Boolean).length}
                 </span>
@@ -110,37 +131,6 @@ export default function ModernFiltersSort({
           </div>
         </div>
 
-        {/* Sort and Count Section */}
-        <div className="py-3 flex items-center justify-between">
-          <div className="text-sm text-gray-700">
-            Showing{' '}
-            <span className="font-semibold text-gray-900">{filteredProducts}</span>{' '}
-            {filteredProducts !== totalProducts && (
-              <>
-                of <span className="font-semibold text-gray-900">{totalProducts}</span>
-              </>
-            )}{' '}
-            {filteredProducts === 1 ? 'product' : 'products'}
-          </div>
-
-          {/* Sort Dropdown */}
-          <div className="relative">
-            <select
-              value={sortBy}
-              onChange={(e) => onSortChange(e.target.value)}
-              className="appearance-none pl-4 pr-10 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent cursor-pointer transition-colors"
-            >
-              <option value="default">Default Sorting</option>
-              <option value="popularity">Sort by Popularity</option>
-              <option value="best-selling">Sort by Best Selling</option>
-              <option value="rating">Sort by Reviews</option>
-              <option value="new-arrivals">Sort by New Arrivals</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-          </div>
-        </div>
       </div>
 
       {/* Filters Panel */}
@@ -158,6 +148,37 @@ export default function ModernFiltersSort({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Sort Options */}
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-gray-900">
+                  Sort By
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'default', label: 'Default' },
+                    { value: 'popularity', label: 'Popularity' },
+                    { value: 'best-selling', label: 'Best Selling' },
+                    { value: 'rating', label: 'Reviews' },
+                    { value: 'new-arrivals', label: 'New Arrivals' },
+                    { value: 'price-asc', label: 'Price: Low to High' },
+                    { value: 'price-desc', label: 'Price: High to Low' },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => onSortChange(option.value)}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-[5px] transition-colors ${
+                        sortBy === option.value
+                          ? 'text-white'
+                          : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-orange-300'
+                      }`}
+                      style={sortBy === option.value ? { backgroundColor: '#fe6c06' } : {}}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Price Range Slider */}
               <div className="space-y-3">
                 <label className="block text-sm font-semibold text-gray-900">
@@ -167,7 +188,7 @@ export default function ModernFiltersSort({
                   {/* Min Price Slider */}
                   <div>
                     <label className="text-xs text-gray-600 mb-1 block">
-                      Minimum: ৳{minPrice.toLocaleString()}
+                      Minimum: Tk {minPrice.toLocaleString()}
                     </label>
                     <input
                       type="range"
@@ -181,14 +202,15 @@ export default function ModernFiltersSort({
                           setMinPrice(value);
                         }
                       }}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal-600"
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                      style={{ accentColor: '#fe6c06' }}
                     />
                   </div>
 
                   {/* Max Price Slider */}
                   <div>
                     <label className="text-xs text-gray-600 mb-1 block">
-                      Maximum: ৳{maxPriceValue.toLocaleString()}
+                      Maximum: Tk {maxPriceValue.toLocaleString()}
                     </label>
                     <input
                       type="range"
@@ -202,101 +224,58 @@ export default function ModernFiltersSort({
                           setMaxPriceValue(value);
                         }
                       }}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal-600"
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                      style={{ accentColor: '#fe6c06' }}
                     />
                   </div>
 
                   <div className="flex items-center gap-2 text-sm text-gray-700 bg-white px-3 py-2 rounded-lg border border-gray-200">
-                    <span className="font-medium">৳{minPrice.toLocaleString()}</span>
+                    <span className="font-medium">Tk {minPrice.toLocaleString()}</span>
                     <span className="text-gray-400">—</span>
-                    <span className="font-medium">৳{maxPriceValue.toLocaleString()}</span>
+                    <span className="font-medium">Tk {maxPriceValue.toLocaleString()}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Availability */}
-              <div className="space-y-3">
-                <label className="block text-sm font-semibold text-gray-900">
-                  Availability
-                </label>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={localFilters.inStock === true}
-                      onChange={(e) =>
-                        setLocalFilters({
-                          ...localFilters,
-                          inStock: e.target.checked ? true : null,
-                        })
-                      }
-                      className="w-5 h-5 text-teal-600 border-gray-300 rounded focus:ring-2 focus:ring-teal-500 cursor-pointer"
-                    />
-                    <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">
-                      In Stock Only
-                    </span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={localFilters.onSale === true}
-                      onChange={(e) =>
-                        setLocalFilters({
-                          ...localFilters,
-                          onSale: e.target.checked ? true : null,
-                        })
-                      }
-                      className="w-5 h-5 text-teal-600 border-gray-300 rounded focus:ring-2 focus:ring-teal-500 cursor-pointer"
-                    />
-                    <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">
-                      On Sale
-                    </span>
-                  </label>
-                </div>
-              </div>
 
               {/* Rating Filter */}
               <div className="space-y-3">
                 <label className="block text-sm font-semibold text-gray-900">
                   Minimum Rating
                 </label>
-                <div className="space-y-2">
-                  {[4.5, 4.0, 3.5, 3.0].map((rating) => (
-                    <label key={rating} className="flex items-center gap-3 cursor-pointer group">
-                      <input
-                        type="radio"
-                        name="rating"
-                        checked={localFilters.minRating === rating}
-                        onChange={() =>
-                          setLocalFilters({
-                            ...localFilters,
-                            minRating: rating,
-                          })
-                        }
-                        className="w-5 h-5 text-teal-600 border-gray-300 focus:ring-2 focus:ring-teal-500 cursor-pointer"
-                      />
-                      <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors flex items-center gap-1">
-                        {rating}+ <span className="text-yellow-500">★</span>
-                      </span>
-                    </label>
-                  ))}
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <input
-                      type="radio"
-                      name="rating"
-                      checked={localFilters.minRating === null}
-                      onChange={() =>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: null, label: 'All Ratings', stars: 0 },
+                    { value: 3.0, label: '3+ Stars', stars: 3 },
+                    { value: 3.5, label: '3.5+ Stars', stars: 3.5 },
+                    { value: 4.0, label: '4+ Stars', stars: 4 },
+                    { value: 4.5, label: '4.5+ Stars', stars: 4.5 },
+                  ].map((option) => (
+                    <button
+                      key={option.value || 'all'}
+                      onClick={() =>
                         setLocalFilters({
                           ...localFilters,
-                          minRating: null,
+                          minRating: option.value,
                         })
                       }
-                      className="w-5 h-5 text-teal-600 border-gray-300 focus:ring-2 focus:ring-teal-500 cursor-pointer"
-                    />
-                    <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">
-                      All Ratings
-                    </span>
-                  </label>
+                      className={`px-3 py-1.5 text-sm font-medium rounded-[5px] transition-colors flex items-center gap-1 ${
+                        localFilters.minRating === option.value
+                          ? 'text-white'
+                          : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-orange-300'
+                      }`}
+                      style={localFilters.minRating === option.value ? { backgroundColor: '#fe6c06' } : {}}
+                    >
+                      {option.value ? (
+                        <>
+                          {option.value}+ 
+                          <span className="text-yellow-400">★</span>
+                        </>
+                      ) : (
+                        option.label
+                      )}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -308,7 +287,10 @@ export default function ModernFiltersSort({
                 <div className="space-y-2">
                   <button
                     onClick={handleApplyFilters}
-                    className="w-full px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors"
+                    className="w-full px-4 py-2.5 text-white font-medium rounded-lg transition-colors"
+                    style={{ backgroundColor: '#fe6c06' }}
+                    onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = '#e55a00'}
+                    onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = '#fe6c06'}
                   >
                     Apply Filters
                   </button>

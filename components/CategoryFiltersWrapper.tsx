@@ -67,11 +67,10 @@ export default function CategoryFiltersWrapper({
   const [hasNextPage, setHasNextPage] = useState(initialHasNextPage);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   const [sortBy, setSortBy] = useState('default');
   const [filters, setFilters] = useState<FilterState>({
     priceRange: [0, 999999],
-    inStock: null,
-    onSale: null,
     minRating: null,
   });
 
@@ -91,10 +90,6 @@ export default function CategoryFiltersWrapper({
     return parseFloat(priceString.replace(/[^0-9.]/g, '')) || 0;
   }, []);
 
-  const checkIfOnSale = useMemo(() => (product: Product): boolean => {
-    return !!(product.salePrice && product.regularPrice && 
-      extractPrice(product.salePrice) < extractPrice(product.regularPrice));
-  }, [extractPrice]);
 
   // Filter and sort products
   const filteredAndSortedProducts = useMemo(() => {
@@ -108,23 +103,6 @@ export default function CategoryFiltersWrapper({
       });
     }
 
-    // Apply stock filter
-    if (filters.inStock !== null) {
-      filtered = filtered.filter((product) => {
-        const inStock = product.stockStatus === 'IN_STOCK' || 
-                       product.stockStatus === 'FAST_DELIVERY' || 
-                       product.stockStatus === 'REGULAR_DELIVERY';
-        return filters.inStock ? inStock : !inStock;
-      });
-    }
-
-    // Apply sale filter
-    if (filters.onSale !== null) {
-      filtered = filtered.filter((product) => {
-        const onSale = checkIfOnSale(product);
-        return filters.onSale ? onSale : !onSale;
-      });
-    }
 
     // Apply rating filter
     if (filters.minRating !== null) {
@@ -167,13 +145,13 @@ export default function CategoryFiltersWrapper({
     }
 
     return filtered;
-  }, [products, filters, sortBy, getProductRating, getSalesCount, extractPrice, checkIfOnSale]);
+  }, [products, filters, sortBy, getProductRating, getSalesCount, extractPrice]);
 
   // Calculate max price
   const maxPrice = useMemo(() => {
-    if (products.length === 0) return 50000;
+    if (products.length === 0) return 200000;
     const prices = products.map(p => extractPrice(p.price || p.regularPrice));
-    return Math.ceil(Math.max(...prices) / 1000) * 1000;
+    return Math.max(200000, Math.ceil(Math.max(...prices) / 1000) * 1000); // Minimum 200000, round up to nearest 1000
   }, [products, extractPrice]);
 
   // Load more products
@@ -210,6 +188,11 @@ export default function CategoryFiltersWrapper({
       setIsLoadingMore(false);
     }
   }, [isLoadingMore, hasNextPage, categorySlug, endCursor, error]);
+
+  // Set initialized after mount
+  useEffect(() => {
+    setIsInitialized(true);
+  }, []);
 
   // Intersection observer for infinite scroll
   useEffect(() => {
@@ -271,6 +254,7 @@ export default function CategoryFiltersWrapper({
       {/* Modern Filters & Sort */}
       {products.length > 0 && (
         <ModernFiltersSort
+          searchTerm={categoryName}
           totalProducts={totalCount}
           filteredProducts={filteredAndSortedProducts.length}
           sortBy={sortBy}
@@ -282,9 +266,26 @@ export default function CategoryFiltersWrapper({
       )}
 
       {/* Products Section */}
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto py-6">
         {/* Products Grid */}
-        {products.length === 0 ? (
+        {!isInitialized ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-[5px] gap-y-[4px] lg:gap-x-4 lg:gap-y-4">
+            {[...Array(20)].map((_, i) => (
+              <div key={i} className="bg-white overflow-hidden">
+                <div className="aspect-square bg-gray-200 animate-pulse" />
+                <div className="p-2 space-y-2">
+                  <div className="h-4 bg-gray-200 animate-pulse rounded" />
+                  <div className="h-5 bg-gray-200 animate-pulse rounded w-20" />
+                  <div className="flex items-center gap-1">
+                    {[...Array(5)].map((_, j) => (
+                      <div key={j} className="w-3 h-3 bg-gray-200 animate-pulse rounded" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : products.length === 0 ? (
           emptyState
         ) : filteredAndSortedProducts.length === 0 ? (
           <div className="min-h-[40vh] flex flex-col items-center justify-center px-4">
@@ -301,13 +302,14 @@ export default function CategoryFiltersWrapper({
               onClick={() => {
                 setFilters({
                   priceRange: [0, 999999],
-                  inStock: null,
-                  onSale: null,
                   minRating: null,
                 });
                 setSortBy('default');
               }}
-              className="px-6 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+              className="px-6 py-2.5 text-white rounded-lg transition-colors font-medium"
+              style={{ backgroundColor: '#fe6c06' }}
+              onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = '#e55a00'}
+              onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = '#fe6c06'}
             >
               Clear All Filters
             </button>
@@ -326,7 +328,7 @@ export default function CategoryFiltersWrapper({
             {/* Loading indicator */}
             {isLoadingMore && (
               <div className="flex flex-col items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-teal-600 mb-2" />
+                <Loader2 className="w-6 h-6 animate-spin mb-2" style={{ color: '#fe6c06' }} />
                 <p className="text-sm text-gray-500">Loading more products...</p>
               </div>
             )}
@@ -353,7 +355,7 @@ export default function CategoryFiltersWrapper({
             {!hasNextPage && products.length > 0 && (
               <div className="text-center py-8">
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full">
-                  <div className="w-2 h-2 bg-teal-600 rounded-full" />
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#fe6c06' }} />
                   <p className="text-sm text-gray-600 font-medium">
                     You&apos;ve viewed all {totalCount} products
                   </p>

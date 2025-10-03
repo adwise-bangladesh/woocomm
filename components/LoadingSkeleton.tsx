@@ -199,35 +199,30 @@ export function ProductPageSkeleton() {
 export function CategoryPageSkeleton() {
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Category Header Skeleton */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-6 lg:py-8">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              {/* Category Name */}
-              <div className="h-8 md:h-10 bg-gray-200 animate-pulse rounded w-48 md:w-64 mb-2" />
-              {/* Category Description */}
-              <div className="space-y-2 max-w-3xl">
-                <div className="h-4 bg-gray-200 animate-pulse rounded w-full" />
-                <div className="h-4 bg-gray-200 animate-pulse rounded w-3/4" />
+      {/* ModernFiltersSort Header Skeleton */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
+        <div className="container mx-auto px-4">
+          {/* Header Section */}
+          <div className="py-4 border-b border-gray-100">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                {/* Category Name */}
+                <div className="h-6 md:h-7 bg-gray-200 animate-pulse rounded w-48 md:w-64 mb-1" />
+                {/* Product Count */}
+                <div className="h-3 bg-gray-200 animate-pulse rounded w-32" />
               </div>
-            </div>
-            {/* Total Count */}
-            <div className="text-right flex-shrink-0">
-              <div className="h-4 bg-gray-200 animate-pulse rounded w-20 mb-2" />
-              <div className="h-8 bg-gray-200 animate-pulse rounded w-16" />
+              {/* Filters Button */}
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg">
+                <div className="w-4 h-4 bg-gray-200 animate-pulse rounded" />
+                <div className="h-4 bg-gray-200 animate-pulse rounded w-16" />
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Products Section */}
-      <div className="container mx-auto px-4 py-6">
-        {/* Results Info Skeleton */}
-        <div className="mb-4">
-          <div className="h-5 bg-gray-200 animate-pulse rounded w-48" />
-        </div>
-
+      <div className="container mx-auto py-6">
         {/* Product Grid - Match actual grid styling */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-[5px] gap-y-[4px] lg:gap-x-4 lg:gap-y-4">
           {[...Array(20)].map((_, i) => (
@@ -236,7 +231,7 @@ export function CategoryPageSkeleton() {
               <div className="aspect-square bg-gray-200 animate-pulse" />
               
               {/* Product Info */}
-              <div className="p-2 space-y-2">
+              <div className="p-1 space-y-2">
                 {/* Product Name */}
                 <div className="h-4 bg-gray-200 animate-pulse rounded" />
                 
@@ -254,7 +249,7 @@ export function CategoryPageSkeleton() {
           ))}
         </div>
 
-        {/* Loading More Skeleton */}
+        {/* Loading indicator */}
         <div className="flex justify-center items-center py-8 mt-4">
           <div className="w-6 h-6 bg-gray-200 animate-pulse rounded-full" />
         </div>

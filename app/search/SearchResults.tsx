@@ -43,8 +43,6 @@ export default function SearchResults() {
   const [sortBy, setSortBy] = useState('default');
   const [filters, setFilters] = useState<FilterState>({
     priceRange: [0, 999999],
-    inStock: null,
-    onSale: null,
     minRating: null,
   });
 
@@ -94,10 +92,6 @@ export default function SearchResults() {
     return parseFloat(priceString.replace(/[^0-9.]/g, '')) || 0;
   }, []);
 
-  const checkIfOnSale = useMemo(() => (product: Product): boolean => {
-    return !!(product.salePrice && product.regularPrice && 
-      extractPrice(product.salePrice) < extractPrice(product.regularPrice));
-  }, [extractPrice]);
 
 
   // Filter and sort products
@@ -113,23 +107,6 @@ export default function SearchResults() {
       });
     }
 
-    // Apply stock filter
-    if (filters.inStock !== null) {
-      filtered = filtered.filter((product) => {
-        const inStock = product.stockStatus === 'IN_STOCK' || 
-                       product.stockStatus === 'FAST_DELIVERY' || 
-                       product.stockStatus === 'REGULAR_DELIVERY';
-        return filters.inStock ? inStock : !inStock;
-      });
-    }
-
-    // Apply sale filter
-    if (filters.onSale !== null) {
-      filtered = filtered.filter((product) => {
-        const onSale = checkIfOnSale(product);
-        return filters.onSale ? onSale : !onSale;
-      });
-    }
 
     // Apply rating filter
     if (filters.minRating !== null) {
@@ -173,20 +150,20 @@ export default function SearchResults() {
     }
 
     return filtered;
-  }, [products, filters, sortBy, getProductRating, getSalesCount, extractPrice, checkIfOnSale]);
+  }, [products, filters, sortBy, getProductRating, getSalesCount, extractPrice]);
 
   // Calculate max price for slider
   const maxPrice = useMemo(() => {
-    if (products.length === 0) return 50000;
+    if (products.length === 0) return 200000;
     const prices = products.map(p => extractPrice(p.price || p.regularPrice));
-    return Math.ceil(Math.max(...prices) / 1000) * 1000; // Round up to nearest 1000
+    return Math.max(200000, Math.ceil(Math.max(...prices) / 1000) * 1000); // Minimum 200000, round up to nearest 1000
   }, [products, extractPrice]);
 
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col items-center justify-center py-20">
-          <Loader2 className="w-12 h-12 animate-spin text-teal-600 mb-4" />
+          <Loader2 className="w-12 h-12 animate-spin mb-4" style={{ color: '#fe6c06' }} />
           <p className="text-gray-600">Searching for &quot;{query}&quot;...</p>
         </div>
       </div>
@@ -200,7 +177,10 @@ export default function SearchResults() {
           <p className="text-red-600 mb-4">{error}</p>
           <Link
             href="/"
-            className="inline-block px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            className="inline-block px-6 py-2 text-white rounded-lg transition-colors"
+            style={{ backgroundColor: '#fe6c06' }}
+            onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = '#e55a00'}
+            onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = '#fe6c06'}
           >
             Go to Homepage
           </Link>
@@ -218,7 +198,10 @@ export default function SearchResults() {
           <p className="text-gray-600 mb-6">Enter a search term to find products</p>
           <Link
             href="/"
-            className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            className="px-6 py-2 text-white rounded-lg transition-colors"
+            style={{ backgroundColor: '#fe6c06' }}
+            onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = '#e55a00'}
+            onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = '#fe6c06'}
           >
             Browse All Products
           </Link>
@@ -252,8 +235,8 @@ export default function SearchResults() {
               <div className="w-32 h-32 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
                 <Package className="w-16 h-16 text-gray-400" strokeWidth={1.5} />
               </div>
-              <div className="absolute -top-2 -right-2 w-12 h-12 rounded-full bg-gradient-to-br from-teal-100 to-teal-200 flex items-center justify-center">
-                <Search className="w-6 h-6 text-teal-600" strokeWidth={2} />
+              <div className="absolute -top-2 -right-2 w-12 h-12 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center">
+                <Search className="w-6 h-6" strokeWidth={2} style={{ color: '#fe6c06' }} />
               </div>
             </div>
 
@@ -272,7 +255,10 @@ export default function SearchResults() {
             <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
               <Link
                 href="/categories"
-                className="flex-1 group flex items-center justify-center gap-2 px-6 py-3.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all hover:shadow-lg font-medium"
+                className="flex-1 group flex items-center justify-center gap-2 px-6 py-3.5 text-white rounded-lg transition-all hover:shadow-lg font-medium"
+                style={{ backgroundColor: '#fe6c06' }}
+                onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = '#e55a00'}
+                onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = '#fe6c06'}
               >
                 <Package className="w-5 h-5" />
                 Browse All Products
@@ -280,7 +266,7 @@ export default function SearchResults() {
               </Link>
               <Link
                 href="/"
-                className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-white border-2 border-gray-200 text-gray-700 rounded-lg hover:border-teal-600 hover:text-teal-600 transition-all font-medium"
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-white border-2 border-gray-200 text-gray-700 rounded-lg hover:border-orange-600 hover:text-orange-600 transition-all font-medium"
               >
                 Go to Homepage
               </Link>
@@ -294,7 +280,7 @@ export default function SearchResults() {
                   <Link
                     key={term}
                     href={`/search?q=${encodeURIComponent(term)}`}
-                    className="px-4 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-teal-50 hover:text-teal-600 transition-colors"
+                    className="px-4 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-orange-50 hover:text-orange-600 transition-colors"
                   >
                     {term}
                   </Link>
@@ -318,13 +304,14 @@ export default function SearchResults() {
               onClick={() => {
                 setFilters({
                   priceRange: [0, 999999],
-                  inStock: null,
-                  onSale: null,
                   minRating: null,
                 });
                 setSortBy('default');
               }}
-              className="px-6 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+              className="px-6 py-2.5 text-white rounded-lg transition-colors font-medium"
+              style={{ backgroundColor: '#fe6c06' }}
+              onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = '#e55a00'}
+              onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = '#fe6c06'}
             >
               Clear All Filters
             </button>

@@ -56,7 +56,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       </div>
 
       {/* Product Info */}
-      <div className="p-3">
+      <div className="p-1">
         {/* Product Title - Single Line */}
         <h3 className="font-medium text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors">
           {product.name}

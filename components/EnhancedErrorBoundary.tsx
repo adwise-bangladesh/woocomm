@@ -60,8 +60,8 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
     this.props.onError?.(error, errorInfo);
 
     // Analytics integration (if needed)
-    if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', 'exception', {
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('event', 'exception', {
         description: error.name,
         fatal: false,
         custom_map: { custom_parameter: errorId }
@@ -109,7 +109,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
             </h2>
             
             <p className="text-gray-600 mb-4">
-              We're sorry, but something unexpected happened. Please try refreshing the page.
+              We&apos;re sorry, but something unexpected happened. Please try refreshing the page.
             </p>
 
             {/* Error ID for support reference (only in development) */}
@@ -144,6 +144,6 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
 }
 
 // Functional wrapper for easier usage
-export default function ErrorBoundary(props: Props): JSX.Element {
-  return <EnhancedErrorBoundary {...props} />;
+export default function ErrorBoundary(props: Props): React.ReactElement {
+  return React.createElement(EnhancedErrorBoundary, props);
 }

@@ -5,7 +5,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag, revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
 
 export async function POST(req: NextRequest) {
   try {

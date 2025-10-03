@@ -38,7 +38,9 @@ class MemoryCache<T = unknown> {
     // Enforce max size
     if (this.cache.size > this.config.maxSize) {
       const oldestKey = this.cache.keys().next().value;
-      this.cache.delete(oldestKey);
+      if (oldestKey) {
+        this.cache.delete(oldestKey);
+      }
     }
   }
 
@@ -149,10 +151,13 @@ export const warmCategoryCache = async (slug: string, data: unknown): Promise<vo
 export const warmProductCache = async (products: unknown[]): Promise<void> => {
   // Cache individual products for faster lookups
   if (Array.isArray(products)) {
-    products.forEach((product: any) => {
-      if (product?.id) {
-        const key = generateProductKey(product.id);
-        productCache.set(key, product, 3 * 60 * 1000); // 3 minutes
+    products.forEach((product) => {
+      if (product && typeof product === 'object' && 'id' in product) {
+        const productRecord = product as Record<string, unknown>;
+        if (typeof productRecord.id === 'string') {
+          const key = generateProductKey(productRecord.id);
+          productCache.set(key, product, 3 * 60 * 1000); // 3 minutes
+        }
       }
     });
   }

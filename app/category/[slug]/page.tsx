@@ -215,7 +215,7 @@ export default async function CategoryPage({
     throw error;
   }
 
-  if (!data || !(data as any).category) {
+  if (!data || typeof data !== 'object' || !('category' in data)) {
     notFound();
   }
 

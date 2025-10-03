@@ -6,7 +6,7 @@ import { Product } from '@/lib/types';
 import { logger, usePriceFormatter, useDiscountCalculator, useReviewStatsGenerator, throttle } from '@/lib/utils/performance';
 import { createSessionClient } from '@/lib/graphql-client';
 import { gql } from 'graphql-request';
-import { productCache, generateProductsByCategoryKey } from '@/lib/utils/cache';
+// Cache utilities available for future enhancements
 import ProgressiveProductGrid from './ProgressiveProductGrid';
 
   const LOAD_MORE_CATEGORY_PRODUCTS = gql`
@@ -158,7 +158,6 @@ export default function CategoryFiltersWrapper({
   }, []);
 
   // Memoized helper functions for better performance
-  const priceFormatter = usePriceFormatter();
   const discountCalculator = useDiscountCalculator();
   const reviewStatsGenerator = useReviewStatsGenerator();
 
@@ -185,7 +184,7 @@ export default function CategoryFiltersWrapper({
       rating: getProductRating(product),
       isInStock: product.stockStatus === 'IN_STOCK' || product.stockStatus === 'FAST_DELIVERY' || product.stockStatus === 'REGULAR_DELIVERY'
     }));
-  }, [allProducts]);
+  }, [allProducts, extractPrice, checkIfOnSale, getProductRating]);
 
 
   // Filter and sort products

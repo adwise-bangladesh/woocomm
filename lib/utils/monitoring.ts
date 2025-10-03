@@ -159,8 +159,7 @@ Additional Metrics:
 - Memory Usage: ${metrics.memoryUsage ? (metrics.memoryUsage / 1024 / 1024).toFixed(2) : 'N/A'}MB
 
 Performance Score: ${score}/100
-Grade: ${score >= 90 ? 'A' : score >= 80 ? 'B' : score >= 70 ? 'C' : 'D'}
-    `..trim();
+Grade: ${score >= 90 ? 'A' : score >= 80 ? 'B' : score >= 70 ? 'C' : 'D'}`.trim();
 
     logger.info('Performance report generated', { score });
     return report;
@@ -210,7 +209,7 @@ export const withPerformanceTracking = <P extends object>(
     React = require('react');
   }
   
-  return React.forwardRef<HTMLElement, P>((props: P, ref: any) => {
+  const ForwardedComponent = React.forwardRef((props: P, ref: any) => {
     React.useEffect(() => {
       const startTime = performance.now();
       
@@ -222,4 +221,7 @@ export const withPerformanceTracking = <P extends object>(
 
     return React.createElement(Component, { ...props, ref });
   });
+  
+  ForwardedComponent.displayName = `withPerformanceTracking(${componentName})`;
+  return ForwardedComponent;
 };

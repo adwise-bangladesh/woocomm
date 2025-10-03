@@ -270,7 +270,6 @@ export default async function CategoryPage({
             categoryName={category.name}
             totalCount={category.count}
             categorySlug={slug}
-            categoryId={category.id}
             categoryDatabaseId={category.databaseId}
             initialEndCursor={pageInfo.endCursor}
             initialHasNextPage={pageInfo.hasNextPage}

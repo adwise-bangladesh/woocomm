@@ -20,11 +20,7 @@ interface PerformanceMetrics {
   memoryUsage?: number; // Memory usage
 }
 
-interface MemoryInfo {
-  usedJSHeapSize: number;
-  totalJSHeapSize: number;
-  jsHeapSizeLimit: number;
-}
+// MemoryInfo interface for browser performance API
 
 interface CacheMetrics {
   cacheHits: number;
@@ -109,14 +105,22 @@ class PerformanceMonitor {
   }
 
   private measureMemoryUsage(): void {
-    if ('memory' in (performance as any)) {
-      const memory = (performance as any).memory;
-      this.metrics.memoryUsage = memory.usedJSHeapSize;
+    interface PerformanceWithMemory extends Performance {
+      memory?: {
+        usedJSHeapSize: number;
+        totalJSHeapSize: number;
+        jsHeapSizeLimit: number;
+      };
+    }
+    
+    const perfWithMemory = performance as PerformanceWithMemory;
+    if (perfWithMemory.memory) {
+      this.metrics.memoryUsage = perfWithMemory.memory.usedJSHeapSize;
       
       logger.debug('Memory usage measured', {
-        used: memory.usedJSHeapSize,
-        total: memory.totalJSHeapSize,
-        limit: memory.jsHeapSizeLimit
+        used: perfWithMemory.memory.usedJSHeapSize,
+        total: perfWithMemory.memory.totalJSHeapSize,
+        limit: perfWithMemory.memory.jsHeapSizeLimit
       });
     }
   }

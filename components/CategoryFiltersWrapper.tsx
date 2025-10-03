@@ -49,7 +49,6 @@ interface CategoryFiltersWrapperProps {
   categoryName?: string;
   totalCount?: number;
   categorySlug: string;
-  categoryId: string;
   categoryDatabaseId: number;
   initialEndCursor: string | null;
   initialHasNextPage: boolean;
@@ -60,7 +59,6 @@ export default function CategoryFiltersWrapper({
   categoryName, 
   totalCount,
   categorySlug,
-  categoryId,
   categoryDatabaseId,
   initialEndCursor,
   initialHasNextPage

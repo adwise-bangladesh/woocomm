@@ -365,34 +365,11 @@ export default function CheckoutPage() {
                   required
                   value={formData.phone}
                   onChange={handleInputChange}
-                  className={`w-full px-3 py-2 text-sm text-gray-900 border ${
-                    errors.phone ? 'border-red-500' : 
-                    verificationError ? 'border-red-500' :
-                    verificationResult?.allowed ? 'border-green-500' :
-                    'border-gray-200'
-                  } rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent placeholder:text-gray-500`}
+                  className={`w-full px-3 py-2 text-sm text-gray-900 border ${errors.phone ? 'border-red-500' : 'border-gray-200'} rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent placeholder:text-gray-500`}
                   placeholder="01XXXXXXXXX"
                 />
                 {errors.phone && (
                   <p className="text-xs text-red-600 mt-1">{errors.phone}</p>
-                )}
-                {isVerifying && formData.phone.length >= 10 && (
-                  <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
-                    <span className="inline-block w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></span>
-                    Verifying customer...
-                  </p>
-                )}
-                {verificationResult?.allowed && !isVerifying && (
-                  <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                    <span className="inline-block">✓</span>
-                    Verified - You can place order
-                  </p>
-                )}
-                {verificationError && !isVerifying && (
-                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" />
-                    {verificationError}
-                  </p>
                 )}
               </div>
 
@@ -466,7 +443,7 @@ export default function CheckoutPage() {
             disabled={isLoading || localItems.length === 0}
             className="w-full bg-teal-600 text-white px-6 py-3 rounded-[5px] text-base font-bold hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-2 shadow-sm"
           >
-            {isVerifying ? 'Verifying Customer...' : isLoading ? 'Processing Order...' : 'Place Order'}
+            {isLoading ? 'Processing Order...' : 'Place Order'}
           </button>
 
           {/* Order Summary Card */}

@@ -21,6 +21,11 @@ export default function CheckoutPage() {
     deliveryZone: 'outside', // Default to outside Dhaka
     paymentMethod: 'cod',
   });
+  
+  const [errors, setErrors] = useState({
+    fullName: '',
+    phone: '',
+  });
 
   const formatPrice = (price: string | null | undefined) => {
     if (!price) return 'Tk 0';
@@ -28,9 +33,57 @@ export default function CheckoutPage() {
     return `Tk ${num.toFixed(0)}`;
   };
 
+  const validateName = (name: string) => {
+    if (name.length < 3) {
+      return 'Name must be at least 3 characters';
+    }
+    return '';
+  };
+
+  const validatePhone = (phone: string) => {
+    // Remove all non-digits
+    const digits = phone.replace(/\D/g, '');
+    
+    // Remove leading +88 or 88 if present
+    let cleanedDigits = digits;
+    if (digits.startsWith('88')) {
+      cleanedDigits = digits.substring(2);
+    }
+    
+    // Check if it's a valid BD number (starts with 01 and 11 digits total)
+    if (cleanedDigits.length !== 11 || !cleanedDigits.startsWith('01')) {
+      return 'Invalid Bangladesh phone number';
+    }
+    
+    return '';
+  };
+
+  const formatPhoneNumber = (phone: string) => {
+    // Remove all non-digits
+    const digits = phone.replace(/\D/g, '');
+    
+    // Remove leading +88 or 88 if present
+    let cleanedDigits = digits;
+    if (digits.startsWith('88')) {
+      cleanedDigits = digits.substring(2);
+    }
+    
+    // Ensure it starts with 0
+    if (cleanedDigits.startsWith('1')) {
+      cleanedDigits = '0' + cleanedDigits;
+    }
+    
+    return cleanedDigits;
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Clear error when user types
+    if (name === 'fullName' || name === 'phone') {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
   };
 
   const getDeliveryCharge = () => {
@@ -106,6 +159,22 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate name
+    const nameError = validateName(formData.fullName);
+    if (nameError) {
+      setErrors((prev) => ({ ...prev, fullName: nameError }));
+      return;
+    }
+
+    // Validate and format phone
+    const phoneError = validatePhone(formData.phone);
+    if (phoneError) {
+      setErrors((prev) => ({ ...prev, phone: phoneError }));
+      return;
+    }
+
+    const formattedPhone = formatPhoneNumber(formData.phone);
+
     setIsLoading(true);
 
     try {
@@ -115,15 +184,21 @@ export default function CheckoutPage() {
       
       const orderNumber = Math.random().toString(36).substr(2, 9).toUpperCase();
       const deliveryCharge = getDeliveryCharge();
-      const subtotalAmount = parseInt(total?.replace(/[^0-9]/g, '') || '0');
+      
+      // Calculate subtotal from localItems
+      const subtotalAmount = localItems.reduce((sum, item) => {
+        return sum + parseFloat(item.total.replace(/[^0-9.-]+/g, ''));
+      }, 0);
+      
       const totalAmount = subtotalAmount + deliveryCharge;
       
       clearCart();
       alert(
         `Order placed successfully! Order #${orderNumber}\n\n` +
+        `Phone: ${formattedPhone}\n` +
         `Delivery Zone: ${formData.deliveryZone === 'dhaka' ? 'Inside Dhaka' : 'Outside Dhaka'}\n` +
         `Delivery Charge: Tk ${deliveryCharge}\n` +
-        `Total Amount: Tk ${totalAmount}\n\n` +
+        `Total Amount: Tk ${totalAmount.toFixed(0)}\n\n` +
         `We'll contact you within 24 hours to confirm your order.`
       );
       router.push('/');
@@ -156,8 +231,6 @@ export default function CheckoutPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="lg:container lg:mx-auto px-2 py-2 lg:py-4">
         <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
-          <h1 className="text-xl font-bold text-gray-900 mb-3 px-1">Checkout</h1>
-          
           {/* Customer Information Card */}
           <div className="bg-white rounded-[5px] p-4 mb-2 shadow-sm">
             <h2 className="text-base font-semibold text-gray-900 mb-3">Customer Information</h2>
@@ -172,11 +245,15 @@ export default function CheckoutPage() {
                   id="fullName"
                   name="fullName"
                   required
+                  minLength={3}
                   value={formData.fullName}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent placeholder:text-gray-900"
+                  className={`w-full px-3 py-2 text-sm text-gray-900 border ${errors.fullName ? 'border-red-500' : 'border-gray-200'} rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent placeholder:text-gray-500`}
                   placeholder="Enter your full name"
                 />
+                {errors.fullName && (
+                  <p className="text-xs text-red-600 mt-1">{errors.fullName}</p>
+                )}
               </div>
 
               <div>
@@ -190,9 +267,12 @@ export default function CheckoutPage() {
                   required
                   value={formData.phone}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent placeholder:text-gray-900"
-                  placeholder="01XXXXXXXXX"
+                  className={`w-full px-3 py-2 text-sm text-gray-900 border ${errors.phone ? 'border-red-500' : 'border-gray-200'} rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent placeholder:text-gray-500`}
+                  placeholder="01XXXXXXXXX or +8801XXXXXXXXX"
                 />
+                {errors.phone && (
+                  <p className="text-xs text-red-600 mt-1">{errors.phone}</p>
+                )}
               </div>
 
               <div>
@@ -206,7 +286,7 @@ export default function CheckoutPage() {
                   rows={3}
                   value={formData.address}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent resize-none placeholder:text-gray-900"
+                  className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent resize-none placeholder:text-gray-500"
                   placeholder="House/Flat no, Road, Area, City, District"
                 />
               </div>
@@ -271,70 +351,74 @@ export default function CheckoutPage() {
           {/* Order Summary Card */}
           <div className="bg-white rounded-[5px] p-4 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-gray-900">Order Summary</h3>
-              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                {localItems.length} {localItems.length === 1 ? 'item' : 'items'}
-              </span>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-semibold text-gray-900">Order Summary</h3>
+                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                  {localItems.length} {localItems.length === 1 ? 'item' : 'items'}
+                </span>
+              </div>
             </div>
 
             <div className="space-y-3 mb-4">
               {localItems.map((item) => {
                 // Default to 1-3 days for in-stock items
-                // You can extend cart items to include stock status if needed
                 const deliveryTime = '1-3 days';
                 
                 return (
-                  <div key={item.key} className="flex gap-3 pb-3 border-b border-gray-100 last:border-0">
-                    <div className="w-20 h-20 bg-gray-100 rounded-[5px] overflow-hidden flex-shrink-0">
-                      <Image
-                        src={item.product.node.image?.sourceUrl || '/placeholder.png'}
-                        alt={item.product.node.name}
-                        width={80}
-                        height={80}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
+                  <div key={item.key} className="pb-3 border-b border-gray-100 last:border-0">
+                    {/* Product Title & Delete Button */}
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="text-sm font-medium text-gray-900 line-clamp-2 flex-1 pr-2">
                         {item.product.node.name}
                       </h4>
-                      
-                      {/* Delivery Time Badge */}
-                      <div className="flex items-center gap-1 mb-2">
-                        <Clock className="w-3 h-3 text-teal-600" />
-                        <span className="text-xs text-teal-600 font-medium">{deliveryTime}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeItem(item.key)}
+                        className="text-red-600 hover:text-red-700 p-1 hover:bg-red-50 rounded-[5px] transition-colors flex-shrink-0"
+                        title="Remove item"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <div className="w-20 h-20 bg-gray-100 rounded-[5px] overflow-hidden flex-shrink-0">
+                        <Image
+                          src={item.product.node.image?.sourceUrl || '/placeholder.png'}
+                          alt={item.product.node.name}
+                          width={80}
+                          height={80}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
-                      
-                      {/* Quantity Controls & Price */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => updateQuantity(item.key, item.quantity - 1)}
-                            className="w-7 h-7 flex items-center justify-center border border-gray-300 rounded-[5px] hover:bg-gray-50 transition-colors"
-                          >
-                            <Minus className="w-3.5 h-3.5 text-gray-600" />
-                          </button>
-                          <span className="text-sm font-semibold text-gray-900 w-8 text-center">{item.quantity}</span>
-                          <button
-                            type="button"
-                            onClick={() => updateQuantity(item.key, item.quantity + 1)}
-                            className="w-7 h-7 flex items-center justify-center border border-gray-300 rounded-[5px] hover:bg-gray-50 transition-colors"
-                          >
-                            <Plus className="w-3.5 h-3.5 text-gray-600" />
-                          </button>
+                      <div className="flex-1 min-w-0">
+                        {/* Delivery Time Badge */}
+                        <div className="flex items-center gap-1 mb-3">
+                          <Clock className="w-3 h-3 text-teal-600" />
+                          <span className="text-xs text-teal-600 font-medium">{deliveryTime}</span>
                         </div>
                         
-                        <div className="flex items-center gap-2">
+                        {/* Quantity Controls & Price */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center bg-gray-100 rounded-full p-1">
+                            <button
+                              type="button"
+                              onClick={() => updateQuantity(item.key, item.quantity - 1)}
+                              className="w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm hover:bg-gray-50 active:scale-95 transition-all"
+                            >
+                              <Minus className="w-4 h-4 text-gray-700" />
+                            </button>
+                            <span className="text-sm font-bold text-gray-900 w-10 text-center">{item.quantity}</span>
+                            <button
+                              type="button"
+                              onClick={() => updateQuantity(item.key, item.quantity + 1)}
+                              className="w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm hover:bg-gray-50 active:scale-95 transition-all"
+                            >
+                              <Plus className="w-4 h-4 text-gray-700" />
+                            </button>
+                          </div>
+                          
                           <span className="text-base font-bold text-red-600">{formatPrice(item.total)}</span>
-                          <button
-                            type="button"
-                            onClick={() => removeItem(item.key)}
-                            className="text-red-600 hover:text-red-700 p-1 hover:bg-red-50 rounded transition-colors"
-                            title="Remove item"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
                         </div>
                       </div>
                     </div>
@@ -347,7 +431,9 @@ export default function CheckoutPage() {
             <div className="space-y-2 pt-3 border-t-2 border-gray-200">
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-600">Subtotal</span>
-                <span className="font-medium text-gray-900">{formatPrice(total)}</span>
+                <span className="font-medium text-gray-900">
+                  Tk {localItems.reduce((sum, item) => sum + parseFloat(item.total.replace(/[^0-9.-]+/g, '')), 0).toFixed(0)}
+                </span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <div className="flex items-center gap-1">
@@ -358,7 +444,9 @@ export default function CheckoutPage() {
               </div>
               <div className="flex justify-between items-center text-lg font-bold pt-2 border-t border-gray-200">
                 <span className="text-gray-900">Total</span>
-                <span className="text-red-600">Tk {parseInt(total?.replace(/[^0-9]/g, '') || '0') + getDeliveryCharge()}</span>
+                <span className="text-red-600">
+                  Tk {(localItems.reduce((sum, item) => sum + parseFloat(item.total.replace(/[^0-9.-]+/g, '')), 0) + getDeliveryCharge()).toFixed(0)}
+                </span>
               </div>
             </div>
           </div>

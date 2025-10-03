@@ -18,6 +18,10 @@ const GET_CATEGORY_PRODUCTS = gql`
       description
       count
       products(first: $first) {
+        pageInfo {
+          endCursor
+          hasNextPage
+        }
         nodes {
           id
           name
@@ -56,7 +60,10 @@ async function getCategoryData(slug: string) {
         name: string; 
         description?: string; 
         count: number;
-        products: { nodes: Product[] };
+        products: { 
+          pageInfo: { endCursor: string | null; hasNextPage: boolean };
+          nodes: Product[] 
+        };
       } | null;
     };
     
@@ -77,6 +84,7 @@ async function getCategoryData(slug: string) {
     return {
       category: data.productCategory,
       products: data.productCategory.products?.nodes || [],
+      pageInfo: data.productCategory.products?.pageInfo || { endCursor: null, hasNextPage: false },
     };
   } catch (error) {
     logger.error('Error fetching category', { slug, error });
@@ -96,7 +104,7 @@ export default async function CategoryPage({
     notFound();
   }
 
-  const { products, category } = data;
+  const { products, category, pageInfo } = data;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -108,6 +116,8 @@ export default async function CategoryPage({
             categoryName={category.name}
             totalCount={category.count}
             categorySlug={slug}
+            initialEndCursor={pageInfo.endCursor}
+            initialHasNextPage={pageInfo.hasNextPage}
           />
         </Suspense>
       </ErrorBoundary>

@@ -22,7 +22,7 @@ const LOAD_MORE_CATEGORY_PRODUCTS = gql`
           name
           slug
           image {
-           sourceUrl
+            sourceUrl
             altText
           }
           ... on ProductWithPricing {
@@ -44,18 +44,26 @@ interface CategoryFiltersWrapperProps {
   categoryName?: string;
   totalCount?: number;
   categorySlug: string;
+  initialEndCursor: string | null;
+  initialHasNextPage: boolean;
 }
 
 export default function CategoryFiltersWrapper({ 
   initialProducts, 
   categoryName, 
   totalCount,
-  categorySlug
+  categorySlug,
+  initialEndCursor,
+  initialHasNextPage
 }: CategoryFiltersWrapperProps) {
+  console.log('🔍 CategoryFiltersWrapper initialized with slug:', categorySlug);
+  console.log('🔍 Initial products count:', initialProducts.length);
+  console.log('🔍 Initial endCursor:', initialEndCursor);
+  console.log('🔍 Initial hasNextPage:', initialHasNextPage);
 
   const [allProducts, setAllProducts] = useState<Product[]>(initialProducts);
-  const [endCursor, setEndCursor] = useState<string | null>(null);
-  const [hasNextPage, setHasNextPage] = useState(true);
+  const [endCursor, setEndCursor] = useState<string | null>(initialEndCursor);
+  const [hasNextPage, setHasNextPage] = useState(initialHasNextPage);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [lastLoadTime, setLastLoadTime] = useState(0);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -81,6 +89,9 @@ export default function CategoryFiltersWrapper({
     setLastLoadTime(now);
     
     try {
+      console.log('🔍 Loading more products for category:', categorySlug);
+      console.log('🔍 Using endCursor:', endCursor);
+      
       const client = createSessionClient();
       const data = await client.request(LOAD_MORE_CATEGORY_PRODUCTS, {
         slug: categorySlug,
@@ -95,8 +106,12 @@ export default function CategoryFiltersWrapper({
         }
       };
 
+      console.log('🔍 GraphQL Response:', data);
+      
       if (data.productCategory?.products) {
         const newProducts = data.productCategory.products.nodes;
+        console.log('🔍 New products loaded:', newProducts.length);
+        console.log('🔍 New products:', newProducts.map(p => p.name));
         setAllProducts(prev => [...prev, ...newProducts]);
         setEndCursor(data.productCategory.products.pageInfo.endCursor);
         setHasNextPage(data.productCategory.products.pageInfo.hasNextPage);

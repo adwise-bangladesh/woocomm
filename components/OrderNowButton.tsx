@@ -41,11 +41,11 @@ export default function OrderNowButton({ productId, variationId, disabled = fals
       
       // Redirect to checkout
       router.push('/checkout');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error adding to cart:', error);
       
       // Check if it's a stock status error
-      const errorMessage = error?.response?.errors?.[0]?.message || error?.message || 'Unknown error';
+      const errorMessage = (error as { response?: { errors?: { message?: string }[] }; message?: string })?.response?.errors?.[0]?.message || (error as Error)?.message || 'Unknown error';
       
       if (errorMessage.toLowerCase().includes('stock') || errorMessage.toLowerCase().includes('inventory')) {
         alert('This product is currently out of stock but available for pre-order. We are processing your request...');

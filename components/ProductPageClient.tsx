@@ -8,7 +8,6 @@ import AddToCartButton from './AddToCartButton';
 import AnimatedOrderButton from './AnimatedOrderButton';
 import ShareButton from './ShareButton';
 import { Phone, Star, Package, Clock } from 'lucide-react';
-import Link from 'next/link';
 import { usePriceFormatter, useDiscountCalculator, logger } from '@/lib/utils/performance';
 import { sanitizeHtml } from '@/lib/utils/sanitizer';
 
@@ -45,10 +44,10 @@ export default function ProductPageClient({
     const isPreOrder = currentStockStatus === 'OUT_OF_STOCK';
     const canOrder = isInStock || isBackordersAllowed || isPreOrder; // Allow all three statuses
     
-    return { isInStock, isBackordersAllowed, isPreOrder, canOrder };
+    return { isInStock, isBackordersAllowed, canOrder };
   }, [currentStockStatus]);
 
-  const { isInStock, isBackordersAllowed, isPreOrder, canOrder } = stockInfo;
+  const { isInStock, isBackordersAllowed, canOrder } = stockInfo;
   
   // Debug logging (development only)
   logger.debug('Stock status debug', {

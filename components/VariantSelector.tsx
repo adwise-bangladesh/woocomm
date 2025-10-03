@@ -12,7 +12,6 @@ interface VariantSelectorProps {
 
 export default function VariantSelector({ product, onVariantChange }: VariantSelectorProps) {
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
-  const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null);
 
   // Memoize expensive data processing
   const { attributes, variations, defaultAttributes } = useMemo(() => ({
@@ -82,11 +81,9 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
       });
 
       logger.debug('Found matching variation', matchingVariation?.databaseId);
-      setSelectedVariation(matchingVariation || null);
       onVariantChange(matchingVariation || null, selectedAttributes);
     } else {
       logger.debug('Not enough attributes selected');
-      setSelectedVariation(null);
       onVariantChange(null, selectedAttributes);
     }
   }, [selectedAttributes, variations, attributes.length, onVariantChange]);

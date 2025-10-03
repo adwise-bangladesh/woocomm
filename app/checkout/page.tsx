@@ -419,7 +419,17 @@ export default function CheckoutPage() {
                             </h4>
                             {item.variation?.node?.name && (
                               <p className="text-xs text-gray-500 mt-0.5">
-                                {item.variation.node.name.replace(item.product.node.name + ' - ', '')}
+                                {(() => {
+                                  const variationText = item.variation.node.name.replace(item.product.node.name + ' - ', '');
+                                  const attributes = variationText.split(', ');
+                                  
+                                  // If we have exactly 2 attributes, assume they are Size and Color
+                                  if (attributes.length === 2) {
+                                    return `Size: ${attributes[0]} | Color: ${attributes[1]}`;
+                                  }
+                                  // Otherwise, try to detect attribute names from the variation data
+                                  return variationText;
+                                })()}
                               </p>
                             )}
                           </div>

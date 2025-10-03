@@ -3,7 +3,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import ProductCard from './ProductCard';
 import { Product } from '@/lib/types';
-import { logger } from '@/lib/utils/performance';
 import { createSessionClient } from '@/lib/graphql-client';
 import { Loader2 } from 'lucide-react';
 import { gql } from 'graphql-request';
@@ -78,13 +77,6 @@ export default function CategoryFiltersWrapper({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [lastLoadTime, setLastLoadTime] = useState(0);
   const MIN_LOAD_INTERVAL = 500;
-  const [sortBy, setSortBy] = useState('default');
-  const [filters, setFilters] = useState<FilterState>({
-    priceRange: [0, 999999],
-    inStock: null,
-    onSale: null,
-    rating: null,
-  });
 
   // Load more products function
   const loadMore = useCallback(async () => {

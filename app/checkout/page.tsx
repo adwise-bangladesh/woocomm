@@ -50,6 +50,11 @@ export default function CheckoutPage() {
       cleanedDigits = digits.substring(2);
     }
     
+    // Add leading 0 if starts with 1
+    if (cleanedDigits.startsWith('1') && cleanedDigits.length === 10) {
+      cleanedDigits = '0' + cleanedDigits;
+    }
+    
     // Check if it's a valid BD number (starts with 01 and 11 digits total)
     if (cleanedDigits.length !== 11 || !cleanedDigits.startsWith('01')) {
       return 'Invalid Bangladesh phone number';
@@ -69,7 +74,7 @@ export default function CheckoutPage() {
     }
     
     // Ensure it starts with 0
-    if (cleanedDigits.startsWith('1')) {
+    if (cleanedDigits.startsWith('1') && cleanedDigits.length === 10) {
       cleanedDigits = '0' + cleanedDigits;
     }
     
@@ -91,17 +96,17 @@ export default function CheckoutPage() {
   };
 
   const getDeliveryTime = (stockStatus?: string) => {
-    if (!stockStatus) return '1-3 days';
+    if (!stockStatus) return { text: 'Fast Delivery (1-3 days)', color: 'text-green-600' };
     
     switch (stockStatus) {
       case 'IN_STOCK':
-        return '1-3 days';
+        return { text: 'Fast Delivery (1-3 days)', color: 'text-green-600' };
       case 'ON_BACKORDER':
-        return '3-5 days';
+        return { text: 'Regular Delivery (3-5 days)', color: 'text-yellow-600' };
       case 'OUT_OF_STOCK':
-        return '10-15 days';
+        return { text: 'Pre Order (10-15 days)', color: 'text-orange-600' };
       default:
-        return '1-3 days';
+        return { text: 'Fast Delivery (1-3 days)', color: 'text-green-600' };
     }
   };
 
@@ -268,7 +273,7 @@ export default function CheckoutPage() {
                   value={formData.phone}
                   onChange={handleInputChange}
                   className={`w-full px-3 py-2 text-sm text-gray-900 border ${errors.phone ? 'border-red-500' : 'border-gray-200'} rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent placeholder:text-gray-500`}
-                  placeholder="01XXXXXXXXX or +8801XXXXXXXXX"
+                  placeholder="01XXXXXXXXX"
                 />
                 {errors.phone && (
                   <p className="text-xs text-red-600 mt-1">{errors.phone}</p>
@@ -361,28 +366,14 @@ export default function CheckoutPage() {
 
             <div className="space-y-3 mb-4">
               {localItems.map((item) => {
-                // Default to 1-3 days for in-stock items
-                const deliveryTime = '1-3 days';
+                // Default to fast delivery for in-stock items
+                const deliveryInfo = getDeliveryTime('IN_STOCK');
                 
                 return (
                   <div key={item.key} className="pb-3 border-b border-gray-100 last:border-0">
-                    {/* Product Title & Delete Button */}
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="text-sm font-medium text-gray-900 line-clamp-2 flex-1 pr-2">
-                        {item.product.node.name}
-                      </h4>
-                      <button
-                        type="button"
-                        onClick={() => removeItem(item.key)}
-                        className="text-red-600 hover:text-red-700 p-1 hover:bg-red-50 rounded-[5px] transition-colors flex-shrink-0"
-                        title="Remove item"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-
                     <div className="flex gap-3">
-                      <div className="w-20 h-20 bg-gray-100 rounded-[5px] overflow-hidden flex-shrink-0">
+                      {/* Product Image with Border */}
+                      <div className="w-20 h-20 border-[3px] border-gray-200 rounded-[5px] overflow-hidden flex-shrink-0">
                         <Image
                           src={item.product.node.image?.sourceUrl || '/placeholder.png'}
                           alt={item.product.node.name}
@@ -391,11 +382,27 @@ export default function CheckoutPage() {
                           className="w-full h-full object-cover"
                         />
                       </div>
+
                       <div className="flex-1 min-w-0">
+                        {/* Product Title & Delete Button */}
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="text-sm font-medium text-gray-900 line-clamp-2 flex-1 pr-2">
+                            {item.product.node.name}
+                          </h4>
+                          <button
+                            type="button"
+                            onClick={() => removeItem(item.key)}
+                            className="text-red-600 hover:text-red-700 p-1 hover:bg-red-50 rounded-[5px] transition-colors flex-shrink-0"
+                            title="Remove item"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+
                         {/* Delivery Time Badge */}
                         <div className="flex items-center gap-1 mb-3">
-                          <Clock className="w-3 h-3 text-teal-600" />
-                          <span className="text-xs text-teal-600 font-medium">{deliveryTime}</span>
+                          <Clock className={`w-3 h-3 ${deliveryInfo.color}`} />
+                          <span className={`text-xs ${deliveryInfo.color} font-medium`}>{deliveryInfo.text}</span>
                         </div>
                         
                         {/* Quantity Controls & Price */}

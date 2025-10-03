@@ -127,8 +127,19 @@ export default function OrderNowButton({ productId, variationId, disabled = fals
       className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-[5px] font-semibold transition-colors ${
         disabled || isLoading
           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          : 'bg-teal-600 text-white hover:bg-teal-700'
+          : 'text-white'
       }`}
+      style={!disabled && !isLoading ? { backgroundColor: '#fe6c06' } : {}}
+      onMouseEnter={(e) => {
+        if (!disabled && !isLoading) {
+          (e.target as HTMLElement).style.backgroundColor = '#e55a00';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!disabled && !isLoading) {
+          (e.target as HTMLElement).style.backgroundColor = '#fe6c06';
+        }
+      }}
     >
       {isLoading ? (
         <>

@@ -5,11 +5,49 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Clock, Plus, Minus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
-import { CartItem } from '@/lib/types';
+import { CartItem, Product } from '@/lib/types';
+import { createSessionClient } from '@/lib/graphql-client';
+import { gql } from 'graphql-request';
+import InfiniteProductGrid from '@/components/InfiniteProductGrid';
+
+const GET_HOMEPAGE_PRODUCTS = gql`
+  query GetHomepageProducts($first: Int!) {
+    products(first: $first, where: { orderby: { field: DATE, order: DESC } }) {
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        id
+        name
+        slug
+        featured
+        image {
+          sourceUrl
+          altText
+        }
+        ... on ProductWithPricing {
+          price
+          regularPrice
+          salePrice
+        }
+        ... on InventoriedProduct {
+          stockStatus
+        }
+      }
+    }
+  }
+`;
 
 export default function CartPage() {
   const { items, isEmpty, clearCart, setCart } = useCartStore();
   const [localItems, setLocalItems] = useState<CartItem[]>([]);
+  const [homepageProducts, setHomepageProducts] = useState<Product[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [pageInfo, setPageInfo] = useState<{ hasNextPage: boolean; endCursor: string | null }>({
+    hasNextPage: false,
+    endCursor: null
+  });
 
   // Sync localItems with items from store
   useEffect(() => {
@@ -23,11 +61,34 @@ export default function CartPage() {
     }
   }, [items, localItems.length]);
 
+  // Fetch homepage products when cart is empty
+  useEffect(() => {
+    const fetchHomepageProducts = async () => {
+      if (isEmpty || items.length === 0) {
+        setIsLoadingProducts(true);
+        try {
+          const client = createSessionClient();
+          const data = await client.request(GET_HOMEPAGE_PRODUCTS, { first: 20 }) as { products: { nodes: Product[]; pageInfo: { hasNextPage: boolean; endCursor: string | null } } };
+          setHomepageProducts(data.products?.nodes || []);
+          setPageInfo(data.products?.pageInfo || { hasNextPage: false, endCursor: null });
+        } catch (error) {
+          console.error('Error fetching homepage products:', error);
+          setHomepageProducts([]);
+        } finally {
+          setIsLoadingProducts(false);
+        }
+      }
+    };
+
+    fetchHomepageProducts();
+  }, [isEmpty, items.length]);
+
   const formatPrice = (price: string | null | undefined) => {
     if (!price) return 'Tk 0';
     const num = parseFloat(price.replace(/[^0-9.-]+/g, ''));
     return `Tk ${num.toFixed(0)}`;
   };
+
 
   const getDeliveryTime = (stockStatus?: string) => {
     if (!stockStatus) return { text: 'Fast Delivery (1-3 days)', color: 'text-green-600' };
@@ -101,19 +162,69 @@ export default function CartPage() {
 
   if (isEmpty || items.length === 0 || localItems.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <div className="mb-6">
-            <ShoppingBag className="mx-auto h-24 w-24 text-gray-400" strokeWidth={1.5} />
+      <div className="min-h-screen bg-gray-50">
+        {/* Empty Cart Header */}
+        <div className="bg-white border-b border-gray-200">
+          <div className="container mx-auto px-4 py-10">
+            <div className="text-center max-w-xl mx-auto">
+              <div className="mb-4">
+                <div className="w-16 h-16 mx-auto bg-gradient-to-br from-orange-100 to-orange-200 rounded-full flex items-center justify-center">
+                  <ShoppingBag className="w-8 h-8" style={{ color: '#fe6c06' }} strokeWidth={1.5} />
+                </div>
+              </div>
+              <h1 className="text-xl font-bold text-gray-900 mb-2">Your Cart is Empty</h1>
+              <p className="text-sm text-gray-600 mb-6">Discover amazing products and start building your perfect cart!</p>
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 px-6 py-3 text-white font-semibold rounded-lg transition-colors shadow-lg"
+                style={{ backgroundColor: '#fe6c06' }}
+                onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = '#e55a00'}
+                onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = '#fe6c06'}
+              >
+                <ShoppingBag className="w-4 h-4" />
+                Start Shopping
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Your Cart is Empty</h1>
-          <p className="text-gray-600 mb-8">Looks like you haven&apos;t added anything to your cart yet.</p>
-          <Link
-            href="/"
-            className="inline-block bg-teal-600 text-white px-8 py-3 rounded-[5px] font-semibold hover:bg-teal-700 transition-colors shadow-sm"
-          >
-            Start Shopping
-          </Link>
+        </div>
+
+        {/* Products for You Section */}
+        <div className="container mx-auto py-4">
+          {isLoadingProducts ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-[5px] gap-y-[4px] lg:gap-x-4 lg:gap-y-4">
+              {[...Array(20)].map((_, i) => (
+                <div key={i} className="bg-white overflow-hidden">
+                  <div className="aspect-square bg-gray-200 animate-pulse" />
+                  <div className="p-1 space-y-2">
+                    <div className="h-4 bg-gray-200 animate-pulse rounded" />
+                    <div className="h-5 bg-gray-200 animate-pulse rounded w-20" />
+                    <div className="flex items-center gap-1">
+                      {[...Array(5)].map((_, j) => (
+                        <div key={j} className="w-3 h-3 bg-gray-200 animate-pulse rounded" />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : homepageProducts.length > 0 ? (
+            <InfiniteProductGrid
+              initialProducts={homepageProducts}
+              initialEndCursor={pageInfo.endCursor}
+              initialHasNextPage={pageInfo.hasNextPage}
+            />
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-sm text-gray-500 mb-4">Unable to load products. Please try again later.</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="text-orange-600 hover:text-orange-700 font-medium text-sm"
+              >
+                Refresh Page
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -254,7 +365,10 @@ export default function CartPage() {
 
                 <Link
                   href="/checkout"
-                  className="w-full flex items-center justify-center gap-2 bg-teal-600 text-white px-6 py-3 rounded-[5px] text-base font-bold hover:bg-teal-700 transition-colors shadow-sm"
+                  className="w-full flex items-center justify-center gap-2 text-white px-6 py-3 rounded-[5px] text-base font-bold transition-colors shadow-sm"
+                  style={{ backgroundColor: '#fe6c06' }}
+                  onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = '#e55a00'}
+                  onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = '#fe6c06'}
                 >
                   Proceed to Checkout
                   <ArrowRight className="w-4 h-4" />
@@ -262,7 +376,7 @@ export default function CartPage() {
 
                 <Link
                   href="/"
-                  className="block text-center text-sm text-gray-600 hover:text-teal-600 mt-3 font-medium"
+                  className="block text-center text-sm text-gray-600 hover:text-orange-600 mt-3 font-medium transition-colors"
                 >
                   Continue Shopping
                 </Link>

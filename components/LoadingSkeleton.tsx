@@ -34,14 +34,14 @@ export function ProductGridSkeleton() {
       <div className="w-full lg:container lg:mx-auto lg:px-4">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-[5px] gap-y-[4px] lg:gap-x-4 lg:gap-y-4">
           {[...Array(12)].map((_, i) => (
-            <div key={i} className="bg-white overflow-hidden">
-              <div className="aspect-square bg-gray-200 animate-pulse" />
-              <div className="p-2 space-y-2">
+            <div key={i} className="bg-white overflow-hidden rounded-lg shadow-sm hover:shadow-md transition-shadow">
+              <div className="aspect-square bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse" />
+              <div className="p-1 space-y-2">
                 <div className="h-4 bg-gray-200 animate-pulse rounded" />
                 <div className="h-5 bg-gray-200 animate-pulse rounded w-20" />
                 <div className="flex gap-1">
                   {[...Array(5)].map((_, j) => (
-                    <div key={j} className="w-4 h-4 bg-gray-200 animate-pulse rounded" />
+                    <div key={j} className="w-3 h-3 bg-gray-200 animate-pulse rounded" />
                   ))}
                 </div>
               </div>
@@ -60,14 +60,14 @@ export function ProductPageSkeleton() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Left: Image Gallery Skeleton */}
           <div className="lg:col-span-2">
-            <div className="bg-white sticky top-4 p-4 rounded-[5px]">
+            <div className="bg-white sticky top-4 p-4 rounded-lg shadow-sm">
               {/* Main Image */}
-              <div className="aspect-square bg-gray-200 animate-pulse rounded-[5px] mb-4" />
+              <div className="aspect-square bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse rounded-lg mb-4" />
               
               {/* Thumbnail Gallery */}
               <div className="grid grid-cols-5 gap-2">
                 {[...Array(5)].map((_, i) => (
-                  <div key={i} className="aspect-square bg-gray-200 animate-pulse rounded-[5px]" />
+                  <div key={i} className="aspect-square bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse rounded-lg border-2 border-gray-200" />
                 ))}
               </div>
             </div>
@@ -75,12 +75,12 @@ export function ProductPageSkeleton() {
 
           {/* Right: Product Info Skeleton */}
           <div className="space-y-2">
-            <div className="bg-white rounded-[5px] p-3 sticky top-4">
+            <div className="bg-white rounded-lg p-4 sticky top-4 shadow-sm">
               {/* Title */}
-              <div className="h-6 bg-gray-200 animate-pulse rounded mb-3" />
+              <div className="h-7 bg-gray-200 animate-pulse rounded mb-3" />
               
               {/* Reviews */}
-              <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+              <div className="flex items-center gap-2 mb-3 pb-3 border-b">
                 <div className="flex gap-1">
                   {[...Array(5)].map((_, i) => (
                     <div key={i} className="w-3.5 h-3.5 bg-gray-200 animate-pulse rounded" />
@@ -90,86 +90,87 @@ export function ProductPageSkeleton() {
               </div>
 
               {/* Price */}
-              <div className="mb-3 pb-3 border-b">
+              <div className="mb-4 pb-4 border-b">
                 <div className="flex items-baseline gap-2">
-                  <div className="w-20 h-8 bg-gray-200 animate-pulse rounded" />
+                  <div className="w-24 h-8 bg-gray-200 animate-pulse rounded" />
+                  <div className="w-20 h-5 bg-gray-200 animate-pulse rounded" />
                   <div className="w-16 h-5 bg-gray-200 animate-pulse rounded" />
-                  <div className="w-12 h-5 bg-gray-200 animate-pulse rounded" />
                 </div>
               </div>
 
               {/* Variant Selector */}
-              <div className="mb-4 pb-4 border-b space-y-3">
-                <div className="w-16 h-4 bg-gray-200 animate-pulse rounded" />
-                <div className="flex gap-2">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="w-16 h-10 bg-gray-200 animate-pulse rounded-md" />
-                  ))}
-                </div>
+              <div className="mb-4 pb-4 border-b space-y-4">
                 <div className="w-20 h-4 bg-gray-200 animate-pulse rounded" />
                 <div className="flex gap-2">
                   {[...Array(3)].map((_, i) => (
-                    <div key={i} className="w-16 h-10 bg-gray-200 animate-pulse rounded-md" />
+                    <div key={i} className="w-16 h-10 bg-gray-200 animate-pulse rounded-md border-2 border-gray-200" />
+                  ))}
+                </div>
+                <div className="w-24 h-4 bg-gray-200 animate-pulse rounded" />
+                <div className="flex gap-2">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="w-16 h-10 bg-gray-200 animate-pulse rounded-md border-2 border-gray-200" />
                   ))}
                 </div>
               </div>
 
               {/* Short Description */}
-              <div className="mb-3 pb-3 border-b space-y-2">
+              <div className="mb-4 pb-4 border-b space-y-2">
                 <div className="w-full h-3 bg-gray-200 animate-pulse rounded" />
-                <div className="w-3/4 h-3 bg-gray-200 animate-pulse rounded" />
+                <div className="w-4/5 h-3 bg-gray-200 animate-pulse rounded" />
+                <div className="w-3/5 h-3 bg-gray-200 animate-pulse rounded" />
               </div>
 
               {/* Stock Status */}
               <div className="flex items-center justify-between mb-4 pb-4 border-b">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-gray-200 animate-pulse rounded-full" />
-                  <div className="w-16 h-4 bg-gray-200 animate-pulse rounded" />
+                  <div className="w-2 h-2 bg-green-200 animate-pulse rounded-full" />
+                  <div className="w-20 h-4 bg-gray-200 animate-pulse rounded" />
                 </div>
-                <div className="w-20 h-4 bg-gray-200 animate-pulse rounded" />
+                <div className="w-24 h-4 bg-gray-200 animate-pulse rounded" />
               </div>
 
               {/* Action Buttons */}
-              <div className="space-y-2 mb-4">
-                <div className="w-full h-12 bg-gray-200 animate-pulse rounded-lg" />
-                <div className="w-full h-12 bg-gray-200 animate-pulse rounded-lg" />
+              <div className="space-y-3 mb-4">
+                <div className="w-full h-12 bg-gradient-to-r from-gray-200 to-gray-300 animate-pulse rounded-lg" />
+                <div className="w-full h-12 bg-gradient-to-r from-gray-200 to-gray-300 animate-pulse rounded-lg" />
               </div>
 
               {/* Contact Options */}
-              <div className="space-y-2 mb-4 pb-4 border-b">
-                <div className="w-full h-10 bg-gray-200 animate-pulse rounded-lg" />
+              <div className="space-y-3 mb-4 pb-4 border-b">
+                <div className="w-full h-10 bg-gradient-to-r from-gray-200 to-gray-300 animate-pulse rounded-lg" />
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="h-10 bg-gray-200 animate-pulse rounded-lg" />
-                  <div className="h-10 bg-gray-200 animate-pulse rounded-lg" />
+                  <div className="h-10 bg-gradient-to-r from-gray-200 to-gray-300 animate-pulse rounded-lg" />
+                  <div className="h-10 bg-gradient-to-r from-gray-200 to-gray-300 animate-pulse rounded-lg" />
                 </div>
               </div>
 
               {/* Delivery Charges */}
-              <div className="mb-4 pb-4 border-b space-y-2">
-                <div className="w-24 h-4 bg-gray-200 animate-pulse rounded" />
-                <div className="space-y-1">
-                  <div className="flex justify-between">
-                    <div className="w-20 h-3 bg-gray-200 animate-pulse rounded" />
-                    <div className="w-12 h-3 bg-gray-200 animate-pulse rounded" />
-                  </div>
+              <div className="mb-4 pb-4 border-b space-y-3">
+                <div className="w-28 h-4 bg-gray-200 animate-pulse rounded" />
+                <div className="space-y-2">
                   <div className="flex justify-between">
                     <div className="w-24 h-3 bg-gray-200 animate-pulse rounded" />
-                    <div className="w-14 h-3 bg-gray-200 animate-pulse rounded" />
+                    <div className="w-16 h-3 bg-gray-200 animate-pulse rounded" />
+                  </div>
+                  <div className="flex justify-between">
+                    <div className="w-28 h-3 bg-gray-200 animate-pulse rounded" />
+                    <div className="w-18 h-3 bg-gray-200 animate-pulse rounded" />
                   </div>
                 </div>
               </div>
 
               {/* Note */}
-              <div className="mb-3 p-3 bg-gray-100 rounded-lg space-y-2">
-                <div className="w-28 h-3 bg-gray-200 animate-pulse rounded" />
+              <div className="mb-4 p-3 bg-orange-50 rounded-lg space-y-2">
+                <div className="w-32 h-3 bg-gray-200 animate-pulse rounded" />
                 <div className="w-full h-3 bg-gray-200 animate-pulse rounded" />
-                <div className="w-2/3 h-3 bg-gray-200 animate-pulse rounded" />
+                <div className="w-3/4 h-3 bg-gray-200 animate-pulse rounded" />
               </div>
 
               {/* Product Code & Share */}
               <div className="flex items-center justify-between">
-                <div className="w-24 h-3 bg-gray-200 animate-pulse rounded" />
-                <div className="w-12 h-6 bg-gray-200 animate-pulse rounded" />
+                <div className="w-28 h-3 bg-gray-200 animate-pulse rounded" />
+                <div className="w-16 h-6 bg-gray-200 animate-pulse rounded" />
               </div>
             </div>
           </div>
@@ -177,19 +178,20 @@ export function ProductPageSkeleton() {
       </div>
 
       {/* Product Description Skeleton */}
-      <div className="container mx-auto px-2 mt-4">
-        <div className="bg-white rounded-[5px] p-4 space-y-3">
-          <div className="w-40 h-6 bg-gray-200 animate-pulse rounded" />
-          <div className="space-y-2">
+      <div className="container mx-auto px-2 mt-6">
+        <div className="bg-white rounded-lg p-6 shadow-sm space-y-4">
+          <div className="w-48 h-6 bg-gray-200 animate-pulse rounded" />
+          <div className="space-y-3">
             <div className="w-full h-4 bg-gray-200 animate-pulse rounded" />
             <div className="w-full h-4 bg-gray-200 animate-pulse rounded" />
-            <div className="w-3/4 h-4 bg-gray-200 animate-pulse rounded" />
+            <div className="w-4/5 h-4 bg-gray-200 animate-pulse rounded" />
+            <div className="w-3/5 h-4 bg-gray-200 animate-pulse rounded" />
           </div>
         </div>
       </div>
 
       {/* Related Products Skeleton */}
-      <div className="mt-6">
+      <div className="mt-8">
         <ProductGridSkeleton />
       </div>
     </div>
@@ -275,6 +277,81 @@ export function PageLoadingSkeleton() {
       </div>
       <CategoriesSkeleton />
       <ProductGridSkeleton />
+    </div>
+  );
+}
+
+export function HomePageSkeleton() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero Slider Skeleton */}
+      <section className="container mx-auto px-4 py-4 md:py-6">
+        <div className="relative h-[200px] md:h-[300px] lg:h-[400px] bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse rounded-lg overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-gray-200/50 to-transparent" />
+          <div className="absolute bottom-4 left-4 right-4">
+            <div className="h-6 md:h-8 bg-gray-300 animate-pulse rounded w-3/4 mb-2" />
+            <div className="h-4 md:h-5 bg-gray-300 animate-pulse rounded w-1/2" />
+          </div>
+          {/* Slider dots */}
+          <div className="absolute bottom-4 right-4 flex gap-2">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="w-2 h-2 bg-gray-300 animate-pulse rounded-full" />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Quick Links Skeleton */}
+      <section className="py-4 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-2 gap-2 md:gap-3">
+            {[...Array(2)].map((_, i) => (
+              <div key={i} className="h-16 bg-gray-200 animate-pulse rounded-lg" />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Circular Categories Skeleton */}
+      <section className="py-8 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="flex flex-col items-center">
+                <div className="w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse rounded-full mb-2" />
+                <div className="w-16 h-3 bg-gray-200 animate-pulse rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Products Section Skeleton */}
+      <section className="py-6 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex-1 h-[2px] bg-gray-200" />
+            <div className="w-40 h-6 bg-gray-200 animate-pulse rounded" />
+            <div className="flex-1 h-[2px] bg-gray-200" />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-[5px] gap-y-[4px] lg:gap-x-4 lg:gap-y-4">
+            {[...Array(20)].map((_, i) => (
+              <div key={i} className="bg-white overflow-hidden rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                <div className="aspect-square bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse" />
+                <div className="p-1 space-y-2">
+                  <div className="h-4 bg-gray-200 animate-pulse rounded" />
+                  <div className="h-5 bg-gray-200 animate-pulse rounded w-20" />
+                  <div className="flex gap-1">
+                    {[...Array(5)].map((_, j) => (
+                      <div key={j} className="w-3 h-3 bg-gray-200 animate-pulse rounded" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

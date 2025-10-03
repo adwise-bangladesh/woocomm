@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Truck, Clock, Plus, Minus, Trash2, AlertTriangle } from 'lucide-react';
+import { Truck, Clock, Plus, Minus, Trash2, AlertTriangle, ShoppingBag } from 'lucide-react';
 import { CartItem } from '@/lib/types';
 import { verifyCustomerHistory } from '@/lib/utils/courierVerification';
 
@@ -347,7 +347,10 @@ export default function CheckoutPage() {
           <p className="text-gray-600 mb-8">Add some products to get started!</p>
           <Link
             href="/"
-            className="inline-block bg-teal-600 text-white px-8 py-3 rounded-[5px] font-semibold hover:bg-teal-700 transition-colors shadow-sm"
+            className="inline-block text-white px-8 py-3 rounded-[5px] font-semibold transition-colors shadow-sm"
+            style={{ backgroundColor: '#fe6c06' }}
+            onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = '#e55a00'}
+            onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = '#fe6c06'}
           >
             Continue Shopping
           </Link>
@@ -357,6 +360,21 @@ export default function CheckoutPage() {
   }
 
   return (
+    <>
+      <style jsx>{`
+        @keyframes pulse {
+          0%, 100% {
+            transform: scale(1);
+          }
+          50% {
+            transform: scale(1.02);
+          }
+        }
+        .animate-pulse-btn {
+          animation: pulse 1100ms infinite;
+          transform-origin: center;
+        }
+      `}</style>
     <div className="min-h-screen bg-gray-50">
       <div className="lg:container lg:mx-auto px-2 py-2 lg:py-4">
         <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
@@ -445,29 +463,57 @@ export default function CheckoutPage() {
           {/* Payment Method Card */}
           <div className="bg-white rounded-[5px] p-4 mb-2 shadow-sm">
             <h3 className="text-base font-semibold text-gray-900 mb-3">Payment Method</h3>
-            <div className="space-y-2">
-              <label className="flex items-center p-3 border-2 border-teal-500 bg-teal-50 rounded-[5px] cursor-pointer">
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="cod"
-                  checked={formData.paymentMethod === 'cod'}
-                  onChange={handleInputChange}
-                  className="w-4 h-4 mr-3 text-teal-600"
-                />
-                <span className="text-sm font-medium text-gray-900">Cash on Delivery</span>
-              </label>
-              
-              <label className="flex items-center p-3 border border-gray-200 rounded-[5px] cursor-not-allowed opacity-50">
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="bkash"
+            <div className="flex gap-2">
+              {/* Cash on Delivery Button */}
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'cod' }))}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-900 border rounded transition-all duration-200 ${
+                  formData.paymentMethod === 'cod'
+                    ? 'border-orange-500 bg-orange-50'
+                    : 'border-gray-200 bg-white hover:bg-gray-50 hover:border-orange-300'
+                }`}
+              >
+                <div className="w-4 h-4 flex items-center justify-center">
+                  <svg width="16" height="16" viewBox="0 0 36 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4.23442 7.7087L17.0354 20.5097C17.1594 20.6337 17.3605 20.6337 17.4845 20.5097L24.6511 13.3431C24.7751 13.2191 24.7751 13.018 24.6511 12.894L11.8502 0.0930021C11.7262 -0.0310007 11.5251 -0.0310007 11.4011 0.0930021L4.23447 7.25965C4.11041 7.38365 4.11041 7.5847 4.23442 7.7087Z" fill="#0E5327"/>
+                    <path d="M4.23544 7.25939L6.16594 5.32889L19.416 18.579L17.4855 20.5095C17.3615 20.6335 17.1605 20.6335 17.0365 20.5095L4.23544 7.70845C4.11143 7.58444 4.11143 7.3834 4.23544 7.25939Z" fill="#004D3F"/>
+                    <path d="M21.8999 13.9493C21.6206 13.4326 21.6206 12.8038 21.8999 12.287C21.9373 12.2176 21.9265 12.1322 21.8707 12.0765L12.6668 2.87257C12.6111 2.8168 12.5257 2.80597 12.4563 2.84352C11.9397 3.12281 11.3109 3.12281 10.794 2.84346C10.7246 2.80597 10.6393 2.8168 10.5835 2.87252L7.01397 6.44205C6.9582 6.49782 6.94737 6.58319 6.98491 6.65256C7.26426 7.16936 7.26426 7.79808 6.98491 8.31488C6.94742 8.38425 6.95825 8.46962 7.01397 8.52539L16.2179 17.7294C16.2737 17.7851 16.3591 17.796 16.4284 17.7585C16.9452 17.4792 17.574 17.4792 18.0907 17.7585C18.1601 17.796 18.2454 17.7851 18.3012 17.7294L21.8707 14.1598C21.9265 14.1041 21.9373 14.0186 21.8999 13.9493Z" fill="#16A34A"/>
+                    <path d="M6.98574 8.31504C7.26508 7.79824 7.26508 7.16952 6.98574 6.65273C6.94825 6.58335 6.95908 6.49798 7.01479 6.44221L9.07012 4.38689C9.43935 4.96032 9.43935 5.70385 9.07012 6.27729L18.4671 15.6742C19.0405 15.305 19.7841 15.3051 20.3574 15.6742L18.3021 17.7295C18.2463 17.7853 18.161 17.7961 18.0916 17.7586C17.5749 17.4793 16.9461 17.4793 16.4293 17.7586C16.3599 17.7961 16.2746 17.7853 16.2188 17.7295L7.01485 8.52556C6.95908 8.46984 6.94825 8.38441 6.98574 8.31504Z" fill="#00B795"/>
+                    <path d="M12.5968 12.1467C11.5773 11.1272 11.5773 9.47421 12.5968 8.4547C13.6163 7.43519 15.2693 7.43519 16.2888 8.4547C17.3083 9.47421 17.3083 11.1272 16.2888 12.1467C15.2693 13.1662 13.6163 13.1662 12.5968 12.1467Z" fill="#F3E8D7"/>
+                    <path d="M17.5396 16.5005L13.6008 12.5618C13.1469 12.1079 12.9539 11.5649 13.4078 11.1111C14.1232 10.2227 16.7346 10.9351 17.9734 12.1739C18.574 12.7745 19.2561 13.4567 19.632 13.8329C19.816 14.0169 20.0653 14.1203 20.3287 14.1203H20.3423C20.7768 14.1203 21.2859 13.6994 21.3979 13.2796L21.3982 9.63999L20.7483 8.99005L20.0342 8.27596L17.1981 5.43984C18.3649 5.30909 19.5251 5.23835 19.9752 5.18443C20.4756 5.12447 20.9024 5.3487 21.2907 5.66994L24.9215 8.53436C25.4339 8.95828 25.8033 9.52948 25.9802 10.1706C26.3766 11.6064 27.2116 14.1461 27.7415 15.1561L30.3887 17.8033L25.8056 22.3863L24.531 21.1117C24.2914 20.8721 23.9952 20.697 23.6698 20.6027L21.0078 19.7063C20.1715 19.4194 19.4353 18.8981 18.8869 18.2046L17.5396 16.5005Z" fill="#FCD7C3"/>
+                    <path d="M18.8846 18.2046L17.5372 16.5005L13.5985 12.5618C13.1446 12.1079 12.9516 11.565 13.4055 11.1111C13.6684 10.7845 14.1876 10.6743 14.8007 10.727C15.6986 10.8042 16.5353 11.2147 17.1726 11.852L19.6792 14.3586L21.0266 16.0626C21.5749 16.7562 22.3111 17.2774 23.1474 17.5643L25.8095 18.4607C26.1348 18.555 26.4311 18.7301 26.6707 18.9697L27.9453 20.2443L25.8034 22.3863L24.5287 21.1117C24.2892 20.8721 23.9929 20.697 23.6676 20.6026L21.0055 19.7063C20.1692 19.4193 19.433 18.898 18.8846 18.2046Z" fill="#FFCDAC"/>
+                    <path d="M26.5481 23.8525L31.8526 18.548C32.0491 18.3514 32.0491 18.0327 31.8526 17.8361L30.9191 16.9027C30.7225 16.7061 30.4038 16.7061 30.2072 16.9027L24.9027 22.2071C24.7062 22.4037 24.7062 22.7224 24.9027 22.919L25.8362 23.8524C26.0328 24.0491 26.3515 24.0491 26.5481 23.8525Z" fill="#475569"/>
+                    <path d="M24.9032 22.2072L26.7023 20.4081L28.3477 22.0535L26.5486 23.8526C26.352 24.0492 26.0333 24.0492 25.8367 23.8526L24.9033 22.9191C24.7066 22.7226 24.7066 22.4038 24.9032 22.2072Z" fill="#0F172A"/>
+                    <path d="M13.7557 12.439C14.2785 11.9163 15.126 11.9163 15.6488 12.439L16.2435 13.0337C16.5126 13.3028 16.5126 13.7391 16.2435 14.0082L15.6451 14.6066L13.6166 12.5782L13.7557 12.439Z" fill="#0F172A"/>
+                  </svg>
+                </div>
+                <span className="text-sm font-medium">Cash on Delivery</span>
+              </button>
+
+              {/* bKash Button */}
+              <button
+                type="button"
                   disabled
-                  className="w-4 h-4 mr-3"
-                />
-                <span className="text-sm font-medium text-gray-500">bKash (Coming Soon)</span>
-              </label>
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-500 border border-gray-200 bg-gray-50 cursor-not-allowed opacity-60 rounded"
+              >
+                <div className="w-4 h-4 flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" height="800" width="1200" viewBox="-18.0015 -28.3525 156.013 170.115">
+                    <g fill="none">
+                      <path fill="#D12053" d="M96.58 62.45l-53.03-8.31 7.03 31.6z"/>
+                      <path fill="#E2136E" d="M96.58 62.45L56.62 6.93 43.56 54.15z"/>
+                      <path fill="#D12053" d="M42.32 53.51L.45 0l54.83 6.55z"/>
+                      <path fill="#9E1638" d="M23.25 31.15L0 9.24h6.12z"/>
+                      <path fill="#D12053" d="M107.89 35.46l-9.84 26.69L82.1 40.09z"/>
+                      <path fill="#E2136E" d="M56.77 84.14l38.61-15.51L97 63.7z"/>
+                      <path fill="#9E1638" d="M25.89 113.41l16.54-58.02 8.39 37.75z"/>
+                      <path fill="#E2136E" d="M109.43 35.67l-4.06 11.02 14.64-.24z"/>
+                    </g>
+                  </svg>
+                </div>
+                <span className="text-sm font-medium">bKash</span>
+                <span className="text-xs text-gray-400">Soon</span>
+              </button>
             </div>
           </div>
 
@@ -475,9 +521,24 @@ export default function CheckoutPage() {
           <button
             type="submit"
             disabled={isLoading || localItems.length === 0}
-            className="w-full bg-teal-600 text-white px-6 py-3 rounded-[5px] text-base font-bold hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-2 shadow-sm"
+            className="w-full text-white px-6 py-3 rounded-[5px] text-base font-bold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed mb-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] disabled:transform-none animate-pulse-btn"
+            style={{ backgroundColor: '#fe6c06' }}
+            onMouseEnter={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = '#e55a00')}
+            onMouseLeave={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = '#fe6c06')}
           >
-            {isLoading ? 'Processing Order...' : 'Place Order'}
+            <div className="flex items-center justify-center gap-2">
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Processing Order...</span>
+                </>
+              ) : (
+                <>
+                  <ShoppingBag className="w-5 h-5" />
+                  <span>Place Order</span>
+                </>
+              )}
+            </div>
           </button>
 
           {/* Order Summary Card */}
@@ -625,7 +686,10 @@ export default function CheckoutPage() {
               <div className="space-y-2 w-full">
                 <button
                   onClick={() => setShowBlockedModal(false)}
-                  className="w-full bg-teal-600 text-white px-6 py-3 rounded-[5px] font-semibold hover:bg-teal-700 transition-colors"
+                  className="w-full text-white px-6 py-3 rounded-[5px] font-semibold transition-colors"
+                  style={{ backgroundColor: '#fe6c06' }}
+                  onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = '#e55a00'}
+                  onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = '#fe6c06'}
                 >
                   Understood
                 </button>
@@ -642,5 +706,6 @@ export default function CheckoutPage() {
         </div>
       )}
     </div>
+    </>
   );
 }

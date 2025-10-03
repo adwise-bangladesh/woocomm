@@ -27,6 +27,11 @@ export default function ProductImageGallery({
     ...(galleryImages?.nodes || [])
   ], [mainImage, galleryImages]);
 
+  // Reset selected image when main image changes (variant selection)
+  useEffect(() => {
+    setSelectedImage(0);
+  }, [mainImage.sourceUrl]);
+
   // Preload all images for instant switching
   useEffect(() => {
     allImages.forEach((image) => {
@@ -37,9 +42,12 @@ export default function ProductImageGallery({
 
   const handleImageChange = (index: number) => {
     if (index === selectedImage) return;
+    
     setIsTransitioning(true);
     setSelectedImage(index);
-    setTimeout(() => setIsTransitioning(false), 150);
+    
+    // Smooth transition with proper timing
+    setTimeout(() => setIsTransitioning(false), 200);
   };
 
   return (
@@ -50,7 +58,9 @@ export default function ProductImageGallery({
           src={allImages[selectedImage]?.sourceUrl || '/placeholder.png'}
           alt={allImages[selectedImage]?.altText || productName}
           fill
-          className={`object-cover transition-opacity duration-150 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}
+          className={`object-cover transition-all duration-300 ease-in-out ${
+            isTransitioning ? 'opacity-0 scale-105' : 'opacity-100 scale-100'
+          }`}
           priority
           sizes="(max-width: 768px) 100vw, 66vw"
           quality={95}
@@ -64,11 +74,22 @@ export default function ProductImageGallery({
             <button
               key={index}
               onClick={() => handleImageChange(index)}
-              className={`relative aspect-square overflow-hidden bg-white rounded-[5px] border-2 transition-all ${
+              className={`relative aspect-square overflow-hidden bg-white rounded-[5px] border-2 transition-all duration-200 ${
                 selectedImage === index
-                  ? 'border-gray-400'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-orange-500 shadow-md'
+                  : 'border-gray-200 hover:border-orange-300 hover:shadow-sm'
               }`}
+              style={selectedImage === index ? { borderColor: '#fe6c06' } : {}}
+              onMouseEnter={(e) => {
+                if (selectedImage !== index) {
+                  (e.target as HTMLElement).style.borderColor = '#fe6c06';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedImage !== index) {
+                  (e.target as HTMLElement).style.borderColor = '';
+                }
+              }}
             >
               <Image
                 src={image.sourceUrl}

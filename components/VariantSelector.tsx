@@ -129,7 +129,7 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
               {attribute.name}
             </label>
             {selectedAttributes[attribute.name] && (
-              <span className="text-xs text-teal-600 font-medium">
+              <span className="text-xs font-medium" style={{ color: '#fe6c06' }}>
                 {selectedAttributes[attribute.name]}
               </span>
             )}
@@ -154,16 +154,29 @@ export default function VariantSelector({ product, onVariantChange }: VariantSel
                     transition-all duration-200 cursor-pointer
                     ${
                       isSelected
-                        ? 'border-teal-600 bg-teal-50 text-teal-700'
+                        ? 'border-orange-500 bg-orange-50 text-orange-700'
                         : isDisabled
                         ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed line-through'
-                        : 'border-gray-300 bg-white text-gray-700 hover:border-teal-500 hover:bg-teal-50'
+                        : 'border-gray-300 bg-white text-gray-700 hover:border-orange-400 hover:bg-orange-25'
                     }
                   `}
+                  style={isSelected ? { borderColor: '#fe6c06', backgroundColor: '#fef3e7', color: '#e55a00' } : {}}
+                  onMouseEnter={(e) => {
+                    if (!isDisabled && !isSelected) {
+                      (e.target as HTMLElement).style.borderColor = '#fe6c06';
+                      (e.target as HTMLElement).style.backgroundColor = '#fef3e7';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isDisabled && !isSelected) {
+                      (e.target as HTMLElement).style.borderColor = '';
+                      (e.target as HTMLElement).style.backgroundColor = '';
+                    }
+                  }}
                 >
                   {option}
                   {isSelected && (
-                    <CheckCircle2 className="absolute -top-1 -right-1 w-4 h-4 text-teal-600 bg-white rounded-full" />
+                    <CheckCircle2 className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full" style={{ color: '#fe6c06' }} />
                   )}
                 </button>
               );

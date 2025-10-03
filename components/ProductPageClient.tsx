@@ -110,16 +110,25 @@ export default function ProductPageClient({
               {/* Reviews Count */}
               <div className="flex items-center gap-2 mb-2">
                 <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`w-3.5 h-3.5 ${
-                        i < Math.floor(reviewStats.rating)
-                          ? 'fill-yellow-400 text-yellow-400'
-                          : 'text-gray-300'
-                      }`}
-                    />
-                  ))}
+                  {[...Array(5)].map((_, i) => {
+                    const starRating = i + 1;
+                    const filled = starRating <= Math.floor(reviewStats.rating);
+                    const halfFilled = starRating === Math.ceil(reviewStats.rating) && reviewStats.rating % 1 !== 0;
+                    
+                    return (
+                      <div key={i} className="relative inline-block">
+                        <Star className="w-3.5 h-3.5 text-gray-300" />
+                        {(filled || halfFilled) && (
+                          <Star 
+                            className={`w-3.5 h-3.5 absolute top-0 left-0 text-yellow-400 ${
+                              halfFilled ? 'fill-current' : 'fill-current'
+                            }`}
+                            style={halfFilled ? { clipPath: 'polygon(0 0, 50% 0, 50% 100%, 0% 100%)' } : {}}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
                 <span className="text-xs text-gray-600">
                   {reviewStats.rating} ({reviewStats.count.toLocaleString()} reviews)
@@ -218,7 +227,7 @@ export default function ProductPageClient({
               <div className="space-y-2 mb-4 pb-4 border-b">
                 <a
                   href="tel:01926644575"
-                  className="flex items-center justify-center gap-2 w-full py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
+                  className="flex items-center justify-center gap-2 w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors"
                 >
                   <Phone className="w-4 h-4" />
                   <span className="font-medium">Call: 01926644575</span>

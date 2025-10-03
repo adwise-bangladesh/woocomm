@@ -201,17 +201,18 @@ export async function verifyCustomerHistory(phone: string): Promise<Verification
     
     console.log('🔍 Fetching fresh data for:', phone);
     
-    // Make API request
-    const apiUrl = `https://dash.hoorin.com/api/courier/search.php?apiKey=41730dcec62d82e18a9788&searchTerm=${phone}`;
+    // Call our internal API route (server-side proxy to avoid CORS)
+    const apiUrl = '/api/verify-customer';
     const response = await fetch(apiUrl, {
-      method: 'GET',
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ phone }),
     });
     
     if (!response.ok) {
-      console.error('Courier API error:', response.status);
+      console.error('Verification API error:', response.status);
       // If API fails, allow the order
       return {
         allowed: true,

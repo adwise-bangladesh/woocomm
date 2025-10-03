@@ -2,14 +2,13 @@
 
 import { useCartStore } from '@/lib/store';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Clock, Plus, Minus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
+import { CartItem } from '@/lib/types';
 
 export default function CartPage() {
-  const { items, total, isEmpty, clearCart, setCart } = useCartStore();
-  const router = useRouter();
+  const { items, isEmpty, clearCart, setCart } = useCartStore();
   const [localItems, setLocalItems] = useState(items);
 
   // Sync localItems with items from store
@@ -144,8 +143,10 @@ export default function CartPage() {
                 </div>
 
                 <div className="space-y-3">
-                  {localItems.map((item) => {
-                    const stockStatus = (item.variation?.node as any)?.stockStatus || (item.product.node as any)?.stockStatus || 'IN_STOCK';
+                  {localItems.map((item: CartItem) => {
+                    const variationStock = item.variation?.node?.stockStatus;
+                    const productStock = item.product?.node?.stockStatus;
+                    const stockStatus = variationStock || productStock || 'IN_STOCK';
                     const deliveryInfo = getDeliveryTime(stockStatus);
                     
                     return (

@@ -1,16 +1,15 @@
 'use client';
 
 import { useCartStore } from '@/lib/store';
-import { createSessionClient } from '@/lib/graphql-client';
-import { CHECKOUT } from '@/lib/mutations';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Truck, Clock, Plus, Minus, Trash2 } from 'lucide-react';
+import { CartItem } from '@/lib/types';
 
 export default function CheckoutPage() {
-  const { items, total, isEmpty, sessionToken, clearCart, setCart } = useCartStore();
+  const { items, isEmpty, clearCart, setCart } = useCartStore();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [localItems, setLocalItems] = useState(items);
@@ -386,9 +385,11 @@ export default function CheckoutPage() {
             </div>
 
             <div className="space-y-3 mb-4">
-              {localItems.map((item) => {
+              {localItems.map((item: CartItem) => {
                 // Get stock status from variation or product
-                const stockStatus = (item.variation?.node as any)?.stockStatus || (item.product.node as any)?.stockStatus || 'IN_STOCK';
+                const variationStock = item.variation?.node?.stockStatus;
+                const productStock = item.product?.node?.stockStatus;
+                const stockStatus = variationStock || productStock || 'IN_STOCK';
                 const deliveryInfo = getDeliveryTime(stockStatus);
                 
                 return (

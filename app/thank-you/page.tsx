@@ -1,15 +1,13 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { CheckCircle, Package, MapPin, Phone, CreditCard, User, Camera } from 'lucide-react';
+import { CheckCircle, Package, MapPin, Phone, CreditCard, User } from 'lucide-react';
 import { Suspense } from 'react';
 
 function ThankYouContent() {
   const searchParams = useSearchParams();
   const [showAnimation, setShowAnimation] = useState(false);
-  const [isCapturing, setIsCapturing] = useState(false);
-  const captureRef = useRef<HTMLDivElement>(null);
   
   // Get order details from URL params
   const orderNumber = searchParams.get('orderNumber') || 'N/A';
@@ -29,59 +27,9 @@ function ThankYouContent() {
     setTimeout(() => setShowAnimation(true), 100);
   }, []);
 
-  const handleScreenshot = async () => {
-    setIsCapturing(true);
-    
-    try {
-      // Use html2canvas library for screenshot
-      const html2canvas = (await import('html2canvas')).default;
-      
-      if (captureRef.current) {
-        const canvas = await html2canvas(captureRef.current, {
-          background: '#f9fafb',
-          logging: false,
-          width: captureRef.current.scrollWidth,
-          height: captureRef.current.scrollHeight,
-        });
-        
-        // Convert canvas to blob
-        canvas.toBlob((blob: Blob | null) => {
-          if (blob) {
-            // Create download link
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `order-${orderNumber}.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-          }
-        }, 'image/png');
-      }
-    } catch (error) {
-      console.error('Screenshot failed:', error);
-      alert('Failed to capture screenshot. Please try again.');
-    } finally {
-      setIsCapturing(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-2xl mx-auto">
-        {/* Screenshot Button - Fixed Position */}
-        <button
-          onClick={handleScreenshot}
-          disabled={isCapturing}
-          className="fixed top-20 right-4 z-50 bg-teal-600 text-white px-4 py-2 rounded-[5px] shadow-lg hover:bg-teal-700 transition-all flex items-center gap-2 disabled:opacity-50"
-        >
-          <Camera className="w-4 h-4" />
-          <span className="hidden sm:inline">{isCapturing ? 'Capturing...' : 'Take Screenshot'}</span>
-        </button>
-
-        {/* Capture Area */}
-        <div ref={captureRef}>
         {/* Success Animation */}
         <div className={`text-center mb-8 transition-all duration-500 ${showAnimation ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
           <div className="inline-block relative">
@@ -181,7 +129,6 @@ function ThankYouContent() {
           <p className="text-sm text-gray-500">
            Thank you for your purchase
           </p>
-        </div>
         </div>
       </div>
 

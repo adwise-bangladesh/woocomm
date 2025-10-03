@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import { validateSlug } from '@/lib/utils/sanitizer';
 import { logger } from '@/lib/utils/performance';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { Suspense } from 'react';
 
 export const revalidate = 300; // 5 minutes, consistent with homepage
 
@@ -99,23 +100,15 @@ export default async function CategoryPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Category Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="w-full lg:container lg:mx-auto lg:px-4">
-          <div className="flex items-center justify-between px-4 py-4 lg:px-0">
-            <h1 className="text-lg font-semibold text-gray-900 capitalize">
-              {category.name}
-            </h1>
-            <span className="text-sm text-gray-500 font-medium">
-              {category.count} items
-            </span>
-          </div>
-        </div>
-      </div>
-
       {/* Filters & Sort - Sticky under header */}
       <ErrorBoundary>
-        <CategoryFiltersWrapper initialProducts={products} />
+        <Suspense fallback={<div className="px-4 py-6">Loading...</div>}>
+          <CategoryFiltersWrapper 
+            initialProducts={products} 
+            categoryName={category.name}
+            totalCount={category.count}
+          />
+        </Suspense>
       </ErrorBoundary>
     </div>
   );

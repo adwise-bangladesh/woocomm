@@ -150,15 +150,6 @@ export default function ProductPageClient({
                   <VariantSelector product={product} onVariantChange={handleVariantChange} />
                 </div>
               )}
-              
-              {/* Debug: Show if not variable */}
-              {!isVariableProduct && (
-                <div className="mb-4 pb-4 border-b bg-yellow-50 p-2 rounded">
-                  <p className="text-xs text-yellow-800">
-                    Debug: This is not a variable product (type: {product.type || 'undefined'})
-                  </p>
-                </div>
-              )}
 
               {/* Short Description */}
               {product.shortDescription && (
@@ -178,20 +169,30 @@ export default function ProductPageClient({
                     </>
                   ) : isBackordersAllowed ? (
                     <>
-                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                      <span className="text-orange-600 font-semibold">Pre-Order (Imported)</span>
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                      <span className="text-yellow-600 font-semibold">Pre-Order (Imported)</span>
                     </>
                   ) : (
                     <>
-                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                      <span className="text-red-600 font-semibold">Out of Stock</span>
+                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                      <span className="text-orange-600 font-semibold">Out of Stock</span>
                     </>
                   )}
                 </div>
-                <div className="flex items-center gap-1.5 text-gray-700">
-                  <Clock className="w-3.5 h-3.5 text-teal-600" />
-                  <span className="text-xs">
-                    Delivery: <strong>{isInStock ? '1-3 days' : '10-15 days'}</strong>
+                <div className="flex items-center gap-1.5">
+                  <Clock className={`w-3.5 h-3.5 ${
+                    isInStock ? 'text-green-600' : 
+                    isBackordersAllowed ? 'text-yellow-600' : 
+                    'text-orange-600'
+                  }`} />
+                  <span className={`text-xs font-medium ${
+                    isInStock ? 'text-green-600' : 
+                    isBackordersAllowed ? 'text-yellow-600' : 
+                    'text-orange-600'
+                  }`}>
+                    {isInStock ? 'Fast Delivery (1-3 days)' : 
+                     isBackordersAllowed ? 'Regular Delivery (3-5 days)' : 
+                     'Pre Order (10-15 days)'}
                   </span>
                 </div>
               </div>

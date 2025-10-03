@@ -30,9 +30,7 @@ export default function CheckoutPage() {
 
   const [showBlockedModal, setShowBlockedModal] = useState(false);
   const [blockedReason, setBlockedReason] = useState('');
-  const [isVerifying, setIsVerifying] = useState(false);
   const [verificationResult, setVerificationResult] = useState<{ allowed: boolean; reason: string } | null>(null);
-  const [verificationError, setVerificationError] = useState('');
 
   // Sync localItems with items from store
   useEffect(() => {
@@ -48,25 +46,15 @@ export default function CheckoutPage() {
       if (!phoneError && formData.phone) {
         const formattedPhone = formatPhoneNumber(formData.phone);
         
-        setIsVerifying(true);
-        setVerificationError('');
-        
         try {
           const result = await verifyCustomerHistory(formattedPhone);
           setVerificationResult(result);
-          
-          if (!result.allowed) {
-            setVerificationError(result.reason);
-          }
         } catch (error) {
           console.error('Verification error:', error);
           setVerificationResult({ allowed: true, reason: 'Verification unavailable' });
-        } finally {
-          setIsVerifying(false);
         }
       } else {
         setVerificationResult(null);
-        setVerificationError('');
       }
     };
 
@@ -263,9 +251,7 @@ export default function CheckoutPage() {
     try {
       // If not already verified, verify now
       if (!verificationResult) {
-        setIsVerifying(true);
         const result = await verifyCustomerHistory(formattedPhone);
-        setIsVerifying(false);
         
         // If customer is blocked, show modal and stop
         if (!result.allowed) {

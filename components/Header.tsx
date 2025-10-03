@@ -104,7 +104,7 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
       </div>
 
       {/* Main Header - Desktop */}
-      <header className="hidden lg:block bg-white shadow-sm">
+      <header className="hidden lg:block shadow-sm" style={{ backgroundColor: '#FF7208' }}>
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between py-3">
             {/* Logo */}
@@ -120,10 +120,10 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
                 />
               ) : (
                 <>
-                  <div className="bg-teal-600 text-white font-bold text-2xl px-3 py-2 rounded">
+                  <div className="bg-white text-orange-600 font-bold text-2xl px-3 py-2 rounded">
                     {siteName.charAt(0).toUpperCase()}
                   </div>
-                  <span className="text-2xl font-bold text-gray-900">{siteName}</span>
+                  <span className="text-2xl font-bold text-white">{siteName}</span>
                 </>
               )}
             </Link>
@@ -131,13 +131,13 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
             {/* Search Bar */}
             <form onSubmit={handleSearch} className="flex-1 max-w-2xl mx-8">
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search for products..."
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-[5px] focus:outline-none focus:bg-white focus:border-gray-400 placeholder:text-gray-700 transition-all"
+                  className="w-full pl-12 pr-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-[5px] focus:outline-none focus:bg-white focus:bg-opacity-100 focus:border-white placeholder:text-white text-white transition-all"
                 />
               </div>
             </form>
@@ -147,11 +147,11 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
               {/* Login/Signup */}
               <Link
                 href="/account"
-                className="flex items-center gap-2 text-gray-700 hover:text-teal-600 transition-colors"
+                className="flex items-center gap-2 text-white hover:text-gray-200 transition-colors"
               >
                 <User className="w-6 h-6" />
                 <div className="flex flex-col">
-                  <span className="text-xs text-gray-500">Login/Signup</span>
+                  <span className="text-xs text-white text-opacity-80">Login/Signup</span>
                   <span className="text-sm font-semibold">Account</span>
                 </div>
               </Link>
@@ -162,7 +162,7 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
                 className="flex items-center gap-3 relative group"
               >
                 <div className="relative">
-                  <ShoppingCart className="w-7 h-7 text-gray-700 group-hover:text-teal-600 transition-colors" />
+                  <ShoppingCart className="w-7 h-7 text-white group-hover:text-gray-200 transition-colors" />
                   {cartCount > 0 && (
                     <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                       {cartCount}
@@ -170,8 +170,8 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
                   )}
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xs text-gray-500">Shopping cart</span>
-                  <span className="text-sm font-bold text-gray-900">{formatPrice(total)}</span>
+                  <span className="text-xs text-white text-opacity-80">Shopping cart</span>
+                  <span className="text-sm font-bold text-white">{formatPrice(total)}</span>
                 </div>
               </Link>
             </div>
@@ -179,10 +179,10 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
 
           {/* Navigation Menu */}
           {menuItems.length > 0 && (
-            <nav className="border-t border-gray-200 py-2">
+            <nav className="border-t border-white border-opacity-30 py-2">
               <ul className="flex items-center gap-8">
                 <li>
-                  <button className="flex items-center gap-2 text-gray-700 hover:text-teal-600 font-medium transition-colors">
+                  <button className="flex items-center gap-2 text-white hover:text-gray-200 font-medium transition-colors">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
@@ -193,7 +193,7 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
                   <li key={item.id}>
                     <Link
                       href={item.path || item.url}
-                      className="text-gray-700 hover:text-teal-600 font-medium transition-colors"
+                      className="text-white hover:text-gray-200 font-medium transition-colors"
                     >
                       {item.label}
                     </Link>
@@ -206,7 +206,7 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
       </header>
 
       {/* Mobile Header */}
-      <header className="lg:hidden bg-white shadow-md">
+      <header className="lg:hidden shadow-md" style={{ backgroundColor: '#FF7208' }}>
         <div className="px-4">
           {/* Top Mobile Header */}
           <div className="flex items-center justify-between py-3">
@@ -223,10 +223,10 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
                 />
               ) : (
                 <>
-                  <div className="bg-teal-600 text-white font-bold text-xl px-2 py-1 rounded">
+                  <div className="bg-white text-orange-600 font-bold text-xl px-2 py-1 rounded">
                     {siteName.charAt(0).toUpperCase()}
                   </div>
-                  <span className="text-xl font-bold text-gray-900">{siteName}</span>
+                  <span className="text-xl font-bold text-white">{siteName}</span>
                 </>
               )}
             </Link>
@@ -235,12 +235,12 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-                className="text-gray-700 hover:text-teal-600 transition-colors"
+                className="text-white hover:text-gray-200 transition-colors"
               >
                 <Search className="w-6 h-6" />
               </button>
 
-              <Link href="/cart" className="relative text-gray-700 hover:text-teal-600 transition-colors">
+              <Link href="/cart" className="relative text-white hover:text-gray-200 transition-colors">
                 <ShoppingCart className="w-6 h-6" />
                 {cartCount > 0 && (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
@@ -256,13 +256,13 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
             <div className="pb-3 animate-slideDown">
               <form onSubmit={handleSearch}>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search products..."
-                    className="w-full pl-10 pr-4 py-2 text-sm text-gray-900 bg-gray-50 border border-gray-300 rounded-[5px] focus:outline-none focus:bg-white focus:border-gray-400 placeholder:text-gray-700 transition-all"
+                    className="w-full pl-10 pr-4 py-2 text-sm text-white bg-white bg-opacity-20 border border-white border-opacity-30 rounded-[5px] focus:outline-none focus:bg-white focus:bg-opacity-100 focus:border-white placeholder:text-white transition-all"
                     autoFocus
                   />
                 </div>

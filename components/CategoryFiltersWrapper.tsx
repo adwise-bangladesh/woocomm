@@ -15,34 +15,31 @@ export interface FilterState {
 }
 
   const LOAD_MORE_CATEGORY_PRODUCTS = gql`
-    query LoadMoreCategoryProducts($slug: String!, $first: Int = 20, $after: String) {
-      products(
-        first: $first
-        after: $after
-        where: { 
-          category: $slug
-          orderby: { field: DATE, order: DESC }
-        }
-      ) {
-        pageInfo {
-          endCursor
-          hasNextPage
-        }
+    query LoadMoreCategoryProducts($slug: [String]!, $first: Int = 20, $after: String) {
+      productCategories(where: { slug: $slug }) {
         nodes {
-          id
-          name
-          slug
-          image {
-            sourceUrl
-            altText
-          }
-          ... on ProductWithPricing {
-            price
-            regularPrice
-            salePrice
-          }
-          ... on InventoriedProduct {
-            stockStatus
+          products(first: $first, after: $after) {
+            pageInfo {
+              endCursor
+              hasNextPage
+            }
+            nodes {
+              id
+              name
+              slug
+              image {
+                sourceUrl
+                altText
+              }
+              ... on ProductWithPricing {
+                price
+                regularPrice
+                salePrice
+              }
+              ... on InventoriedProduct {
+                stockStatus
+              }
+            }
           }
         }
       }
@@ -95,22 +92,27 @@ export default function CategoryFiltersWrapper({
       
       const client = createSessionClient();
       const data = await client.request(LOAD_MORE_CATEGORY_PRODUCTS, {
-        slug: categorySlug,
+        slug: [categorySlug],
         first: 20,
         after: endCursor,
       }) as {
-        products: { 
-          pageInfo: { endCursor: string | null; hasNextPage: boolean }
-          nodes: Product[] 
+        productCategories: {
+          nodes: Array<{
+            products: {
+              pageInfo: { endCursor: string | null; hasNextPage: boolean }
+              nodes: Product[]
+            }
+          }>
         }
       };
 
-      if (data.products) {
-        const newProducts = data.products.nodes;
+      const category = data.productCategories?.nodes?.[0];
+      if (category?.products) {
+        const newProducts = category.products.nodes;
         console.log('🔍 Loaded', newProducts.length, 'more products for category:', categorySlug);
         setAllProducts(prev => [...prev, ...newProducts]);
-        setEndCursor(data.products.pageInfo.endCursor);
-        setHasNextPage(data.products.pageInfo.hasNextPage);
+        setEndCursor(category.products.pageInfo.endCursor);
+        setHasNextPage(category.products.pageInfo.hasNextPage);
       }
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {

@@ -14,6 +14,7 @@ const GET_CATEGORY_PRODUCTS = gql`
   query GetCategoryProducts($slug: ID!, $first: Int = 30) {
       productCategory(id: $slug, idType: SLUG) {
       id
+      databaseId
       name
       slug
       description
@@ -58,7 +59,9 @@ async function getCategoryData(slug: string) {
     const data = await graphqlClient.request(GET_CATEGORY_PRODUCTS, { slug, first: 30 }) as {
       productCategory: { 
         id: string; 
+        databaseId: number;
         name: string; 
+        slug: string;
         description?: string; 
         count: number;
         products: { 
@@ -118,6 +121,7 @@ export default async function CategoryPage({
             totalCount={category.count}
             categorySlug={slug}
             categoryId={category.id}
+            categoryDatabaseId={category.databaseId}
             initialEndCursor={pageInfo.endCursor}
             initialHasNextPage={pageInfo.hasNextPage}
           />

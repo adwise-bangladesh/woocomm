@@ -10,12 +10,12 @@ import { Loader2 } from 'lucide-react';
 import { gql } from 'graphql-request';
 
 const LOAD_MORE_CATEGORY_PRODUCTS = gql`
-  query LoadMoreCategoryProducts($categorySlug: String!, $first: Int = 20, $after: String) {
+  query LoadMoreCategoryProducts($categoryId: Int!, $first: Int = 20, $after: String) {
     products(
       first: $first
       after: $after
       where: { 
-        categoryIn: [$categorySlug]
+        categoryId: $categoryId
         orderby: { field: DATE, order: DESC }
       }
     ) {
@@ -50,6 +50,7 @@ interface CategoryFiltersWrapperProps {
   totalCount?: number;
   categorySlug: string;
   categoryId: string;
+  categoryDatabaseId: number;
   initialEndCursor: string | null;
   initialHasNextPage: boolean;
 }
@@ -60,11 +61,12 @@ export default function CategoryFiltersWrapper({
   totalCount,
   categorySlug,
   categoryId,
+  categoryDatabaseId,
   initialEndCursor,
   initialHasNextPage
 }: CategoryFiltersWrapperProps) {
   // Debug: Log initial setup
-  console.log('🔍 Category:', categorySlug, '| Initial products:', initialProducts.length);
+  console.log('🔍 Category:', categorySlug, '| Database ID:', categoryDatabaseId, '| Initial products:', initialProducts.length);
 
   const [allProducts, setAllProducts] = useState<Product[]>(initialProducts);
   const [endCursor, setEndCursor] = useState<string | null>(initialEndCursor);
@@ -94,11 +96,11 @@ export default function CategoryFiltersWrapper({
     setLastLoadTime(now);
     
     try {
-      console.log('🔍 Loading more products for:', categorySlug);
+      console.log('🔍 Loading more products for:', categorySlug, 'with database ID:', categoryDatabaseId);
       
       const client = createSessionClient();
       const data = await client.request(LOAD_MORE_CATEGORY_PRODUCTS, {
-        categorySlug: categorySlug,
+        categoryId: categoryDatabaseId,
         first: 20,
         after: endCursor,
       }) as {
@@ -122,7 +124,7 @@ export default function CategoryFiltersWrapper({
     } finally {
       setIsLoadingMore(false);
     }
-  }, [isLoadingMore, hasNextPage, categorySlug, endCursor, lastLoadTime]);
+  }, [isLoadingMore, hasNextPage, categorySlug, categoryDatabaseId, endCursor, lastLoadTime]);
 
   // Infinite scroll effect
   useEffect(() => {

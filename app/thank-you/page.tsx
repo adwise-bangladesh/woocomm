@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { CheckCircle, Package, MapPin, Phone, CreditCard } from 'lucide-react';
 import { Suspense } from 'react';
 
@@ -12,7 +11,6 @@ function ThankYouContent() {
   
   // Get order details from URL params
   const orderNumber = searchParams.get('orderNumber') || 'N/A';
-  const customerName = searchParams.get('name') || 'Customer';
   const phone = searchParams.get('phone') || 'N/A';
   const address = searchParams.get('address') || 'N/A';
   const total = searchParams.get('total') || '0';
@@ -40,7 +38,7 @@ function ThankYouContent() {
             <div className="absolute inset-0 w-24 h-24 bg-green-200 rounded-full animate-ping opacity-20"></div>
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Order Placed !</h2>
-          <p className="text-gray-600">We'll call you to confirm your order</p>
+          <p className="text-gray-600">We&apos;ll call you to confirm your order</p>
         </div>
 
         {/* Order Details Card */}

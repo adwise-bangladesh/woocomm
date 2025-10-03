@@ -10,32 +10,34 @@ import { Loader2 } from 'lucide-react';
 import { gql } from 'graphql-request';
 
 const LOAD_MORE_CATEGORY_PRODUCTS = gql`
-  query LoadMoreCategoryProducts($categoryId: ID!, $first: Int = 20, $after: String) {
-    productCategory(id: $categoryId) {
-      id
-      name
-      slug
-      products(first: $first, after: $after) {
-        pageInfo {
-          endCursor
-          hasNextPage
+  query LoadMoreCategoryProducts($categorySlug: String!, $first: Int = 20, $after: String) {
+    products(
+      first: $first
+      after: $after
+      where: { 
+        categoryIn: [$categorySlug]
+        orderby: { field: DATE, order: DESC }
+      }
+    ) {
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
+      nodes {
+        id
+        name
+        slug
+        image {
+          sourceUrl
+          altText
         }
-        nodes {
-          id
-          name
-          slug
-          image {
-            sourceUrl
-            altText
-          }
-          ... on ProductWithPricing {
-            price
-            regularPrice
-            salePrice
-          }
-          ... on InventoriedProduct {
-            stockStatus
-          }
+        ... on ProductWithPricing {
+          price
+          regularPrice
+          salePrice
+        }
+        ... on InventoriedProduct {
+          stockStatus
         }
       }
     }
@@ -61,12 +63,8 @@ export default function CategoryFiltersWrapper({
   initialEndCursor,
   initialHasNextPage
 }: CategoryFiltersWrapperProps) {
-  console.log('🔍 CategoryFiltersWrapper initialized with slug:', categorySlug);
-  console.log('🔍 CategoryFiltersWrapper initialized with id:', categoryId);
-  console.log('🔍 Initial products count:', initialProducts.length);
-  console.log('🔍 Initial endCursor:', initialEndCursor);
-  console.log('🔍 Initial hasNextPage:', initialHasNextPage);
-  console.log('🔍 Initial products:', initialProducts.map(p => p.name));
+  // Debug: Log initial setup
+  console.log('🔍 Category:', categorySlug, '| Initial products:', initialProducts.length);
 
   const [allProducts, setAllProducts] = useState<Product[]>(initialProducts);
   const [endCursor, setEndCursor] = useState<string | null>(initialEndCursor);
@@ -96,34 +94,26 @@ export default function CategoryFiltersWrapper({
     setLastLoadTime(now);
     
     try {
-      // Debug: Check if this is loading correctly
-      console.log('🔍 Loading more products for category:', categorySlug);
-      console.log('🔍 Using endCursor:', endCursor);
+      console.log('🔍 Loading more products for:', categorySlug);
       
       const client = createSessionClient();
       const data = await client.request(LOAD_MORE_CATEGORY_PRODUCTS, {
-        categoryId: categoryId,
+        categorySlug: categorySlug,
         first: 20,
         after: endCursor,
       }) as {
-        productCategory: { 
-          products: { 
-            pageInfo: { endCursor: string | null; hasNextPage: boolean }
-            nodes: Product[] 
-          } 
+        products: { 
+          pageInfo: { endCursor: string | null; hasNextPage: boolean }
+          nodes: Product[] 
         }
       };
 
-      console.log('🔍 GraphQL Response:', data);
-      console.log('🔍 Response productCategory:', data.productCategory);
-      
-      if (data.productCategory?.products) {
-        const newProducts = data.productCategory.products.nodes;
-        console.log('🔍 New products loaded:', newProducts.length);
-        console.log('🔍 New products:', newProducts.map(p => p.name));
+      if (data.products) {
+        const newProducts = data.products.nodes;
+        console.log('🔍 Loaded', newProducts.length, 'more products for category:', categorySlug);
         setAllProducts(prev => [...prev, ...newProducts]);
-        setEndCursor(data.productCategory.products.pageInfo.endCursor);
-        setHasNextPage(data.productCategory.products.pageInfo.hasNextPage);
+        setEndCursor(data.products.pageInfo.endCursor);
+        setHasNextPage(data.products.pageInfo.hasNextPage);
       }
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {

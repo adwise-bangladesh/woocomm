@@ -84,22 +84,26 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* Reviews */}
         <div className="flex items-center gap-1">
-          <div className="flex items-center relative">
-            {/* Background stars (empty) */}
-            <div className="flex text-gray-300">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-4 h-4" />
-              ))}
-            </div>
-            {/* Foreground stars (filled) with gradient */}
-            <div 
-              className="absolute top-0 left-0 flex overflow-hidden text-yellow-400"
-              style={{ width: `${(rating / 5) * 100}%` }}
-            >
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-4 h-4 fill-current" />
-              ))}
-            </div>
+          <div className="flex items-center">
+            {[...Array(5)].map((_, i) => {
+              const starRating = i + 1;
+              const filled = starRating <= Math.floor(rating);
+              const halfFilled = starRating === Math.ceil(rating) && rating % 1 !== 0;
+              
+              return (
+                <div key={i} className="relative inline-block">
+                  <Star className="w-4 h-4 text-gray-300" />
+                  {(filled || halfFilled) && (
+                    <Star 
+                      className={`w-4 h-4 absolute top-0 left-0 text-yellow-400 ${
+                        halfFilled ? 'fill-current' : 'fill-current'
+                      }`}
+                      style={halfFilled ? { clipPath: 'polygon(0 0, 50% 0, 50% 100%, 0% 100%)' } : {}}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
           <span className="text-xs text-gray-600">
             {rating} ({reviewCount})

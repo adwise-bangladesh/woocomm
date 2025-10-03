@@ -8,12 +8,9 @@ import { logger } from '@/lib/utils/performance';
 import { EnhancedErrorBoundary } from '@/components/EnhancedErrorBoundary';
 import { Suspense } from 'react';
 import { headers } from 'next/headers';
-import { categoryCache, warmCategoryCache, warmProductCache, generateCategoryKey } from '@/lib/utils/cache';
-import { categoryPageLimiter } from '@/lib/utils/rateLimiter';
 
 // Enhanced ISR with tag-based revalidation
 export const revalidate = 300; // 5 minutes ISR
-export const dynamicParams = true; // Allow dynamic params
 
 // Generate dynamic tags for selective revalidation
 export async function generateMetadata({
@@ -87,34 +84,17 @@ const GET_CATEGORY_PRODUCTS = gql`
   }
 `;
 
-async function getCategoryData(slug: string, clientIp?: string) {
+async function getCategoryData(slug: string) {
   // Enhanced input validation
   if (!validateSlug(slug)) {
     logger.error('Invalid category slug', { slug });
     return null;
   }
 
-  // Rate limiting check
-  if (clientIp) {
-    const rateLimit = categoryPageLimiter.isAllowed(clientIp);
-    if (!rateLimit.allowed) {
-      logger.warn('Rate limit exceeded', { ip: clientIp, slug });
-      throw new Error('Too many requests. Please try again later.');
-    }
-  }
-
-  // Check cache first
-  const cacheKey = generateCategoryKey(slug, 1);
-  const cachedData = categoryCache.get(cacheKey);
-  if (cachedData) {
-    logger.debug('Cache hit for category', { slug });
-    return cachedData;
-  }
-
   try {
     logger.debug('Fetching category data from API', { slug });
     
-    // Fetch category info and products with cache tags
+    // Fetch category info and products separately for better reliability
     const [categoryData, productsData] = await Promise.all([
       graphqlClient.request(GET_CATEGORY_INFO, { slug }) as Promise<{
         productCategory: {
@@ -140,38 +120,21 @@ async function getCategoryData(slug: string, clientIp?: string) {
       return null;
     }
     
-    // Prepare response data
-    const responseData = {
+    logger.debug('Category data loaded successfully', { 
+      slug, 
+      productsCount: productsData.products?.nodes?.length || 0
+    });
+    
+    return {
       category: categoryData.productCategory,
       products: productsData.products?.nodes || [],
       pageInfo: productsData.products?.pageInfo || { endCursor: null, hasNextPage: false },
     };
-
-    // Cache warming - warm both category and individual products
-    await Promise.all([
-      warmCategoryCache(slug, responseData),
-      warmProductCache(responseData.products)
-    ]);
-
-    logger.debug('Category data loaded and cached successfully', { 
-      slug, 
-      cacheKey,
-      productsCached: responseData.products.length 
-    });
-    
-    return responseData;
   } catch (error) {
     logger.error('Error fetching category data', { 
       slug, 
       error: error instanceof Error ? error.message : 'Unknown error'
     });
-    
-    // Return cached data if available during errors (graceful degradation)
-    const fallbackData = categoryCache.get(cacheKey);
-    if (fallbackData) {
-      logger.info('Using cached fallback data due to error', { slug });
-      return fallbackData;
-    }
     
     return null;
   }
@@ -190,30 +153,7 @@ export default async function CategoryPage({
     notFound();
   }
 
-  // Extract client IP for rate limiting
-  const headersList = await headers();
-  const forwardedFor = headersList.get('x-forwarded-for');
-  const clientIp = forwardedFor?.split(',')[0] || 
-                  headersList.get('x-real-ip') || 
-                  '127.0.0.1';
-
-  let data;
-  try {
-    data = await getCategoryData(slug, clientIp);
-  } catch (error) {
-    // Handle rate limiting or other errors
-    if (error instanceof Error && error.message.includes('Too many requests')) {
-      return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Rate Limited</h2>
-            <p className="text-gray-600">Please wait a moment before accessing this page again.</p>
-          </div>
-        </div>
-      );
-    }
-    throw error;
-  }
+  const data = await getCategoryData(slug);
 
   if (!data || typeof data !== 'object' || !('category' in data)) {
     notFound();

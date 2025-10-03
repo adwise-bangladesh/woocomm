@@ -3,11 +3,11 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import CategoryFilters, { FilterState } from './CategoryFilters';
 import { Product } from '@/lib/types';
-import { logger, useDiscountCalculator, useReviewStatsGenerator, throttle } from '@/lib/utils/performance';
+import { logger } from '@/lib/utils/performance';
 import { createSessionClient } from '@/lib/graphql-client';
 import { gql } from 'graphql-request';
-// Cache utilities available for future enhancements
-import ProgressiveProductGrid from './ProgressiveProductGrid';
+import ProductCard from './ProductCard';
+import { Loader2 } from 'lucide-react';
 
   const LOAD_MORE_CATEGORY_PRODUCTS = gql`
     query LoadMoreCategoryProducts($slug: String!, $first: Int = 20, $after: String) {
@@ -126,9 +126,9 @@ export default function CategoryFiltersWrapper({
     }
   }, [isLoadingMore, hasNextPage, categorySlug, endCursor, lastLoadTime]);
 
-  // Throttled infinite scroll effect for better performance
+  // Infinite scroll effect
   useEffect(() => {
-    const throttledLoadMore = throttle(() => {
+    const handleScroll = () => {
       if (
         window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 1200 &&
         !isLoadingMore &&
@@ -136,9 +136,7 @@ export default function CategoryFiltersWrapper({
       ) {
         loadMore();
       }
-    }, 150);
-    
-    const handleScroll = () => throttledLoadMore();
+    };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
@@ -157,13 +155,11 @@ export default function CategoryFiltersWrapper({
     setFilters(newFilters);
   }, []);
 
-  // Memoized helper functions for better performance
-  const discountCalculator = useDiscountCalculator();
-  const reviewStatsGenerator = useReviewStatsGenerator();
-
+  // Helper functions (don't need useCallback since not passed as props)
   const getProductRating = useCallback((product: Product): number => {
-    return reviewStatsGenerator(product.id).rating;
-  }, [reviewStatsGenerator]);
+    const productIdHash = product.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return parseFloat((4.2 + ((productIdHash % 80) / 100)).toFixed(1));
+  }, []);
 
   const extractPrice = useCallback((priceString: string | null | undefined): number => {
     if (!priceString) return 0;
@@ -171,9 +167,9 @@ export default function CategoryFiltersWrapper({
   }, []);
 
   const checkIfOnSale = useCallback((product: Product): boolean => {
-    const discount = discountCalculator(product.salePrice, product.regularPrice);
-    return discount !== null && discount > 0;
-  }, [discountCalculator]);
+    return !!(product.salePrice && product.regularPrice && 
+      extractPrice(product.salePrice) < extractPrice(product.regularPrice));
+  }, [extractPrice]);
 
   // Pre-calculate expensive values to avoid recalculating in filters
   const productsWithMetadata = useMemo(() => {
@@ -246,12 +242,44 @@ export default function CategoryFiltersWrapper({
         )}
 
         {/* Enhanced Progressive Product Grid */}
-        <ProgressiveProductGrid
-          products={filteredAndSortedProducts}
-          isLoadingMore={isLoadingMore}
-          hasNextPage={hasNextPage}
-          onLoadMore={loadMore}
-        />
+          <div className="w-full lg:container lg:mx-auto lg:px-4 py-6">
+            {/* Products Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-3 lg:gap-4">
+              {filteredAndSortedProducts.map((product) => (
+                <div key={product.id}>
+                  <ProductCard 
+                    product={product}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Infinite loading trigger */}
+            {hasNextPage && (
+              <div className="mt-8 flex justify-center">
+                {isLoadingMore ? (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Loading more products...</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={loadMore}
+                    className="bg-gray-200 hover:bg-gray-300 px-6 py-3 rounded-lg text-gray-700 font-medium transition-colors"
+                  >
+                    Load More Products
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* End of results */}
+            {!hasNextPage && filteredAndSortedProducts.length > 0 && (
+              <div className="mt-8 text-center text-gray-500">
+                You've reached the end of the catalog
+              </div>
+            )}
+          </div>
       </div>
     </>
   );

@@ -195,8 +195,11 @@ export async function verifyCustomerHistory(phone: string): Promise<Verification
     // Check cache first
     const cached = getCachedResult(phone);
     if (cached) {
+      console.log('💾 Using cached result for:', phone);
       return cached;
     }
+    
+    console.log('🔍 Fetching fresh data for:', phone);
     
     // Make API request
     const apiUrl = `https://dash.hoorin.com/api/courier/search.php?apiKey=41730dcec62d82e18a9788&searchTerm=${phone}`;
@@ -236,7 +239,21 @@ export async function verifyCustomerHistory(phone: string): Promise<Verification
     const normalized = normalizeData(data.Summaries);
     const totals = calculateTotals(normalized);
     const successRate = calculateSuccessRate(totals);
+    
+    // Debug logging
+    console.log('📊 Verification Debug:', {
+      phone,
+      normalized,
+      totals,
+      successRate: `${successRate.toFixed(1)}%`
+    });
+    
     const result = canPlaceOrder(totals, successRate);
+    
+    console.log('✅ Verification Result:', {
+      allowed: result.allowed,
+      reason: result.reason
+    });
     
     // Cache the result
     setCachedResult(phone, result);

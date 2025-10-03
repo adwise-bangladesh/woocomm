@@ -4,7 +4,7 @@ import CategoryFiltersWrapper from '@/components/CategoryFiltersWrapper';
 import { Product } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import { validateSlug } from '@/lib/utils/sanitizer';
-import { logger } from '@/lib/utils/performance';
+import { serverLogger } from '@/lib/utils/server-logger';
 import { EnhancedErrorBoundary } from '@/components/EnhancedErrorBoundary';
 import { Suspense } from 'react';
 
@@ -86,12 +86,12 @@ const GET_CATEGORY_PRODUCTS = gql`
 async function getCategoryData(slug: string) {
   // Enhanced input validation
   if (!validateSlug(slug)) {
-    logger.error('Invalid category slug', { slug });
+    serverLogger.error('Invalid category slug', { slug });
     return null;
   }
 
   try {
-    logger.debug('Fetching category data from API', { slug });
+    serverLogger.debug('Fetching category data from API', { slug });
     
     // Fetch category info and products separately for better reliability
     const [categoryData, productsData] = await Promise.all([
@@ -115,11 +115,11 @@ async function getCategoryData(slug: string) {
     
     // Validate category exists
     if (!categoryData.productCategory) {
-      logger.warn('Category not found in GraphQL response', { slug });
+      serverLogger.warn('Category not found in GraphQL response', { slug });
       return null;
     }
     
-    logger.debug('Category data loaded successfully', { 
+    serverLogger.debug('Category data loaded successfully', { 
       slug, 
       productsCount: productsData.products?.nodes?.length || 0
     });
@@ -130,7 +130,7 @@ async function getCategoryData(slug: string) {
       pageInfo: productsData.products?.pageInfo || { endCursor: null, hasNextPage: false },
     };
   } catch (error) {
-    logger.error('Error fetching category data', { 
+    serverLogger.error('Error fetching category data', { 
       slug, 
       error: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -148,7 +148,7 @@ export default async function CategoryPage({
   
   // Enhanced security: Validate slug and extract client info
   if (!slug || typeof slug !== 'string' || slug.length > 255) {
-    logger.warn('Invalid slug detected', { slug });
+    serverLogger.warn('Invalid slug detected', { slug });
     notFound();
   }
 
@@ -179,7 +179,7 @@ export default async function CategoryPage({
       {/* Enhanced Error Boundary with security and performance features */}
       <EnhancedErrorBoundary 
         onError={(error, errorInfo) => {
-          logger.error('Category page error', { 
+          serverLogger.error('Category page error', { 
             slug, 
             error: error.message,
             componentStack: errorInfo.componentStack?.split('\n')[0]

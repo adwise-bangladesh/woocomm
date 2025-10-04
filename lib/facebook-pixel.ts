@@ -195,12 +195,12 @@ class FacebookPixelManager {
       // Initialize fbq function before loading script (standard Facebook Pixel format)
       if (!window.fbq) {
         (function(f: Window, b: Document, e: string, v: string, n?: unknown, t?: HTMLScriptElement, s?: Element) {
-          if ((f as any).fbq) return;
-          n = (f as any).fbq = function(...args: unknown[]) {
+          if ((f as Window & { fbq?: unknown }).fbq) return;
+          n = (f as Window & { fbq: unknown }).fbq = function(...args: unknown[]) {
             const fbqFunction = n as { callMethod?: (...args: unknown[]) => void; queue: unknown[] };
             fbqFunction.callMethod ? fbqFunction.callMethod(...args) : fbqFunction.queue.push(args);
           };
-          if (!(f as any)._fbq) (f as any)._fbq = n;
+          if (!(f as Window & { _fbq?: unknown })._fbq) (f as Window & { _fbq: unknown })._fbq = n as (...args: unknown[]) => void;
           (n as { push: unknown }).push = n;
           (n as { loaded: boolean }).loaded = true;
           (n as { version: string }).version = '2.0';

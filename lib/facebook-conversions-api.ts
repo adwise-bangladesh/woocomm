@@ -1,9 +1,11 @@
 // Facebook Conversions API client for server-side tracking
+import type { CartItem, ProductData, OrderData } from './facebook-pixel';
+
 export interface ServerSideEventData {
   eventName: string;
-  eventData: any;
-  userData: any;
-  customData: any;
+  eventData: Record<string, unknown>;
+  userData: Record<string, unknown>;
+  customData: Record<string, unknown>;
   eventSourceUrl?: string;
   eventId?: string;
 }
@@ -37,14 +39,14 @@ export class FacebookConversionsAPI {
   }
 
   // Track Purchase event server-side
-  async trackPurchase(orderData: any, items: any[], userData: any) {
+  async trackPurchase(orderData: OrderData, items: CartItem[], userData: Record<string, unknown>) {
     const customData = {
       content_ids: items.map(item => item.product?.node?.databaseId?.toString() || item.id),
       content_type: 'product',
       contents: items.map(item => ({
         id: item.product?.node?.databaseId?.toString() || item.id,
-        quantity: item.quantity,
-        item_price: parseFloat(item.total?.replace(/[^0-9.-]+/g, '') || '0') / item.quantity
+        quantity: (item.quantity as number | undefined) ?? 1,
+        item_price: parseFloat(item.total?.replace(/[^0-9.-]+/g, '') || '0') / ((item.quantity as number) ?? 1)
       })),
       currency: 'BDT',
       value: parseFloat(orderData.total?.replace(/[^0-9.-]+/g, '') || '0'),
@@ -53,7 +55,7 @@ export class FacebookConversionsAPI {
 
     return this.sendEvent({
       eventName: 'Purchase',
-      eventData: orderData,
+      eventData: orderData as Record<string, unknown>,
       userData,
       customData,
       eventSourceUrl: window.location.href,
@@ -62,7 +64,7 @@ export class FacebookConversionsAPI {
   }
 
   // Track AddToCart event server-side
-  async trackAddToCart(product: any, quantity: number, userData: any) {
+  async trackAddToCart(product: ProductData, quantity: number, userData: Record<string, unknown>) {
     const customData = {
       content_ids: [product.databaseId?.toString() || product.id],
       content_type: 'product',
@@ -77,7 +79,7 @@ export class FacebookConversionsAPI {
 
     return this.sendEvent({
       eventName: 'AddToCart',
-      eventData: product,
+      eventData: product as unknown as Record<string, unknown>,
       userData,
       customData,
       eventSourceUrl: window.location.href,
@@ -86,7 +88,7 @@ export class FacebookConversionsAPI {
   }
 
   // Track ViewContent event server-side
-  async trackViewContent(product: any, userData: any) {
+  async trackViewContent(product: ProductData, userData: Record<string, unknown>) {
     const customData = {
       content_ids: [product.databaseId?.toString() || product.id],
       content_type: 'product',
@@ -101,7 +103,7 @@ export class FacebookConversionsAPI {
 
     return this.sendEvent({
       eventName: 'ViewContent',
-      eventData: product,
+      eventData: product as unknown as Record<string, unknown>,
       userData,
       customData,
       eventSourceUrl: window.location.href,
@@ -110,14 +112,14 @@ export class FacebookConversionsAPI {
   }
 
   // Track InitiateCheckout event server-side
-  async trackInitiateCheckout(items: any[], totalValue: number, userData: any) {
+  async trackInitiateCheckout(items: CartItem[], totalValue: number, userData: Record<string, unknown>) {
     const customData = {
       content_ids: items.map(item => item.product?.node?.databaseId?.toString() || item.id),
       content_type: 'product',
       contents: items.map(item => ({
         id: item.product?.node?.databaseId?.toString() || item.id,
-        quantity: item.quantity,
-        item_price: parseFloat(item.total?.replace(/[^0-9.-]+/g, '') || '0') / item.quantity
+        quantity: (item.quantity as number | undefined) ?? 1,
+        item_price: parseFloat(item.total?.replace(/[^0-9.-]+/g, '') || '0') / ((item.quantity as number) ?? 1)
       })),
       currency: 'BDT',
       value: totalValue,

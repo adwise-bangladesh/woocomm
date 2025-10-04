@@ -131,7 +131,7 @@ export class FacebookPixelDataCollector {
   }
 
   // Get enhanced event data for Facebook Pixel
-  public getEnhancedEventData(baseEventData: any): any {
+  public getEnhancedEventData(baseEventData: Record<string, unknown>): Record<string, unknown> {
     return {
       ...baseEventData,
       // User identification (hashed for privacy)

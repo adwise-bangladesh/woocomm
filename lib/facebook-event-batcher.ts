@@ -2,6 +2,7 @@
 import { facebookPixel } from './facebook-pixel';
 import { facebookConversionsAPI } from './facebook-conversions-api';
 import { facebookPixelDataCollector } from './facebook-pixel-data-collector';
+import type { CartItem, ProductData } from './facebook-pixel';
 
 export interface BatchedEvent {
   eventName: string;
@@ -114,27 +115,27 @@ export class FacebookEventBatcher {
   }
 
   // Send client-side event
-  private sendClientSideEvent(eventName: string, eventData: any) {
+  private async sendClientSideEvent(eventName: string, eventData: Record<string, unknown>) {
     switch (eventName) {
       case 'Purchase':
         // Use the helper function that handles the data transformation
-        const { trackPurchase } = require('./facebook-pixel');
-        trackPurchase(eventData, eventData.items || []);
+        const { trackPurchase } = await import('./facebook-pixel');
+        trackPurchase(eventData as any, (eventData.items || []) as CartItem[]);
         break;
       case 'AddToCart':
         // Use the helper function that handles the data transformation
-        const { trackAddToCart } = require('./facebook-pixel');
-        trackAddToCart(eventData.product, eventData.quantity || 1);
+        const { trackAddToCart } = await import('./facebook-pixel');
+        trackAddToCart(eventData.product as ProductData, eventData.quantity as number || 1);
         break;
       case 'ViewContent':
         // Use the helper function that handles the data transformation
-        const { trackProductView } = require('./facebook-pixel');
-        trackProductView(eventData);
+        const { trackProductView } = await import('./facebook-pixel');
+        trackProductView(eventData as unknown as ProductData);
         break;
       case 'InitiateCheckout':
         // Use the helper function that handles the data transformation
-        const { trackCheckoutInitiated } = require('./facebook-pixel');
-        trackCheckoutInitiated(eventData.items || [], eventData.totalValue || 0);
+        const { trackCheckoutInitiated } = await import('./facebook-pixel');
+        trackCheckoutInitiated((eventData.items || []) as CartItem[], eventData.totalValue as number || 0);
         break;
       default:
         facebookPixel.trackCustomEvent(eventName, eventData);

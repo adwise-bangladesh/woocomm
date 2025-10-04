@@ -73,6 +73,7 @@ class FacebookPixelManager {
   private trackedInitiateCheckouts = new Set<string>();
   private trackedPurchases = new Set<string>();
   private trackedPageViews = new Set<string>();
+  private trackedCategories = new Set<string>();
 
   constructor() {
     this.loadPixelsFromEnv();
@@ -104,15 +105,11 @@ class FacebookPixelManager {
         pixelId: '939261277872914',
         enabled: true
       });
-      console.log('Using fallback pixel ID: 939261277872914');
     }
-
-    console.log('Loaded pixels from env:', this.pixels);
   }
 
   public async initialize() {
     if (this.isInitialized || typeof window === 'undefined') {
-      console.log('Facebook Pixel already initialized or not in browser environment');
       return;
     }
 
@@ -136,7 +133,6 @@ class FacebookPixelManager {
       }
 
       this.isInitialized = true;
-      console.log('Facebook Pixel initialized with', this.pixels.length, 'pixels');
     } catch (error) {
       console.error('Failed to initialize Facebook Pixel:', error);
     }
@@ -179,7 +175,6 @@ class FacebookPixelManager {
       }
 
       this.scriptLoaded = true;
-      console.log('Facebook Pixel script loaded successfully');
       resolve();
     });
   }
@@ -193,7 +188,6 @@ class FacebookPixelManager {
     try {
       // Initialize the pixel
       window.fbq('init', pixelId);
-      console.log(`Facebook Pixel ${pixelId} initialized`);
     } catch (error) {
       console.error(`Failed to initialize pixel ${pixelId}:`, error);
     }
@@ -204,11 +198,16 @@ class FacebookPixelManager {
     if (!this.isInitialized || !window.fbq) return;
     
     // Create a unique key for this page view session
-    const pageViewKey = `pageview_${window.location.pathname}`;
+    const pageViewKey = `pageview_${window.location.pathname}_${Date.now()}`;
     
-    // Prevent duplicate tracking for the same page
-    if (this.trackedPageViews.has(pageViewKey)) {
-      console.log(`PageView already tracked for page: ${pageViewKey}`);
+    // Prevent duplicate tracking for the same page within a short time window
+    const now = Date.now();
+    const recentPageViews = Array.from(this.trackedPageViews).filter(key => {
+      const timestamp = parseInt(key.split('_').pop() || '0');
+      return now - timestamp < 5000; // 5 second window
+    });
+    
+    if (recentPageViews.length > 0) {
       return;
     }
     
@@ -219,9 +218,16 @@ class FacebookPixelManager {
         }
       });
       
-      // Mark as tracked
+      // Mark as tracked with timestamp
       this.trackedPageViews.add(pageViewKey);
-      console.log(`PageView tracked for page: ${window.location.pathname}`);
+      
+      // Clean up old entries
+      this.trackedPageViews.forEach(key => {
+        const timestamp = parseInt(key.split('_').pop() || '0');
+        if (now - timestamp > 30000) { // Keep for 30 seconds
+          this.trackedPageViews.delete(key);
+        }
+      });
     } catch (error) {
       console.error('Failed to track PageView:', error);
     }
@@ -234,7 +240,6 @@ class FacebookPixelManager {
     // Prevent duplicate tracking for the same product
     const productId = productData.content_ids[0];
     if (this.trackedProducts.has(productId)) {
-      console.log(`ViewContent already tracked for product ${productId}`);
       return;
     }
 
@@ -247,7 +252,6 @@ class FacebookPixelManager {
       
       // Mark as tracked
       this.trackedProducts.add(productId);
-      console.log(`ViewContent tracked for product ${productId}`);
     } catch (error) {
       console.error('Failed to track ViewContent:', error);
     }
@@ -277,7 +281,6 @@ class FacebookPixelManager {
     
     // Prevent duplicate tracking for the same checkout session
     if (this.trackedInitiateCheckouts.has(checkoutKey)) {
-      console.log(`InitiateCheckout already tracked for checkout session: ${checkoutKey}`);
       return;
     }
 
@@ -290,7 +293,6 @@ class FacebookPixelManager {
       
       // Mark as tracked
       this.trackedInitiateCheckouts.add(checkoutKey);
-      console.log(`InitiateCheckout tracked for ${checkoutData.num_items} items`);
     } catch (error) {
       console.error('Failed to track InitiateCheckout:', error);
     }
@@ -305,7 +307,6 @@ class FacebookPixelManager {
     
     // Prevent duplicate tracking for the same purchase
     if (this.trackedPurchases.has(purchaseKey)) {
-      console.log(`Purchase already tracked for order: ${purchaseKey}`);
       return;
     }
 
@@ -318,7 +319,6 @@ class FacebookPixelManager {
       
       // Mark as tracked
       this.trackedPurchases.add(purchaseKey);
-      console.log(`Purchase tracked for order total: ${purchaseData.value}`);
     } catch (error) {
       console.error('Failed to track Purchase:', error);
     }
@@ -327,6 +327,14 @@ class FacebookPixelManager {
   // Track Category View
   public trackCategoryView(categoryName: string, categoryId?: string) {
     if (!this.isInitialized || !window.fbq) return;
+
+    // Create a unique key for this category view
+    const categoryKey = `category_${categoryName}_${categoryId || 'no-id'}`;
+    
+    // Prevent duplicate tracking for the same category
+    if (this.trackedCategories.has(categoryKey)) {
+      return;
+    }
 
     try {
       const categoryData = {
@@ -340,6 +348,9 @@ class FacebookPixelManager {
           window.fbq('track', 'ViewContent', categoryData, { source: 'nextjs' });
         }
       });
+      
+      // Mark as tracked
+      this.trackedCategories.add(categoryKey);
     } catch (error) {
       console.error('Failed to track CategoryView:', error);
     }
@@ -369,13 +380,12 @@ class FacebookPixelManager {
     try {
       this.pixels.forEach(pixel => {
         if (pixel.enabled) {
-          window.fbq('track', 'TimeOnSite', {
+          window.fbq('trackCustom', 'TimeOnSite', {
             time_spent_seconds: timeSpent,
             time_spent_minutes: (timeSpent / 60).toFixed(2)
           }, { source: 'nextjs' });
         }
       });
-      console.log(`TimeOnSite tracked: ${timeSpent} seconds`);
     } catch (error) {
       console.error('Failed to track TimeOnSite:', error);
     }
@@ -464,6 +474,12 @@ class FacebookPixelManager {
     console.log('Cleared tracked page views');
   }
 
+  // Clear tracked categories (useful for testing)
+  public clearTrackedCategories(): void {
+    this.trackedCategories.clear();
+    console.log('Cleared tracked categories');
+  }
+
   // Clear all tracked events (useful for testing)
   public clearAllTracked(): void {
     this.trackedProducts.clear();
@@ -471,6 +487,7 @@ class FacebookPixelManager {
     this.trackedInitiateCheckouts.clear();
     this.trackedPurchases.clear();
     this.trackedPageViews.clear();
+    this.trackedCategories.clear();
     console.log('Cleared all tracked events');
   }
 }
@@ -510,7 +527,6 @@ export const trackProductView = (product: any) => {
     user_role: 'guest' // You can enhance this to detect logged-in users
   };
 
-  console.log(`Tracking ViewContent for product ID: ${productId}, name: ${product.name}, price: ${price}, category: ${categoryName}`);
   facebookPixel.trackViewContent(productData);
 };
 
@@ -544,7 +560,6 @@ export const trackAddToCart = (product: any, quantity: number = 1) => {
     user_role: 'guest'
   };
 
-  console.log(`Tracking AddToCart for product ID: ${productId}, name: ${product.name}, quantity: ${quantity}, price: ${price}, category: ${categoryName}`);
   facebookPixel.trackAddToCart(cartData);
 };
 
@@ -644,6 +659,5 @@ export const trackPurchase = (orderData: any, items: any[]) => {
     num_items: items.length
   };
 
-  console.log(`Tracking Purchase for ${items.length} items, order total: ${orderData.total}`);
   facebookPixel.trackPurchase(purchaseData);
 };

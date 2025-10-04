@@ -4,7 +4,6 @@ import './globals.css';
 import Header from '@/components/Header';
 import ProgressBar from '@/components/ProgressBar';
 import FacebookPixelProvider from '@/components/FacebookPixelProvider';
-import FacebookPixelDebug from '@/components/FacebookPixelDebug';
 import { graphqlClient } from '@/lib/graphql-client';
 import { GET_MENU, GET_SITE_SETTINGS } from '@/lib/queries';
 
@@ -86,7 +85,6 @@ export default async function RootLayout({
                     <ProgressBar />
                     <Header menuItems={menuItems} siteSettings={siteSettings} />
                     <main id="main-content" className="pb-16 lg:pb-0">{children}</main>
-                    <FacebookPixelDebug />
                   </FacebookPixelProvider>
       </body>
     </html>

@@ -145,7 +145,6 @@ export default function AddToCartButton({
             regularPrice: itemPrice.toString(),
             productCategories: productData?.productCategories || { nodes: [] }
           };
-          console.log('AddToCart tracking with enhanced product data:', enhancedProductData);
           trackCartAdd(enhancedProductData, 1);
         }
       }

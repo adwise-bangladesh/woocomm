@@ -12,6 +12,9 @@ import { graphqlClient, fetchWithSession } from '@/lib/graphql-client';
 import { PLACE_ORDER, CREATE_CUSTOMER_SESSION, ADD_TO_CART_SIMPLE } from '@/lib/mutations';
 import { useFacebookPixel } from '@/hooks/useFacebookPixel';
 import { facebookPixelDataCollector } from '@/lib/facebook-pixel-data-collector';
+import { facebookEventBatcher } from '@/lib/facebook-event-batcher';
+import { facebookAudienceManager } from '@/lib/facebook-audience-manager';
+import { facebookCustomEvents } from '@/lib/facebook-custom-events';
 
 export default function CheckoutPage() {
   const { items, isEmpty, clearCart, setCart } = useCartStore();
@@ -26,11 +29,6 @@ export default function CheckoutPage() {
     address: '',
     deliveryZone: 'outside', // Default to outside Dhaka
     paymentMethod: 'cod',
-    // Enhanced fields for better Facebook Pixel data
-    city: '',
-    zipCode: '',
-    gender: '',
-    dateOfBirth: '',
   });
   const [isFormLoaded, setIsFormLoaded] = useState(false);
   
@@ -653,8 +651,17 @@ export default function CheckoutPage() {
           total: subtotalForPixel.toString()
         };
         
-        // Get enhanced event data
-        const enhancedEventData = facebookPixelDataCollector.getEnhancedEventData({
+        // Get customer ID for audience management
+        const customerId = formData.phone || order.orderNumber || order.id;
+        
+        // Update customer value in audience manager
+        facebookAudienceManager.updateCustomerValue(customerId, subtotalForPixel);
+        
+        // Add to exclusions if this is a conversion
+        facebookAudienceManager.addToExclusions(customerId, 'converted');
+        
+        // Get enhanced event data with audience exclusions
+        const enhancedEventData = facebookAudienceManager.getEnhancedEventData({
           content_ids: localItems.map(item => item.product.node.databaseId?.toString() || item.product.node.id),
           content_type: 'product',
           contents: localItems.map(item => ({
@@ -665,10 +672,29 @@ export default function CheckoutPage() {
           currency: 'BDT',
           value: subtotalForPixel,
           num_items: localItems.length
+        }, customerId);
+        
+        // Track purchase with enhanced system
+        if (enhancedEventData) {
+          facebookEventBatcher.addEvent('Purchase', {
+            ...orderForPixel,
+            items: localItems,
+            enhancedData: enhancedEventData
+          }, 'high');
+        }
+        
+        // Also track purchase directly for immediate tracking
+        trackOrder(orderForPixel, localItems);
+        
+        // Track custom business events
+        facebookCustomEvents.trackBusinessEvent('OrderCompleted', {
+          order_id: order.orderNumber || order.id,
+          customer_id: customerId,
+          order_value: subtotalForPixel,
+          payment_method: formData.paymentMethod,
+          delivery_zone: formData.deliveryZone
         });
         
-        trackOrder(orderForPixel, localItems);
-        console.log('Facebook Pixel: Purchase tracked with enhanced data, subtotal:', subtotalForPixel, 'Data quality:', facebookPixelDataCollector.getDataQualityScore() + '%');
         
         // Clear cart and navigate to thank you page
       setCheckoutStep('success');
@@ -860,70 +886,6 @@ export default function CheckoutPage() {
                 )}
               </div>
 
-              {/* Enhanced fields for better Facebook Pixel data quality */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="city" className="block text-xs font-medium text-gray-700 mb-1">
-                    City (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    id="city"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent placeholder:text-gray-500"
-                    placeholder="Enter your city"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="zipCode" className="block text-xs font-medium text-gray-700 mb-1">
-                    ZIP Code (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    id="zipCode"
-                    name="zipCode"
-                    value={formData.zipCode}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent placeholder:text-gray-500"
-                    placeholder="Enter ZIP code"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="gender" className="block text-xs font-medium text-gray-700 mb-1">
-                    Gender (Optional)
-                  </label>
-                  <select
-                    id="gender"
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent"
-                  >
-                    <option value="">Select Gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="dateOfBirth" className="block text-xs font-medium text-gray-700 mb-1">
-                    Date of Birth (Optional)
-                  </label>
-                  <input
-                    type="date"
-                    id="dateOfBirth"
-                    name="dateOfBirth"
-                    value={formData.dateOfBirth}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent"
-                  />
-                </div>
-              </div>
 
               <div>
                 <label htmlFor="deliveryZone" className="block text-xs font-medium text-gray-700 mb-1">

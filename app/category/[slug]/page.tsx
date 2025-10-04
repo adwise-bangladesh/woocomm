@@ -154,13 +154,6 @@ async function getCategoryData(slug: string): Promise<CategoryData | null> {
       return null;
     }
     
-    // Production logging (only basic info)
-    if (process.env.NODE_ENV === 'development') {
-      serverLogger.debug('Category data loaded', { 
-        slug, 
-        productsCount: data.products?.nodes?.length || 0
-      });
-    }
     
     return {
       category: {

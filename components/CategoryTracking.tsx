@@ -22,7 +22,6 @@ export default function CategoryTracking({
     if (categoryName) {
       // Track category view
       trackCategory(categoryName, categoryId);
-      console.log(`Facebook Pixel: Category view tracked for "${categoryName}" (${productCount} products)`);
     }
   }, [categoryName, categoryId, trackCategory, productCount]);
 

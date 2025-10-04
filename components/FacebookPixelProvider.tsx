@@ -13,14 +13,32 @@ export default function FacebookPixelProvider({ children }: FacebookPixelProvide
 
   useEffect(() => {
     // Initialize Facebook Pixel only once
-    if (!facebookPixel.isReady()) {
-      facebookPixel.initialize();
-    }
+    const initializePixel = async () => {
+      if (!facebookPixel.isReady()) {
+        await facebookPixel.initialize();
+      }
+    };
+    
+    initializePixel();
   }, []);
 
   useEffect(() => {
-    // Track page view on route change
-    facebookPixel.trackPageView();
+    // Track page view on route change with proper timing
+    const trackPageView = () => {
+      if (facebookPixel.isReady()) {
+        facebookPixel.trackPageView();
+      } else {
+        // If pixel is not ready, wait a bit and try again
+        setTimeout(() => {
+          if (facebookPixel.isReady()) {
+            facebookPixel.trackPageView();
+          }
+        }, 1000);
+      }
+    };
+
+    // Small delay to ensure pixel is initialized
+    setTimeout(trackPageView, 100);
   }, [pathname]);
 
   // Track Time on Site (custom event)

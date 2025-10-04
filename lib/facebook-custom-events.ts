@@ -1,6 +1,5 @@
 // Custom Facebook Pixel events for micro conversions and business-specific tracking
 import { facebookPixel } from './facebook-pixel';
-import { facebookPixelDataCollector } from './facebook-pixel-data-collector';
 
 export class FacebookCustomEvents {
   private trackedEvents = new Set<string>();
@@ -166,7 +165,7 @@ export class FacebookCustomEvents {
   }
 
   // Track business-specific events
-  trackBusinessEvent(eventName: string, eventData: any) {
+  trackBusinessEvent(eventName: string, eventData: Record<string, unknown>) {
     const eventKey = `business_${eventName}_${JSON.stringify(eventData).slice(0, 50)}`;
     
     if (!this.trackedEvents.has(eventKey)) {

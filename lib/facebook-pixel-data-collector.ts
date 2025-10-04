@@ -76,24 +76,25 @@ export class FacebookPixelDataCollector {
   }
 
   // Update user data from checkout form
-  public updateFromCheckoutForm(formData: any) {
+  public updateFromCheckoutForm(formData: Record<string, unknown>) {
     // Parse full name into first and last
-    const nameParts = formData.fullName?.split(' ') || [];
+    const fullName = (formData.fullName as string) || '';
+    const nameParts = fullName.split(' ');
     this.userData.firstName = nameParts[0] || '';
     this.userData.lastName = nameParts.slice(1).join(' ') || '';
     
     // Phone and email
-    this.userData.phone = formData.phone || '';
-    this.userData.email = `${formData.phone}@customer.${process.env.NEXT_PUBLIC_SITE_URL?.replace('https://', '') || 'zoansh.com'}`;
+    this.userData.phone = (formData.phone as string) || '';
+    this.userData.email = `${this.userData.phone}@customer.${process.env.NEXT_PUBLIC_SITE_URL?.replace('https://', '') || 'zoansh.com'}`;
     
     // Location data
-    this.userData.city = formData.city || this.extractCityFromAddress(formData.address);
-    this.userData.zipCode = formData.zipCode || this.extractZipFromAddress(formData.address);
-    this.userData.state = formData.deliveryZone === 'dhaka' ? 'Dhaka' : 'Outside Dhaka';
+    this.userData.city = (formData.city as string) || this.extractCityFromAddress(formData.address as string);
+    this.userData.zipCode = (formData.zipCode as string) || this.extractZipFromAddress(formData.address as string);
+    this.userData.state = (formData.deliveryZone as string) === 'dhaka' ? 'Dhaka' : 'Outside Dhaka';
     
     // Demographics
-    this.userData.gender = formData.gender || '';
-    this.userData.dateOfBirth = formData.dateOfBirth || '';
+    this.userData.gender = (formData.gender as string) || '';
+    this.userData.dateOfBirth = (formData.dateOfBirth as string) || '';
   }
 
   private extractCityFromAddress(address: string): string {

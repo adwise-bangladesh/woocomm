@@ -1,6 +1,5 @@
 // Facebook Pixel Audience Manager for exclusions and value optimization
 import { facebookPixel } from './facebook-pixel';
-import { facebookPixelDataCollector } from './facebook-pixel-data-collector';
 
 export interface CustomerValue {
   customerId: string;
@@ -85,7 +84,7 @@ export class FacebookAudienceManager {
   }
 
   // Add user to exclusions
-  addToExclusions(userId: string, reason: string = 'converted') {
+  addToExclusions(userId: string, _reason: string = 'converted') {
     this.excludedUsers.add(userId);
     this.saveExcludedUsers();
   }
@@ -134,7 +133,7 @@ export class FacebookAudienceManager {
   }
 
   // Get enhanced event data with audience exclusions
-  getEnhancedEventData(baseEventData: any, userId: string) {
+  getEnhancedEventData(baseEventData: Record<string, unknown>, userId: string) {
     // Check if user should be excluded
     if (this.shouldExcludeUser(userId)) {
       return null;

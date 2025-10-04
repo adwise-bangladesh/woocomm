@@ -6,7 +6,7 @@ import type { CartItem, ProductData } from './facebook-pixel';
 
 export interface BatchedEvent {
   eventName: string;
-  eventData: any;
+  eventData: Record<string, unknown>;
   timestamp: number;
   priority: 'high' | 'medium' | 'low';
 }
@@ -24,7 +24,7 @@ export class FacebookEventBatcher {
   }
 
   // Add event to batch queue
-  addEvent(eventName: string, eventData: any, priority: 'high' | 'medium' | 'low' = 'medium') {
+  addEvent(eventName: string, eventData: Record<string, unknown>, priority: 'high' | 'medium' | 'low' = 'medium') {
     const event: BatchedEvent = {
       eventName,
       eventData,
@@ -104,7 +104,7 @@ export class FacebookEventBatcher {
 
         // Send server-side event (if available)
         if (facebookConversionsAPI) {
-          await this.sendServerSideEvent(event.eventName, event.eventData, userData);
+          await this.sendServerSideEvent(event.eventName, event.eventData, userData as Record<string, unknown>);
         }
 
         console.log(`Facebook Pixel: Event "${event.eventName}" processed successfully`);
@@ -144,20 +144,20 @@ export class FacebookEventBatcher {
   }
 
   // Send server-side event
-  private async sendServerSideEvent(eventName: string, eventData: any, userData: any) {
+  private async sendServerSideEvent(eventName: string, eventData: Record<string, unknown>, userData: Record<string, unknown>) {
     try {
       switch (eventName) {
         case 'Purchase':
-          await facebookConversionsAPI.trackPurchase(eventData, eventData.items || [], userData);
+          await facebookConversionsAPI.trackPurchase(eventData as any, (eventData.items || []) as CartItem[], userData);
           break;
         case 'AddToCart':
-          await facebookConversionsAPI.trackAddToCart(eventData.product, eventData.quantity || 1, userData);
+          await facebookConversionsAPI.trackAddToCart(eventData.product as ProductData, (eventData.quantity as number) || 1, userData);
           break;
         case 'ViewContent':
-          await facebookConversionsAPI.trackViewContent(eventData, userData);
+          await facebookConversionsAPI.trackViewContent(eventData as unknown as ProductData, userData);
           break;
         case 'InitiateCheckout':
-          await facebookConversionsAPI.trackInitiateCheckout(eventData.items || [], eventData.totalValue || 0, userData);
+          await facebookConversionsAPI.trackInitiateCheckout((eventData.items || []) as CartItem[], (eventData.totalValue as number) || 0, userData);
           break;
         default:
           // Send custom event server-side

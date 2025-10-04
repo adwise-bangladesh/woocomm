@@ -200,7 +200,9 @@ class FacebookPixelManager {
             const fbqFunction = n as { callMethod?: (...args: unknown[]) => void; queue: unknown[] };
             fbqFunction.callMethod ? fbqFunction.callMethod(...args) : fbqFunction.queue.push(args);
           };
-          if (!(f as Window & { _fbq?: unknown })._fbq) (f as Window & { _fbq: unknown })._fbq = n as (...args: unknown[]) => void;
+          if (!(f as Window & { _fbq?: unknown })._fbq) {
+            (f as Window & { _fbq: unknown })._fbq = n as (...args: unknown[]) => void;
+          }
           (n as { push: unknown }).push = n;
           (n as { loaded: boolean }).loaded = true;
           (n as { version: string }).version = '2.0';

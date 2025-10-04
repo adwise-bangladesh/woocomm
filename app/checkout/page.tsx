@@ -233,6 +233,9 @@ export default function CheckoutPage() {
     if (name === 'fullName' || name === 'phone' || name === 'address') {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
+    
+    // Update Facebook Pixel data collector in real-time
+    facebookPixelDataCollector.updateFromCheckoutForm({ ...formData, [name]: sanitizedValue });
   };
 
   const getDeliveryCharge = () => {

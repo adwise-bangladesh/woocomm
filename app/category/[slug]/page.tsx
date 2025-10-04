@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import { validateSlug } from '@/lib/utils/sanitizer';
 import { serverLogger } from '@/lib/utils/server-logger';
 import { Metadata } from 'next';
+import CategoryTracking from '@/components/CategoryTracking';
 
 // ISR Configuration: 5 minutes cache with on-demand revalidation
 export const revalidate = 300;
@@ -209,6 +210,14 @@ export default async function CategoryPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Facebook Pixel Category Tracking */}
+      <CategoryTracking 
+        categoryName={category.name}
+        categoryId={category.databaseId?.toString()}
+        categorySlug={slug}
+        productCount={category.count}
+      />
+      
       <CategoryFiltersWrapper 
         initialProducts={products} 
         categoryName={category.name}

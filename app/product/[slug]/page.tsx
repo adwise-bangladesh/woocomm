@@ -1,14 +1,21 @@
 import { graphqlClient } from '@/lib/graphql-client';
 import { GET_PRODUCT_BY_SLUG, GET_PRODUCTS } from '@/lib/queries';
 import { Product } from '@/lib/types';
-import ProductPageClient from '@/components/ProductPageClient';
+import dynamicImport from 'next/dynamic';
 import InfiniteProductGrid from '@/components/InfiniteProductGrid';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { sanitizeHtml, validateSlug, sanitizeText } from '@/lib/utils/sanitizer';
 import { logger } from '@/lib/utils/performance';
 
-export const revalidate = 300; // ISR: Revalidate every 5 minutes
+// Lazy load heavy components
+const ProductPageClient = dynamicImport(() => import('@/components/ProductPageClient'), {
+  loading: () => <div className="min-h-screen bg-gray-50 animate-pulse" />,
+  ssr: true
+});
+
+export const revalidate = 1800; // ISR: Revalidate every 30 minutes for better performance
+export const dynamic = 'force-static'; // Force static generation for better caching
 
 async function getProduct(slug: string) {
   // Validate input

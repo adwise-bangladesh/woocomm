@@ -249,6 +249,13 @@ export const GET_PRODUCT_BY_SLUG = gql`
         stockStatus
         stockQuantity
       }
+      productCategories {
+        nodes {
+          id
+          name
+          slug
+        }
+      }
       ... on VariableProduct {
         variations(first: 50) {
           nodes {

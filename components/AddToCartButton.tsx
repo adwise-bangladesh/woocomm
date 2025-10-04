@@ -6,21 +6,28 @@ import { fetchWithSession } from '@/lib/graphql-client';
 import { ShoppingCart } from 'lucide-react';
 import { validateProductId } from '@/lib/utils/sanitizer';
 import { logger } from '@/lib/utils/performance';
+import { useFacebookPixel } from '@/hooks/useFacebookPixel';
 
 interface AddToCartButtonProps {
   productId: number;
   variationId?: number;
   disabled?: boolean;
+  productData?: {
+    name?: string;
+    productCategories?: any;
+  };
 }
 
 export default function AddToCartButton({
   productId,
   variationId,
   disabled = false,
+  productData,
 }: AddToCartButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
   const { sessionToken, setSessionToken, setCart } = useCartStore();
+  const { trackCartAdd } = useFacebookPixel();
 
   const handleAddToCart = async () => {
     // Validate inputs
@@ -28,13 +35,11 @@ export default function AddToCartButton({
     const validVariationId = variationId ? validateProductId(variationId) : null;
     
     if (!validProductId) {
-      logger.error('Invalid product ID', { productId });
       alert('Invalid product. Please refresh the page and try again.');
       return;
     }
     
     if (variationId && !validVariationId) {
-      logger.error('Invalid variation ID', { variationId });
       alert('Invalid product variation. Please refresh the page and try again.');
       return;
     }
@@ -116,10 +121,35 @@ export default function AddToCartButton({
         setCart(response.addToCart.cart as never);
         setIsAdded(true);
         setTimeout(() => setIsAdded(false), 2000);
+        
+        // Track Facebook Pixel AddToCart event with complete product data
+        const cartContents = (response.addToCart.cart as any)?.contents?.nodes || [];
+        const addedItem = cartContents.find((item: any) => 
+          item.product?.node?.databaseId === productId || 
+          item.variation?.node?.databaseId === productId
+        );
+        
+        if (addedItem) {
+          const product = addedItem.product?.node || addedItem.variation?.node;
+          // Get price from cart item total or product price
+          const itemPrice = parseFloat(addedItem.total?.replace(/[^0-9.-]+/g, '') || '0') || 
+                           parseFloat(product?.price?.replace(/[^0-9.-]+/g, '') || '0');
+          
+          // Use passed product data or fallback to cart data
+          const enhancedProductData = {
+            databaseId: product?.databaseId || productId,
+            id: product?.id || productId.toString(),
+            name: productData?.name || product?.name || 'Unknown Product',
+            price: itemPrice.toString(),
+            salePrice: itemPrice.toString(),
+            regularPrice: itemPrice.toString(),
+            productCategories: productData?.productCategories || { nodes: [] }
+          };
+          console.log('AddToCart tracking with enhanced product data:', enhancedProductData);
+          trackCartAdd(enhancedProductData, 1);
+        }
       }
     } catch (error) {
-      logger.error('Error adding to cart', error);
-      
       // Check if it's a stock status error
       const errorMessage = (error as Error)?.message || 'Unknown error';
       

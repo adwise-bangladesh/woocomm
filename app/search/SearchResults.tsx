@@ -9,6 +9,7 @@ import ModernFiltersSort, { FilterState } from '@/components/ModernFiltersSort';
 import { Product } from '@/lib/types';
 import { Search, Loader2, Package, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { facebookPixel } from '@/lib/facebook-pixel';
 
 const SEARCH_PRODUCTS = gql`
   query SearchProducts($search: String!, $first: Int = 100) {
@@ -64,7 +65,14 @@ export default function SearchResults() {
           first: 100,
         }) as { products: { nodes: Product[] } };
 
-        setProducts(data.products?.nodes || []);
+        const searchResults = data.products?.nodes || [];
+        setProducts(searchResults);
+        
+        // Track search event with Facebook Pixel
+        if (query.trim() && searchResults.length > 0) {
+          facebookPixel.trackSearch(query.trim());
+          console.log(`Facebook Pixel: Search tracked for "${query.trim()}" with ${searchResults.length} results`);
+        }
       } catch (err) {
         console.error('Search error:', err);
         setError('Failed to search products. Please try again.');

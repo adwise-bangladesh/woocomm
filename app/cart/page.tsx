@@ -9,6 +9,7 @@ import { CartItem, Product } from '@/lib/types';
 import { createSessionClient } from '@/lib/graphql-client';
 import { gql } from 'graphql-request';
 import InfiniteProductGrid from '@/components/InfiniteProductGrid';
+import { useFacebookPixel } from '@/hooks/useFacebookPixel';
 
 const GET_HOMEPAGE_PRODUCTS = gql`
   query GetHomepageProducts($first: Int!) {
@@ -48,11 +49,39 @@ export default function CartPage() {
     hasNextPage: false,
     endCursor: null
   });
+  
+  // Facebook Pixel tracking
+  const { trackCustom, trackCheckout } = useFacebookPixel();
 
   // Sync localItems with items from store
   useEffect(() => {
     setLocalItems(items);
   }, [items]);
+
+  // Track ViewCart event when cart page loads with items
+  useEffect(() => {
+    if (localItems.length > 0) {
+      const cartValue = localItems.reduce((sum, item) => {
+        return sum + parseFloat(item.total.replace(/[^0-9.-]+/g, ''));
+      }, 0);
+      
+      const cartData = {
+        content_ids: localItems.map(item => item.product.node.databaseId?.toString() || item.product.node.id),
+        content_type: 'product',
+        contents: localItems.map(item => ({
+          id: item.product.node.databaseId?.toString() || item.product.node.id,
+          quantity: item.quantity,
+          item_price: parseFloat(item.total.replace(/[^0-9.-]+/g, '')) / item.quantity
+        })),
+        currency: 'BDT',
+        value: cartValue,
+        num_items: localItems.length
+      };
+      
+      trackCustom('ViewCart', cartData);
+      console.log('Facebook Pixel: ViewCart tracked with', localItems.length, 'items, value:', cartValue);
+    }
+  }, [localItems, trackCustom]);
 
   // Initial load - ensure we have the latest cart
   useEffect(() => {
@@ -369,6 +398,28 @@ export default function CartPage() {
                   style={{ backgroundColor: '#fe6c06' }}
                   onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = '#e55a00'}
                   onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = '#fe6c06'}
+                  onClick={() => {
+                    // Track InitiateCheckout event
+                    const cartValue = localItems.reduce((sum, item) => {
+                      return sum + parseFloat(item.total.replace(/[^0-9.-]+/g, ''));
+                    }, 0);
+                    
+                    const checkoutData = {
+                      content_ids: localItems.map(item => item.product.node.databaseId?.toString() || item.product.node.id),
+                      content_type: 'product',
+                      contents: localItems.map(item => ({
+                        id: item.product.node.databaseId?.toString() || item.product.node.id,
+                        quantity: item.quantity,
+                        item_price: parseFloat(item.total.replace(/[^0-9.-]+/g, '')) / item.quantity
+                      })),
+                      currency: 'BDT',
+                      value: cartValue,
+                      num_items: localItems.length
+                    };
+                    
+                    trackCheckout(localItems, cartValue);
+                    console.log('Facebook Pixel: InitiateCheckout tracked with', localItems.length, 'items, value:', cartValue);
+                  }}
                 >
                   Proceed to Checkout
                   <ArrowRight className="w-4 h-4" />

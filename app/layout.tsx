@@ -3,6 +3,8 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import Header from '@/components/Header';
 import ProgressBar from '@/components/ProgressBar';
+import FacebookPixelProvider from '@/components/FacebookPixelProvider';
+import FacebookPixelDebug from '@/components/FacebookPixelDebug';
 import { graphqlClient } from '@/lib/graphql-client';
 import { GET_MENU, GET_SITE_SETTINGS } from '@/lib/queries';
 
@@ -73,16 +75,19 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        {/* Skip to main content link for accessibility */}
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:shadow-lg"
-        >
-          Skip to main content
-        </a>
-        <ProgressBar />
-        <Header menuItems={menuItems} siteSettings={siteSettings} />
-        <main id="main-content" className="pb-16 lg:pb-0">{children}</main>
+                  <FacebookPixelProvider>
+                    {/* Skip to main content link for accessibility */}
+                    <a
+                      href="#main-content"
+                      className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:shadow-lg"
+                    >
+                      Skip to main content
+                    </a>
+                    <ProgressBar />
+                    <Header menuItems={menuItems} siteSettings={siteSettings} />
+                    <main id="main-content" className="pb-16 lg:pb-0">{children}</main>
+                    <FacebookPixelDebug />
+                  </FacebookPixelProvider>
       </body>
     </html>
   );

@@ -6,6 +6,7 @@ import { useCartStore } from '@/lib/store';
 import { ShoppingCart, Search, User } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { facebookPixel } from '@/lib/facebook-pixel';
 
 interface MenuItem {
   id: string;
@@ -76,6 +77,11 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
+      
+      // Track search event with Facebook Pixel
+      facebookPixel.trackSearch(searchQuery.trim());
+      console.log(`Facebook Pixel: Search tracked for "${searchQuery.trim()}"`);
+      
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
@@ -90,13 +96,13 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
             <span>📧 support@zonash.com</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/track-order" className="hover:text-teal-400 transition-colors">
+            <Link href="#" className="hover:text-teal-400 transition-colors">
               📦 TRACK ORDER
             </Link>
-            <Link href="/new-user" className="hover:text-teal-400 transition-colors">
+            <Link href="#" className="hover:text-teal-400 transition-colors">
               🎁 NEW USER
             </Link>
-            <Link href="/sell" className="hover:text-teal-400 transition-colors">
+            <Link href="#" className="hover:text-teal-400 transition-colors">
               🏪 SELL WITH US
             </Link>
           </div>
@@ -286,7 +292,7 @@ export default function Header({ menuItems = [], siteSettings }: HeaderProps) {
           </Link>
 
           <a
-            href="https://wa.me/your-number"
+            href="https://wa.me/8801926644575?text=Hi, I need help"
             target="_blank"
             rel="noopener noreferrer"
             className="flex flex-col items-center justify-center py-2 text-gray-600 hover:text-green-600 transition-colors"

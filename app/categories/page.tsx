@@ -4,6 +4,7 @@ import CircularCategories from '@/components/CircularCategories';
 import InfiniteProductGrid from '@/components/InfiniteProductGrid';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Product } from '@/lib/types';
+import CategoryTracking from '@/components/CategoryTracking';
 
 export const revalidate = 300; // 5 minutes, consistent with homepage
 
@@ -69,6 +70,13 @@ export default async function CategoriesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Facebook Pixel Category Tracking */}
+      <CategoryTracking 
+        categoryName="All Categories" 
+        categoryId="all-categories"
+        productCount={products.length}
+      />
+      
       {/* Categories */}
       <ErrorBoundary>
         <CircularCategories categories={categories} />

@@ -10,18 +10,27 @@ import { CartItem } from '@/lib/types';
 import { verifyCustomerHistory } from '@/lib/utils/courierVerification';
 import { graphqlClient, fetchWithSession } from '@/lib/graphql-client';
 import { PLACE_ORDER, CREATE_CUSTOMER_SESSION, ADD_TO_CART_SIMPLE } from '@/lib/mutations';
+import { useFacebookPixel } from '@/hooks/useFacebookPixel';
+import { facebookPixelDataCollector } from '@/lib/facebook-pixel-data-collector';
 
 export default function CheckoutPage() {
   const { items, isEmpty, clearCart, setCart } = useCartStore();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [checkoutStep, setCheckoutStep] = useState<'idle' | 'processing' | 'placing_order' | 'success' | 'error'>('idle');
   const [localItems, setLocalItems] = useState(items);
+  const { trackCheckout, trackOrder, trackCustom, trackViewCheckout } = useFacebookPixel();
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
     address: '',
     deliveryZone: 'outside', // Default to outside Dhaka
     paymentMethod: 'cod',
+    // Enhanced fields for better Facebook Pixel data
+    city: '',
+    zipCode: '',
+    gender: '',
+    dateOfBirth: '',
   });
   const [isFormLoaded, setIsFormLoaded] = useState(false);
   
@@ -57,6 +66,15 @@ export default function CheckoutPage() {
       }
     }
     setIsFormLoaded(true);
+    
+    // Mobile-specific optimizations
+    if (typeof window !== 'undefined') {
+      // Prevent zoom on input focus for mobile
+      const viewport = document.querySelector('meta[name="viewport"]');
+      if (viewport) {
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+      }
+    }
   }, []);
 
 
@@ -64,6 +82,20 @@ export default function CheckoutPage() {
   useEffect(() => {
     setLocalItems(items);
   }, [items]);
+
+  // Track InitiateCheckout event when checkout page loads (user starts checkout process)
+  useEffect(() => {
+    if (localItems.length > 0) {
+      const totalValue = localItems.reduce((sum, item) => {
+        const itemTotal = parseFloat(item.total?.replace(/[^0-9.-]+/g, '') || '0');
+        return sum + itemTotal;
+      }, 0);
+      
+      // Track InitiateCheckout event when user starts checkout process
+      trackCheckout(localItems, totalValue);
+      console.log('Facebook Pixel: InitiateCheckout tracked with', localItems.length, 'items, value:', totalValue);
+    }
+  }, [localItems, trackCheckout]);
 
   // Smart verification system - instant for autofill, debounced for manual typing
   useEffect(() => {
@@ -94,7 +126,7 @@ export default function CheckoutPage() {
     
     // Instant verification for complete phone numbers (likely autofill)
     if (phoneLength === 11 && validatePhone(formData.phone) === '') {
-      verifyPhone();
+        verifyPhone();
       return;
     }
     
@@ -104,8 +136,8 @@ export default function CheckoutPage() {
       const timeoutId = setTimeout(() => {
         verifyPhone();
       }, debounceTime);
-      
-      return () => clearTimeout(timeoutId);
+
+    return () => clearTimeout(timeoutId);
     } else {
       // Clear verification for incomplete numbers
       setVerificationResult(null);
@@ -325,6 +357,7 @@ export default function CheckoutPage() {
     }
 
     setIsLoading(true);
+    setCheckoutStep('processing');
 
     try {
       // If not already verified, verify now
@@ -352,112 +385,123 @@ export default function CheckoutPage() {
       const checkoutInput = {
         clientMutationId: `placeOrder${Date.now()}`,
         paymentMethod: formData.paymentMethod,
+        isPaid: formData.paymentMethod === 'bKash', // Only paid if bKash, pending for COD
         billing: {
           firstName,
           lastName,
           address1: formData.address,
-          city: formData.deliveryZone === 'dhaka' ? 'Dhaka' : 'Outside Dhaka',
-          postcode: '1205',
+          city: '', // Keep blank as requested
+          postcode: '', // Keep blank as requested
           country: 'BD',
-          email: `${formattedPhone}@example.com`,
+          email: `${formattedPhone}@customer.${process.env.NEXT_PUBLIC_SITE_URL?.replace('https://', '') || 'zoansh.com'}`,
           phone: formattedPhone,
         },
         shipping: {
           firstName,
           lastName,
           address1: formData.address,
-          city: formData.deliveryZone === 'dhaka' ? 'Dhaka' : 'Outside Dhaka',
-          postcode: '1205',
+          city: '', // Keep blank as requested
+          postcode: '', // Keep blank as requested
           country: 'BD',
         },
         // Use shippingMethod as a string (just the ID) as shown in your working query
-        shippingMethod: shippingMethod.methodId
+        shippingMethod: shippingMethod.methodId,
+        // Add custom metadata to order
+        metaData: [
+          { key: 'store_name', value: process.env.NEXT_PUBLIC_STORE_NAME || 'Zoansh Store' },
+          { key: 'store_id', value: process.env.NEXT_PUBLIC_STORE_ID || '1' },
+          { key: 'payment_method', value: formData.paymentMethod },
+          { key: 'order_origin', value: process.env.NEXT_PUBLIC_SITE_URL || 'https://zoansh.com' }
+        ]
       };
 
       // Get or create session and add cart items to it
       let sessionToken: string | null = localStorage.getItem('woocommerce-session-token');
-      console.log('🔑 Current session token:', sessionToken ? sessionToken.substring(0, 20) + '...' : 'None');
       
-      // If no session, create one
+      // If no session, create one with minimal query
       if (!sessionToken) {
-        console.log('🔄 Creating new session...');
         try {
           const sessionResult = await fetchWithSession(
-            `query { generalSettings { title } }`,
+            `query { __typename }`,
             {},
             undefined
           );
           sessionToken = sessionResult.sessionToken;
           if (sessionToken) {
             localStorage.setItem('woocommerce-session-token', sessionToken);
-            console.log('✅ New session created:', sessionToken.substring(0, 20) + '...');
           }
         } catch (sessionError) {
-          console.error('❌ Failed to create session:', sessionError);
           throw new Error('Failed to create session');
         }
-      } else {
-        console.log('✅ Using existing session');
       }
       
-      // Add cart items to the session sequentially to prevent overwrites
-      console.log('🛒 Adding cart items to session...');
+      // Fast sequential processing with optimized delays
+      setCheckoutStep('placing_order');
       let currentSessionToken = sessionToken;
       
       try {
+        // Process items in small batches to balance speed and reliability
+        const batchSize = 3; // Process 3 items at a time
+        const batches = [];
         
-        for (let i = 0; i < localItems.length; i++) {
-          const item = localItems[i];
-          console.log(`➕ Adding item ${i + 1}/${localItems.length}:`, item.product.node.name, 'Qty:', item.quantity);
+        for (let i = 0; i < localItems.length; i += batchSize) {
+          batches.push(localItems.slice(i, i + batchSize));
+        }
+        
+        for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+          const batch = batches[batchIndex];
           
-          // Check if this is a variable product with variations
-          const variationId = item.variation?.node?.databaseId;
+          // Process batch items in parallel
+          const batchPromises = batch.map(async (item, itemIndex) => {
+            const variationId = item.variation?.node?.databaseId;
+            
+            try {
+              let result;
+              if (variationId) {
+                result = await fetchWithSession(
+                  ADD_TO_CART_SIMPLE,
+                  {
+                    input: {
+                      productId: item.product.node.databaseId,
+                      variationId: variationId,
+                      quantity: item.quantity
+                    }
+                  },
+                  currentSessionToken || undefined
+                );
+              } else {
+                result = await fetchWithSession(
+                  ADD_TO_CART_SIMPLE,
+                  {
+                    input: {
+                      productId: item.product.node.databaseId,
+                      quantity: item.quantity
+                    }
+                  },
+                  currentSessionToken || undefined
+                );
+              }
+              
+              return { success: true, sessionToken: result.sessionToken };
+            } catch (error) {
+              return { success: false, error };
+            }
+          });
+
+          // Wait for batch to complete
+          const batchResults = await Promise.allSettled(batchPromises);
           
-          try {
-            let result;
-            if (variationId) {
-              // Use variation ID for variable products
-              console.log('🔧 Using variation ID:', variationId);
-              result = await fetchWithSession(
-                ADD_TO_CART_SIMPLE,
-                {
-                  input: {
-                    productId: item.product.node.databaseId,
-                    variationId: variationId,
-                    quantity: item.quantity
-                  }
-                },
-                currentSessionToken || undefined
-              );
-            } else {
-              // Use simple product ID for simple products
-              console.log('🔧 Using simple product ID:', item.product.node.databaseId);
-              result = await fetchWithSession(
-                ADD_TO_CART_SIMPLE,
-                {
-                  input: {
-                    productId: item.product.node.databaseId,
-                    quantity: item.quantity
-                  }
-                },
-                currentSessionToken || undefined
-              );
-            }
-            
-            // Update session token if we got a new one
-            if (result.sessionToken) {
-              currentSessionToken = result.sessionToken;
-              console.log('🔄 Updated session token for item', i + 1);
-            }
-            
-            // Small delay between items to prevent race conditions
-            if (i < localItems.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            
-          } catch (itemError) {
-            console.warn(`⚠️ Failed to add item ${i + 1}:`, itemError);
-            // Continue with other items
+          // Update session token from any successful result in this batch
+          const successfulResult = batchResults.find(r => 
+            r.status === 'fulfilled' && r.value.success && r.value.sessionToken
+          );
+          if (successfulResult && successfulResult.status === 'fulfilled') {
+            currentSessionToken = successfulResult.value.sessionToken || currentSessionToken;
+          }
+          
+          // Small delay between batches to prevent session conflicts
+          if (batchIndex < batches.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 100));
           }
         }
         
@@ -465,31 +509,25 @@ export default function CheckoutPage() {
         if (currentSessionToken && currentSessionToken !== sessionToken) {
           sessionToken = currentSessionToken;
           localStorage.setItem('woocommerce-session-token', currentSessionToken);
-          console.log('💾 Updated session token in localStorage');
         }
         
-        console.log('✅ All items added to session');
-        
-        // Verify cart contents before checkout (optional debug step)
+        // Quick verification that we have items in the session
         try {
-          console.log('🔍 Verifying cart contents...');
           const cartCheck = await fetchWithSession(
-            `query { cart { contents { nodes { key quantity product { node { name } } } } } }`,
+            `query { cart { contents { nodes { key } } } }`,
             {},
             currentSessionToken || undefined
           );
-          const cartItems = (cartCheck.data as any)?.cart?.contents?.nodes || [];
-          console.log(`📦 Cart verification: ${cartItems.length} items in session`);
-          cartItems.forEach((item: any, index: number) => {
-            console.log(`  ${index + 1}. ${item.product.node.name} (Qty: ${item.quantity})`);
-          });
+          const sessionItems = (cartCheck.data as any)?.cart?.contents?.nodes || [];
+          if (sessionItems.length === 0) {
+            throw new Error('No items found in session after processing');
+          }
         } catch (verifyError) {
-          console.warn('⚠️ Could not verify cart contents:', verifyError);
+          console.warn('Session verification failed:', verifyError);
         }
         
       } catch (cartError) {
-        // Continue with checkout even if some items fail to add
-        console.warn('⚠️ Failed to add some items to session:', cartError);
+        // Continue with checkout even if cart processing fails
       }
       
       // Place the order with the session that has cart items
@@ -502,8 +540,6 @@ export default function CheckoutPage() {
         throw new Error('No session token available for checkout');
       }
       
-      console.log('🚀 Placing order with session:', finalSessionToken.substring(0, 20) + '...');
-      console.log('📋 Checkout input:', JSON.stringify(checkoutInput, null, 2));
       
       try {
         // Add timeout wrapper for order placement with retry logic
@@ -514,26 +550,20 @@ export default function CheckoutPage() {
         );
         
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Order placement timeout after 20 seconds')), 20000);
+          setTimeout(() => reject(new Error('Order placement timeout after 10 seconds')), 10000);
         });
         
         result = await Promise.race([orderPromise, timeoutPromise]);
-        console.log('✅ Order placed successfully:', result);
       } catch (orderError) {
-        console.error('❌ Order placement failed:', orderError);
-        
         // Retry logic for timeout errors
         if (orderError instanceof Error && orderError.message.includes('timeout')) {
-          console.log('🔄 Retrying order placement...');
           try {
             result = await fetchWithSession(
               PLACE_ORDER,
               { input: checkoutInput },
               finalSessionToken
             );
-            console.log('✅ Order placed successfully on retry:', result);
           } catch (retryError) {
-            console.error('❌ Retry also failed:', retryError);
             throw retryError;
           }
         } else {
@@ -546,13 +576,22 @@ export default function CheckoutPage() {
         localStorage.setItem('woocommerce-session-token', result.sessionToken);
       }
       
-      // Handle response
-      const orderData = result.data?.checkout?.order || result.checkout?.order;
-      if (orderData) {
-        const order = orderData;
-        const orderNumber = order.orderNumber;
-        const totalAmount = parseFloat(order.total);
-        const deliveryCharge = parseFloat(order.shippingTotal || '0');
+       // Handle response and verify order
+       const orderData = result.data?.checkout?.order || result.checkout?.order;
+       if (orderData) {
+         const order = orderData;
+         const orderNumber = order.orderNumber;
+         const totalAmount = parseFloat(order.total);
+         const deliveryCharge = parseFloat(order.shippingTotal || '0');
+         
+         // Verify order was actually created
+         if (!orderNumber || orderNumber === 'N/A') {
+           throw new Error('Order creation failed - no order number received');
+         }
+         
+         if (!totalAmount || totalAmount <= 0) {
+           throw new Error('Order creation failed - invalid total amount');
+         }
       
       // Save customer info to localStorage for future orders
       const customerInfo = {
@@ -562,11 +601,74 @@ export default function CheckoutPage() {
         deliveryZone: formData.deliveryZone,
       };
       localStorage.setItem('customerInfo', JSON.stringify(customerInfo));
+       
+       // Save ordered items for thank you page with delivery time info
+       const itemsWithDeliveryTime = localItems.map(item => {
+         const variationStock = (item.variation?.node as any)?.stockStatus;
+         const productStock = (item.product?.node as any)?.stockStatus;
+         const stockStatus = variationStock || productStock || 'IN_STOCK';
+         
+         // Get delivery time info from the original getDeliveryTime function
+         const deliveryInfo = getDeliveryTime(stockStatus);
+         
+         return {
+           ...item,
+           deliveryTime: deliveryInfo
+         };
+       });
+       
+       // Save to multiple storage locations for backup
+       try {
+         localStorage.setItem('lastOrderItems', JSON.stringify(itemsWithDeliveryTime));
+         localStorage.setItem('lastOrderBackup', JSON.stringify(itemsWithDeliveryTime));
+         sessionStorage.setItem('lastOrderItems', JSON.stringify(itemsWithDeliveryTime));
+       } catch (storageError) {
+         console.warn('Storage failed, using fallback:', storageError);
+         // Fallback: store in memory
+         (window as any).lastOrderItems = itemsWithDeliveryTime;
+       }
+      
+       // Determine order status based on payment method
+       const orderStatus = formData.paymentMethod === 'bKash' ? 'confirmed' : 'pending';
       
       // Build thank you page URL
-      const thankYouUrl = `/thank-you?orderNumber=${orderNumber}&name=${encodeURIComponent(formData.fullName)}&phone=${formattedPhone}&address=${encodeURIComponent(formData.address)}&total=${totalAmount.toFixed(0)}&delivery=${deliveryCharge}&items=${localItems.length}`;
+       const thankYouUrl = `/thank-you?orderNumber=${orderNumber}&name=${encodeURIComponent(formData.fullName)}&phone=${formattedPhone}&address=${encodeURIComponent(formData.address)}&total=${totalAmount.toFixed(0)}&delivery=${deliveryCharge}&items=${localItems.length}&status=${orderStatus}`;
       
+        // Update data collector with form data
+        facebookPixelDataCollector.updateFromCheckoutForm(formData);
+        facebookPixelDataCollector.setExternalId(order.orderNumber || order.id);
+        
+        // Track purchase with subtotal (excluding shipping)
+        const subtotalForPixel = localItems.reduce((sum, item) => {
+          const itemTotal = parseFloat(item.total?.replace(/[^0-9.-]+/g, '') || '0');
+          return sum + itemTotal;
+        }, 0);
+        
+        // Create order data with subtotal for Facebook Pixel
+        const orderForPixel = {
+          ...order,
+          total: subtotalForPixel.toString()
+        };
+        
+        // Get enhanced event data
+        const enhancedEventData = facebookPixelDataCollector.getEnhancedEventData({
+          content_ids: localItems.map(item => item.product.node.databaseId?.toString() || item.product.node.id),
+          content_type: 'product',
+          contents: localItems.map(item => ({
+            id: item.product.node.databaseId?.toString() || item.product.node.id,
+            quantity: item.quantity,
+            item_price: parseFloat(item.total?.replace(/[^0-9.-]+/g, '') || '0') / item.quantity
+          })),
+          currency: 'BDT',
+          value: subtotalForPixel,
+          num_items: localItems.length
+        });
+        
+        trackOrder(orderForPixel, localItems);
+        console.log('Facebook Pixel: Purchase tracked with enhanced data, subtotal:', subtotalForPixel, 'Data quality:', facebookPixelDataCollector.getDataQualityScore() + '%');
+        
         // Clear cart and navigate to thank you page
+      setCheckoutStep('success');
       clearCart();
       router.replace(thankYouUrl);
       } else {
@@ -574,20 +676,30 @@ export default function CheckoutPage() {
       }
     } catch (error) {
       console.error('Checkout error:', error);
-      
-      if (error instanceof Error) {
-        if (error.message.includes('Network')) {
-          alert('Network error. Please check your connection and try again.');
-        } else if (error.message.includes('GraphQL')) {
-          alert('Server error. Please try again later.');
-        } else if (error.message.includes('timeout')) {
-          alert('Checkout timed out. Please try again.');
-        } else {
-          alert(`Checkout failed: ${error.message}`);
-        }
-      } else {
-      alert('Failed to complete checkout. Please try again.');
-      }
+       setCheckoutStep('error');
+       
+       if (error instanceof Error) {
+         // Specific error handling based on error type
+         if (error.message.includes('Order creation failed')) {
+           alert('Order creation failed. Please try again or contact support if the issue persists.');
+         } else if (error.message.includes('Network') || error.message.includes('fetch')) {
+           alert('Network error. Please check your internet connection and try again.');
+         } else if (error.message.includes('GraphQL') || error.message.includes('GraphQL')) {
+           alert('Server error. Please try again in a few moments.');
+         } else if (error.message.includes('timeout')) {
+           alert('Request timed out. Please try again.');
+         } else if (error.message.includes('session') || error.message.includes('Session')) {
+           alert('Session expired. Please refresh the page and try again.');
+         } else if (error.message.includes('payment') || error.message.includes('Payment')) {
+           alert('Payment method error. Please try a different payment method.');
+         } else if (error.message.includes('cart') || error.message.includes('Cart')) {
+           alert('Cart error. Please refresh the page and try again.');
+         } else {
+           alert(`Checkout failed: ${error.message}`);
+         }
+       } else {
+         alert('An unexpected error occurred. Please try again or contact support.');
+       }
     } finally {
       setIsLoading(false);
     }
@@ -669,9 +781,11 @@ export default function CheckoutPage() {
                   onChange={handleInputChange}
                   className={`w-full px-3 py-2 text-sm text-gray-900 border ${errors.fullName ? 'border-red-500' : 'border-gray-200'} rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent placeholder:text-gray-500`}
                   placeholder="Enter your full name"
+                  aria-describedby={errors.fullName ? "fullName-error" : undefined}
+                  aria-invalid={errors.fullName ? "true" : "false"}
                 />
                 {errors.fullName && (
-                  <p className="text-xs text-red-600 mt-1">{errors.fullName}</p>
+                  <p id="fullName-error" className="text-xs text-red-600 mt-1" role="alert">{errors.fullName}</p>
                 )}
               </div>
 
@@ -680,15 +794,17 @@ export default function CheckoutPage() {
                   Phone Number *
                 </label>
                 <div className="relative">
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    required
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    className={`w-full px-3 py-2 text-sm text-gray-900 border ${errors.phone ? 'border-red-500' : 'border-gray-200'} rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent placeholder:text-gray-500`}
-                    placeholder="01XXXXXXXXX"
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  required
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  className={`w-full px-3 py-2 text-sm text-gray-900 border ${errors.phone ? 'border-red-500' : 'border-gray-200'} rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent placeholder:text-gray-500`}
+                  placeholder="01XXXXXXXXX"
+                    aria-describedby={errors.phone ? "phone-error" : undefined}
+                    aria-invalid={errors.phone ? "true" : "false"}
                   />
                   {/* Verification Status Indicator */}
                   {formData.phone && formData.phone.length >= 10 && (
@@ -712,7 +828,7 @@ export default function CheckoutPage() {
                   )}
                 </div>
                 {errors.phone && (
-                  <p className="text-xs text-red-600 mt-1">{errors.phone}</p>
+                  <p id="phone-error" className="text-xs text-red-600 mt-1" role="alert">{errors.phone}</p>
                 )}
                 {verificationResult && !verificationResult.allowed && (
                   <p className="text-xs text-red-600 mt-1">{verificationResult.reason}</p>
@@ -733,10 +849,77 @@ export default function CheckoutPage() {
                   onChange={handleInputChange}
                   className={`w-full px-3 py-2 text-sm text-gray-900 border ${errors.address ? 'border-red-500' : 'border-gray-200'} rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent resize-none placeholder:text-gray-500`}
                   placeholder="House/Flat no, Road, Area, Thana"
+                  aria-describedby={errors.address ? "address-error" : undefined}
+                  aria-invalid={errors.address ? "true" : "false"}
                 />
                 {errors.address && (
-                  <p className="text-xs text-red-600 mt-1">{errors.address}</p>
+                  <p id="address-error" className="text-xs text-red-600 mt-1" role="alert">{errors.address}</p>
                 )}
+              </div>
+
+              {/* Enhanced fields for better Facebook Pixel data quality */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="city" className="block text-xs font-medium text-gray-700 mb-1">
+                    City (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    id="city"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent placeholder:text-gray-500"
+                    placeholder="Enter your city"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="zipCode" className="block text-xs font-medium text-gray-700 mb-1">
+                    ZIP Code (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    id="zipCode"
+                    name="zipCode"
+                    value={formData.zipCode}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent placeholder:text-gray-500"
+                    placeholder="Enter ZIP code"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="gender" className="block text-xs font-medium text-gray-700 mb-1">
+                    Gender (Optional)
+                  </label>
+                  <select
+                    id="gender"
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent"
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="dateOfBirth" className="block text-xs font-medium text-gray-700 mb-1">
+                    Date of Birth (Optional)
+                  </label>
+                  <input
+                    type="date"
+                    id="dateOfBirth"
+                    name="dateOfBirth"
+                    value={formData.dateOfBirth}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent"
+                  />
+                </div>
               </div>
 
               <div>
@@ -750,6 +933,7 @@ export default function CheckoutPage() {
                   value={formData.deliveryZone}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent"
+                  aria-label="Select delivery area"
                 >
                   <option value="outside">Outside Dhaka (Tk 130)</option>
                   <option value="dhaka">Inside Dhaka (Tk 80)</option>
@@ -771,6 +955,8 @@ export default function CheckoutPage() {
                     ? 'border-orange-500 bg-orange-50'
                     : 'border-gray-200 bg-white hover:bg-gray-50 hover:border-orange-300'
                 }`}
+                aria-pressed={formData.paymentMethod === 'cod'}
+                aria-label="Select Cash on Delivery payment method"
               >
                 <div className="w-4 h-4 flex items-center justify-center">
                   <svg width="16" height="16" viewBox="0 0 36 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -794,6 +980,8 @@ export default function CheckoutPage() {
                 type="button"
                   disabled
                 className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-500 border border-gray-200 bg-gray-50 cursor-not-allowed opacity-60 rounded"
+                aria-label="bKash payment method (coming soon)"
+                aria-disabled="true"
               >
                 <div className="w-4 h-4 flex items-center justify-center">
                   <svg xmlns="http://www.w3.org/2000/svg" height="800" width="1200" viewBox="-18.0015 -28.3525 156.013 170.115">
@@ -823,6 +1011,8 @@ export default function CheckoutPage() {
             style={{ backgroundColor: isRateLimited ? '#dc2626' : '#fe6c06' }}
             onMouseEnter={(e) => !e.currentTarget.disabled && !isRateLimited && (e.currentTarget.style.backgroundColor = '#e55a00')}
             onMouseLeave={(e) => !e.currentTarget.disabled && !isRateLimited && (e.currentTarget.style.backgroundColor = '#fe6c06')}
+            aria-label={isLoading ? "Processing order..." : isRateLimited ? "Rate limited, please wait" : "Place your order"}
+            aria-describedby={isRateLimited ? "rate-limit-message" : undefined}
           >
             <div className="flex items-center justify-center gap-2">
               {isRateLimited ? (
@@ -835,7 +1025,13 @@ export default function CheckoutPage() {
               ) : isLoading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Processing Order...</span>
+                  <span>
+                    {checkoutStep === 'processing' && 'Verifying...'}
+                    {checkoutStep === 'placing_order' && 'Placing Order...'}
+                    {checkoutStep === 'success' && 'Success!'}
+                    {checkoutStep === 'error' && 'Error - Retry'}
+                    {!checkoutStep && 'Processing...'}
+                  </span>
                 </>
               ) : (
                 <>

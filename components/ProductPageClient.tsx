@@ -1,12 +1,31 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, memo, useEffect } from 'react';
 import { Product, ProductVariation } from '@/lib/types';
-import VariantSelector from './VariantSelector';
-import ProductImageGallery from './ProductImageGallery';
-import AddToCartButton from './AddToCartButton';
-import AnimatedOrderButton from './AnimatedOrderButton';
+import dynamic from 'next/dynamic';
 import ShareButton from './ShareButton';
+import { useFacebookPixel } from '@/hooks/useFacebookPixel';
+
+// Lazy load heavy components
+const VariantSelector = dynamic(() => import('./VariantSelector'), {
+  loading: () => <div className="animate-pulse h-20 bg-gray-200 rounded" />,
+  ssr: false
+});
+
+const ProductImageGallery = dynamic(() => import('./ProductImageGallery'), {
+  loading: () => <div className="animate-pulse aspect-square bg-gray-200 rounded" />,
+  ssr: true
+});
+
+const AddToCartButton = dynamic(() => import('./AddToCartButton'), {
+  loading: () => <div className="animate-pulse h-12 bg-gray-200 rounded" />,
+  ssr: false
+});
+
+const AnimatedOrderButton = dynamic(() => import('./AnimatedOrderButton'), {
+  loading: () => <div className="animate-pulse h-12 bg-gray-200 rounded" />,
+  ssr: false
+});
 import { Phone, Star, Package, Clock } from 'lucide-react';
 import { usePriceFormatter, useDiscountCalculator, logger } from '@/lib/utils/performance';
 import { sanitizeHtml } from '@/lib/utils/sanitizer';
@@ -17,7 +36,7 @@ interface ProductPageClientProps {
   reviewStats: { rating: number; count: number };
 }
 
-export default function ProductPageClient({
+const ProductPageClient = memo(function ProductPageClient({
   product,
   reviewStats,
 }: ProductPageClientProps) {
@@ -27,6 +46,9 @@ export default function ProductPageClient({
   const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null);
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
   const [showPolicyModal, setShowPolicyModal] = useState(false);
+  
+  // Facebook Pixel tracking
+  const { trackProduct } = useFacebookPixel();
 
   const isVariableProduct = product.type === 'VARIABLE';
   
@@ -48,20 +70,19 @@ export default function ProductPageClient({
     return { isFastDelivery, isRegularDelivery, isGlobalDelivery, canOrder };
   }, [currentStockStatus]);
 
+  // Memoize review stars calculation
+  const reviewStars = useMemo(() => {
+    return [...Array(5)].map((_, i) => {
+      const starRating = i + 1;
+      const filled = starRating <= Math.floor(reviewStats.rating);
+      const halfFilled = starRating === Math.ceil(reviewStats.rating) && reviewStats.rating % 1 !== 0;
+      
+      return { starRating, filled, halfFilled };
+    });
+  }, [reviewStats.rating]);
+
   const { isFastDelivery, isRegularDelivery, isGlobalDelivery, canOrder } = stockInfo;
   
-  // Debug logging (development only)
-  logger.debug('Stock status debug', {
-    currentStockStatus,
-    isFastDelivery,
-    isRegularDelivery,
-    isGlobalDelivery,
-    canOrder,
-    isVariableProduct,
-    selectedVariation: selectedVariation?.databaseId,
-    selectedAttributes,
-    buttonDisabled: isVariableProduct && !selectedVariation
-  });
 
   // Calculate discount for current variation/product (memoized)
   const displayDiscount = useMemo(() => {
@@ -69,7 +90,6 @@ export default function ProductPageClient({
   }, [calculateDiscount, currentSalePrice, currentRegularPrice]);
 
   const handleVariantChange = useCallback((variation: ProductVariation | null, attrs: Record<string, string>) => {
-    logger.debug('handleVariantChange called', { variation: variation?.databaseId, attrs });
     setSelectedVariation(variation);
     setSelectedAttributes(attrs);
   }, []);
@@ -82,6 +102,19 @@ export default function ProductPageClient({
 
   // Get variation image if available
   const currentImage = selectedVariation?.image || product.image;
+
+  // Track product view (only once per product)
+  useEffect(() => {
+    const productId = currentProduct.databaseId || currentProduct.id;
+    if (productId) {
+      // Add a small delay to prevent multiple rapid calls
+      const timeoutId = setTimeout(() => {
+        trackProduct(currentProduct);
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [currentProduct.databaseId, currentProduct.id, trackProduct]);
 
   return (
     <>
@@ -110,25 +143,19 @@ export default function ProductPageClient({
               {/* Reviews Count */}
               <div className="flex items-center gap-2 mb-2">
                 <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => {
-                    const starRating = i + 1;
-                    const filled = starRating <= Math.floor(reviewStats.rating);
-                    const halfFilled = starRating === Math.ceil(reviewStats.rating) && reviewStats.rating % 1 !== 0;
-                    
-                    return (
-                      <div key={i} className="relative inline-block">
-                        <Star className="w-3.5 h-3.5 text-gray-300" />
-                        {(filled || halfFilled) && (
-                          <Star 
-                            className={`w-3.5 h-3.5 absolute top-0 left-0 text-yellow-400 ${
-                              halfFilled ? 'fill-current' : 'fill-current'
-                            }`}
-                            style={halfFilled ? { clipPath: 'polygon(0 0, 50% 0, 50% 100%, 0% 100%)' } : {}}
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
+                  {reviewStars.map(({ starRating, filled, halfFilled }) => (
+                    <div key={starRating} className="relative inline-block">
+                      <Star className="w-3.5 h-3.5 text-gray-300" />
+                      {(filled || halfFilled) && (
+                        <Star 
+                          className={`w-3.5 h-3.5 absolute top-0 left-0 text-yellow-400 ${
+                            halfFilled ? 'fill-current' : 'fill-current'
+                          }`}
+                          style={halfFilled ? { clipPath: 'polygon(0 0, 50% 0, 50% 100%, 0% 100%)' } : {}}
+                        />
+                      )}
+                    </div>
+                  ))}
                 </div>
                 <span className="text-xs text-gray-600">
                   {reviewStats.rating} ({reviewStats.count.toLocaleString()} reviews)
@@ -220,6 +247,10 @@ export default function ProductPageClient({
                   productId={productIdForCart}
                   variationId={variationIdForCart}
                   disabled={isVariableProduct && !selectedVariation}
+                  productData={{
+                    name: currentProduct.name,
+                    productCategories: 'productCategories' in currentProduct ? currentProduct.productCategories : product.productCategories
+                  }}
                 />
               </div>
 
@@ -359,5 +390,7 @@ export default function ProductPageClient({
       )}
     </>
   );
-}
+});
+
+export default ProductPageClient;
 

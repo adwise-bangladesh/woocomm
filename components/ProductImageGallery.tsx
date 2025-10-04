@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, memo } from 'react';
 import Image from 'next/image';
 
 interface GalleryImage {
@@ -14,7 +14,7 @@ interface ProductImageGalleryProps {
   productName: string;
 }
 
-export default function ProductImageGallery({ 
+const ProductImageGallery = memo(function ProductImageGallery({ 
   mainImage, 
   galleryImages, 
   productName 
@@ -32,9 +32,11 @@ export default function ProductImageGallery({
     setSelectedImage(0);
   }, [mainImage.sourceUrl]);
 
-  // Preload all images for instant switching
+  // Lazy load images only when needed
   useEffect(() => {
-    allImages.forEach((image) => {
+    // Only preload the first 3 images for better performance
+    const imagesToPreload = allImages.slice(0, 3);
+    imagesToPreload.forEach((image) => {
       const img = new window.Image();
       img.src = image.sourceUrl;
     });
@@ -62,8 +64,10 @@ export default function ProductImageGallery({
             isTransitioning ? 'opacity-0 scale-105' : 'opacity-100 scale-100'
           }`}
           priority
-          sizes="(max-width: 768px) 100vw, 66vw"
-          quality={95}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          quality={85}
+          placeholder="blur"
+          blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
         />
       </div>
 
@@ -96,8 +100,9 @@ export default function ProductImageGallery({
                 alt={image.altText || `${productName} ${index + 1}`}
                 fill
                 className="object-cover"
-                sizes="100px"
-                quality={80}
+                sizes="(max-width: 768px) 20vw, 10vw"
+                quality={75}
+                loading={index < 3 ? "eager" : "lazy"}
               />
             </button>
           ))}
@@ -105,5 +110,7 @@ export default function ProductImageGallery({
       )}
     </div>
   );
-}
+});
+
+export default ProductImageGallery;
 

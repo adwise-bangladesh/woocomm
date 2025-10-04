@@ -607,7 +607,7 @@ export default function CheckoutPage() {
        const itemsWithDeliveryTime = localItems.map(item => {
          const variationStock = (item.variation?.node as Record<string, unknown>)?.stockStatus;
          const productStock = (item.product?.node as Record<string, unknown>)?.stockStatus;
-         const stockStatus = variationStock || productStock || 'IN_STOCK';
+         const stockStatus = (variationStock as string) || (productStock as string) || 'IN_STOCK';
          
          // Get delivery time info from the original getDeliveryTime function
          const deliveryInfo = getDeliveryTime(stockStatus);

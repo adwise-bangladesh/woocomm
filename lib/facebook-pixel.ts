@@ -116,6 +116,7 @@ class FacebookPixelManager {
   private trackedAddToCart = new Set<string>();
   private trackedViewCart = new Set<string>();
   private trackedTimeOnSite = new Set<string>();
+  private sessionId = Date.now().toString();
 
   constructor() {
     this.loadPixelsFromEnv();
@@ -247,36 +248,22 @@ class FacebookPixelManager {
     if (!this.isInitialized || !window.fbq) return;
     
     // Create a unique key for this page view session
-    const pageViewKey = `pageview_${window.location.pathname}_${Date.now()}`;
+    const pageViewKey = `pageview_${window.location.pathname}_${this.sessionId}`;
     
-    // Prevent duplicate tracking for the same page within a short time window
-    const now = Date.now();
-    const recentPageViews = Array.from(this.trackedPageViews).filter(key => {
-      const timestamp = parseInt(key.split('_').pop() || '0');
-      return now - timestamp < 5000; // 5 second window
-    });
-    
-    if (recentPageViews.length > 0) {
+    // Prevent duplicate tracking for the same page in this session
+    if (this.trackedPageViews.has(pageViewKey)) {
       return;
     }
     
     try {
       this.pixels.forEach(pixel => {
         if (pixel.enabled) {
-          window.fbq('track', 'PageView');
+          window.fbq('track', 'PageView', {}, { source: 'nextjs' });
         }
       });
       
-      // Mark as tracked with timestamp
+      // Mark as tracked
       this.trackedPageViews.add(pageViewKey);
-      
-      // Clean up old entries
-      this.trackedPageViews.forEach(key => {
-        const timestamp = parseInt(key.split('_').pop() || '0');
-        if (now - timestamp > 30000) { // Keep for 30 seconds
-          this.trackedPageViews.delete(key);
-        }
-      });
     } catch (error) {
       console.error('Failed to track PageView:', error);
     }
@@ -286,9 +273,12 @@ class FacebookPixelManager {
   public trackViewContent(productData: ProductData) {
     if (!this.isInitialized || !window.fbq) return;
 
-    // Prevent duplicate tracking for the same product
+    // Create a unique key for this ViewContent event
     const productId = productData.content_ids[0];
-    if (this.trackedProducts.has(productId)) {
+    const viewContentKey = `viewcontent_${productId}_${this.sessionId}`;
+    
+    // Prevent duplicate tracking for the same product in this session
+    if (this.trackedProducts.has(viewContentKey)) {
       return;
     }
 
@@ -300,7 +290,7 @@ class FacebookPixelManager {
       });
       
       // Mark as tracked
-      this.trackedProducts.add(productId);
+      this.trackedProducts.add(viewContentKey);
     } catch (error) {
       console.error('Failed to track ViewContent:', error);
     }
@@ -337,7 +327,7 @@ class FacebookPixelManager {
     if (!this.isInitialized || !window.fbq) return;
 
     // Create a unique key for this checkout session
-    const checkoutKey = `initiate_${checkoutData.content_ids?.join('_')}_${checkoutData.value}`;
+    const checkoutKey = `initiate_${checkoutData.content_ids?.join('_')}_${checkoutData.value}_${this.sessionId}`;
     
     // Prevent duplicate tracking for the same checkout session
     if (this.trackedInitiateCheckouts.has(checkoutKey)) {
@@ -363,7 +353,7 @@ class FacebookPixelManager {
     if (!this.isInitialized || !window.fbq) return;
 
     // Create a unique key for this purchase
-    const purchaseKey = `purchase_${purchaseData.content_ids?.join('_')}_${purchaseData.value}`;
+    const purchaseKey = `purchase_${purchaseData.content_ids?.join('_')}_${purchaseData.value}_${this.sessionId}`;
     
     // Prevent duplicate tracking for the same purchase
     if (this.trackedPurchases.has(purchaseKey)) {
@@ -438,7 +428,7 @@ class FacebookPixelManager {
     if (!this.isInitialized || !window.fbq) return;
 
     // Create a unique key for this TimeOnSite event
-    const timeOnSiteKey = `timeonsite_${Math.floor(timeSpent / 60)}_${Date.now()}`;
+    const timeOnSiteKey = `timeonsite_${Math.floor(timeSpent / 60)}_${this.sessionId}`;
     
     // Prevent duplicate tracking for the same TimeOnSite event
     if (this.trackedTimeOnSite.has(timeOnSiteKey)) {
@@ -563,7 +553,8 @@ class FacebookPixelManager {
     this.trackedAddToCart.clear();
     this.trackedViewCart.clear();
     this.trackedTimeOnSite.clear();
-    console.log('Cleared all tracked events');
+    this.sessionId = Date.now().toString();
+    console.log('Cleared all tracked events and reset session');
   }
 }
 

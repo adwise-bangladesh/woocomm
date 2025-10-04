@@ -4,12 +4,11 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { eventName, eventData, userData, customData } = body;
+    const { eventName, userData, customData } = body;
 
     // Get IP address from request
     const ipAddress = request.headers.get('x-forwarded-for') || 
                      request.headers.get('x-real-ip') || 
-                     request.ip || 
                      'unknown';
 
     // Get user agent

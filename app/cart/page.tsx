@@ -404,7 +404,7 @@ export default function CartPage() {
                       return sum + parseFloat(item.total.replace(/[^0-9.-]+/g, ''));
                     }, 0);
                     
-                    const checkoutData = {
+                    const _checkoutData = {
                       content_ids: localItems.map(item => item.product.node.databaseId?.toString() || item.product.node.id),
                       content_type: 'product',
                       contents: localItems.map(item => ({

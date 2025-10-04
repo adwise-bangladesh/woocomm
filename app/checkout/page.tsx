@@ -431,7 +431,7 @@ export default function CheckoutPage() {
           if (sessionToken) {
             localStorage.setItem('woocommerce-session-token', sessionToken);
           }
-        } catch (sessionError) {
+        } catch (_sessionError) {
           throw new Error('Failed to create session');
         }
       }
@@ -453,7 +453,7 @@ export default function CheckoutPage() {
           const batch = batches[batchIndex];
           
           // Process batch items in parallel
-          const batchPromises = batch.map(async (item, itemIndex) => {
+          const batchPromises = batch.map(async (item, _itemIndex) => {
             const variationId = item.variation?.node?.databaseId;
             
             try {
@@ -519,7 +519,7 @@ export default function CheckoutPage() {
             {},
             currentSessionToken || undefined
           );
-          const sessionItems = (cartCheck.data as any)?.cart?.contents?.nodes || [];
+          const sessionItems = (((cartCheck.data as Record<string, unknown>)?.cart as Record<string, unknown>)?.contents as Record<string, unknown>)?.nodes as Record<string, unknown>[] || [];
           if (sessionItems.length === 0) {
             throw new Error('No items found in session after processing');
           }
@@ -527,12 +527,12 @@ export default function CheckoutPage() {
           console.warn('Session verification failed:', verifyError);
         }
         
-      } catch (cartError) {
+      } catch (_cartError) {
         // Continue with checkout even if cart processing fails
       }
       
       // Place the order with the session that has cart items
-      let result: any;
+      let result: Record<string, unknown>;
       
       // Use the updated session token
       const finalSessionToken = currentSessionToken || sessionToken;
@@ -554,7 +554,7 @@ export default function CheckoutPage() {
           setTimeout(() => reject(new Error('Order placement timeout after 10 seconds')), 10000);
         });
         
-        result = await Promise.race([orderPromise, timeoutPromise]);
+        result = await Promise.race([orderPromise, timeoutPromise]) as Record<string, unknown>;
       } catch (orderError) {
         // Retry logic for timeout errors
         if (orderError instanceof Error && orderError.message.includes('timeout')) {
@@ -574,16 +574,16 @@ export default function CheckoutPage() {
       
       // Save session token if we got a new one
       if (result.sessionToken) {
-        localStorage.setItem('woocommerce-session-token', result.sessionToken);
+        localStorage.setItem('woocommerce-session-token', result.sessionToken as string);
       }
       
        // Handle response and verify order
-       const orderData = result.data?.checkout?.order || result.checkout?.order;
+       const orderData = ((result.data as Record<string, unknown>)?.checkout as Record<string, unknown>)?.order || ((result as Record<string, unknown>)?.checkout as Record<string, unknown>)?.order;
        if (orderData) {
-         const order = orderData;
-         const orderNumber = order.orderNumber;
-         const totalAmount = parseFloat(order.total);
-         const deliveryCharge = parseFloat(order.shippingTotal || '0');
+         const order = orderData as Record<string, unknown>;
+         const orderNumber = order.orderNumber as string;
+         const totalAmount = parseFloat(order.total as string);
+         const deliveryCharge = parseFloat((order.shippingTotal as string) || '0');
          
          // Verify order was actually created
          if (!orderNumber || orderNumber === 'N/A') {
@@ -605,8 +605,8 @@ export default function CheckoutPage() {
        
        // Save ordered items for thank you page with delivery time info
        const itemsWithDeliveryTime = localItems.map(item => {
-         const variationStock = (item.variation?.node as any)?.stockStatus;
-         const productStock = (item.product?.node as any)?.stockStatus;
+         const variationStock = (item.variation?.node as Record<string, unknown>)?.stockStatus;
+         const productStock = (item.product?.node as Record<string, unknown>)?.stockStatus;
          const stockStatus = variationStock || productStock || 'IN_STOCK';
          
          // Get delivery time info from the original getDeliveryTime function
@@ -626,7 +626,7 @@ export default function CheckoutPage() {
        } catch (storageError) {
          console.warn('Storage failed, using fallback:', storageError);
          // Fallback: store in memory
-         (window as any).lastOrderItems = itemsWithDeliveryTime;
+         (window as unknown as Record<string, unknown>).lastOrderItems = itemsWithDeliveryTime;
        }
       
        // Determine order status based on payment method

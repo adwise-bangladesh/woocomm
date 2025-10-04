@@ -112,8 +112,9 @@ function ThankYouContent() {
         // Try localStorage first
         try {
           storedItems = localStorage.getItem('lastOrderItems');
-        } catch (_e) {
+        } catch (e) {
           // Try backup storage
+          console.warn('localStorage access failed:', e);
           storedItems = localStorage.getItem('lastOrderBackup');
         }
         
@@ -121,8 +122,9 @@ function ThankYouContent() {
         if (!storedItems) {
           try {
             storedItems = sessionStorage.getItem('lastOrderItems');
-          } catch (_e) {
+          } catch (e) {
             // Try memory fallback
+            console.warn('sessionStorage access failed:', e);
             storedItems = (window as unknown as Record<string, unknown>).lastOrderItems ? JSON.stringify((window as unknown as Record<string, unknown>).lastOrderItems) : null;
           }
         }
@@ -130,8 +132,9 @@ function ThankYouContent() {
         if (storedItems) {
           setOrderedItems(JSON.parse(storedItems));
         }
-      } catch (_error) {
+      } catch (error) {
         // Silently handle error - items will show fallback message
+        console.warn('Failed to load ordered items:', error);
       } finally {
         setIsLoadingItems(false);
       }
@@ -163,8 +166,9 @@ function ThankYouContent() {
         
         oscillator.start(audioContext.currentTime);
         oscillator.stop(audioContext.currentTime + 0.3);
-      } catch (_error) {
+      } catch (error) {
         // Silently handle audio failure
+        console.warn('Audio playback failed:', error);
       }
     };
 

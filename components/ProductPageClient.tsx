@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, memo, useEffect } from 'react';
+import { useState, useCallback, useMemo, memo, useEffect, useRef } from 'react';
 import { Product, ProductVariation } from '@/lib/types';
 import dynamic from 'next/dynamic';
 import ShareButton from './ShareButton';
@@ -49,6 +49,7 @@ const ProductPageClient = memo(function ProductPageClient({
   
   // Facebook Pixel tracking
   const { trackProduct } = useFacebookPixel();
+  const trackedProductRef = useRef<string | null>(null);
 
   const isVariableProduct = product.type === 'VARIABLE';
   
@@ -106,15 +107,16 @@ const ProductPageClient = memo(function ProductPageClient({
   // Track product view (only once per product)
   useEffect(() => {
     const productId = currentProduct.databaseId || currentProduct.id;
-    if (productId) {
+    if (productId && trackedProductRef.current !== productId) {
       // Add a small delay to prevent multiple rapid calls
       const timeoutId = setTimeout(() => {
         trackProduct(currentProduct);
+        trackedProductRef.current = productId;
       }, 100);
       
       return () => clearTimeout(timeoutId);
     }
-  }, [currentProduct, trackProduct]);
+  }, [currentProduct.databaseId, currentProduct.id]); // Only depend on product ID, not the entire product object
 
   return (
     <>

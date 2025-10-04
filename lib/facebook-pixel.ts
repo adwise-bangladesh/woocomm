@@ -1,8 +1,8 @@
 // Facebook Pixel implementation for e-commerce tracking
 declare global {
   interface Window {
-    fbq: any;
-    _fbq: any;
+    fbq: (...args: unknown[]) => void;
+    _fbq: (...args: unknown[]) => void;
   }
 }
 
@@ -62,6 +62,45 @@ export interface AddToCartData {
   post_type?: string;
   page_title?: string;
   user_role?: string;
+}
+
+export interface ProductData {
+  databaseId?: number;
+  id?: string;
+  name?: string;
+  price?: string;
+  salePrice?: string;
+  regularPrice?: string;
+  productCategories?: {
+    nodes?: Array<{
+      name?: string;
+    }>;
+  };
+}
+
+export interface CartItem {
+  product?: {
+    node?: ProductData;
+  };
+  quantity?: number;
+  databaseId?: number;
+  id?: string;
+  name?: string;
+  price?: string;
+  salePrice?: string;
+  regularPrice?: string;
+  total?: string;
+  productCategories?: {
+    nodes?: Array<{
+      name?: string;
+    }>;
+  };
+}
+
+export interface OrderData {
+  total?: string;
+  orderNumber?: string;
+  id?: string;
 }
 
 class FacebookPixelManager {
@@ -139,7 +178,7 @@ class FacebookPixelManager {
   }
 
   private async loadFacebookPixelScript(): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       if (this.scriptLoaded) {
         resolve();
         return;
@@ -155,18 +194,19 @@ class FacebookPixelManager {
 
       // Initialize fbq function before loading script (standard Facebook Pixel format)
       if (!window.fbq) {
-        (function(f: any, b: any, e: any, v: any, n?: any, t?: any, s?: any) {
-          if (f.fbq) return;
-          n = f.fbq = function() {
-            n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+        (function(f: Window, b: Document, e: string, v: string, n?: unknown, t?: HTMLScriptElement, s?: Element) {
+          if ((f as any).fbq) return;
+          n = (f as any).fbq = function(...args: unknown[]) {
+            const fbqFunction = n as { callMethod?: (...args: unknown[]) => void; queue: unknown[] };
+            fbqFunction.callMethod ? fbqFunction.callMethod(...args) : fbqFunction.queue.push(args);
           };
-          if (!f._fbq) f._fbq = n;
-          n.push = n;
-          n.loaded = !0;
-          n.version = '2.0';
-          n.queue = [];
-          t = b.createElement(e);
-          t.async = !0;
+          if (!(f as any)._fbq) (f as any)._fbq = n;
+          (n as { push: unknown }).push = n;
+          (n as { loaded: boolean }).loaded = true;
+          (n as { version: string }).version = '2.0';
+          (n as { queue: unknown[] }).queue = [];
+          t = b.createElement(e) as HTMLScriptElement;
+          t.async = true;
           t.src = v;
           t.id = 'facebook-pixel-script';
           s = b.getElementsByTagName(e)[0];
@@ -392,7 +432,7 @@ class FacebookPixelManager {
   }
 
   // Track Custom Event
-  public trackCustomEvent(eventName: string, eventData: any = {}) {
+  public trackCustomEvent(eventName: string, eventData: Record<string, unknown> = {}) {
     if (!this.isInitialized || !window.fbq) return;
 
     try {
@@ -407,11 +447,12 @@ class FacebookPixelManager {
   }
 
   // Track ViewCheckout with duplicate prevention
-  public trackViewCheckout(checkoutData: any) {
+  public trackViewCheckout(checkoutData: Record<string, unknown>) {
     if (!this.isInitialized || !window.fbq) return;
 
     // Create a unique key for this checkout session
-    const checkoutKey = `checkout_${checkoutData.content_ids?.join('_')}_${checkoutData.value}`;
+    const contentIds = Array.isArray(checkoutData.content_ids) ? checkoutData.content_ids : [];
+    const checkoutKey = `checkout_${contentIds.join('_')}_${checkoutData.value || 0}`;
     
     // Prevent duplicate tracking for the same checkout session
     if (this.trackedCheckouts.has(checkoutKey)) {
@@ -496,7 +537,7 @@ class FacebookPixelManager {
 export const facebookPixel = new FacebookPixelManager();
 
 // Helper functions for common e-commerce events
-export const trackProductView = (product: any) => {
+export const trackProductView = (product: ProductData) => {
   // Use databaseId (WooCommerce product ID) instead of GraphQL encoded ID
   const productId = product.databaseId?.toString() || product.id?.toString() || '';
   const price = parseFloat(product.salePrice?.replace(/[^0-9.-]+/g, '') || 
@@ -504,8 +545,7 @@ export const trackProductView = (product: any) => {
                           product.regularPrice?.replace(/[^0-9.-]+/g, '') || '0');
   
   // Get category information
-  const categoryName = product.productCategories?.nodes?.[0]?.name || 
-                      product.categories?.nodes?.[0]?.name || '';
+  const categoryName = product.productCategories?.nodes?.[0]?.name || '';
   
   const productData: ProductData = {
     content_ids: [productId],
@@ -530,15 +570,14 @@ export const trackProductView = (product: any) => {
   facebookPixel.trackViewContent(productData);
 };
 
-export const trackAddToCart = (product: any, quantity: number = 1) => {
+export const trackAddToCart = (product: ProductData, quantity: number = 1) => {
   const productId = product.databaseId?.toString() || product.id?.toString() || '';
   const price = parseFloat(product.salePrice?.replace(/[^0-9.-]+/g, '') || 
                           product.price?.replace(/[^0-9.-]+/g, '') || 
                           product.regularPrice?.replace(/[^0-9.-]+/g, '') || '0');
   
   // Get category information
-  const categoryName = product.productCategories?.nodes?.[0]?.name || 
-                      product.categories?.nodes?.[0]?.name || '';
+  const categoryName = product.productCategories?.nodes?.[0]?.name || '';
   
   const cartData: AddToCartData = {
     content_ids: [productId],
@@ -563,7 +602,7 @@ export const trackAddToCart = (product: any, quantity: number = 1) => {
   facebookPixel.trackAddToCart(cartData);
 };
 
-export const trackCheckoutInitiated = (items: any[], totalValue: number) => {
+export const trackCheckoutInitiated = (items: CartItem[], totalValue: number) => {
   const checkoutData: PurchaseData = {
     content_ids: items.map(item => {
       // Handle both cart item structure and direct product structure
@@ -613,7 +652,7 @@ export const trackCheckoutInitiated = (items: any[], totalValue: number) => {
   facebookPixel.trackInitiateCheckout(checkoutData);
 };
 
-export const trackPurchase = (orderData: any, items: any[]) => {
+export const trackPurchase = (orderData: OrderData, items: CartItem[]) => {
   const purchaseData: PurchaseData = {
     content_ids: items.map(item => {
       // Handle both cart item structure and direct product structure

@@ -637,7 +637,7 @@ export default function CheckoutPage() {
       
         // Update data collector with form data
         facebookPixelDataCollector.updateFromCheckoutForm(formData);
-        facebookPixelDataCollector.setExternalId(order.orderNumber || order.id);
+         facebookPixelDataCollector.setExternalId((order.orderNumber as string) || (order.id as string));
         
         // Track purchase with subtotal (excluding shipping)
         const subtotalForPixel = localItems.reduce((sum, item) => {
@@ -652,7 +652,7 @@ export default function CheckoutPage() {
         };
         
         // Get customer ID for audience management
-        const customerId = formData.phone || order.orderNumber || order.id;
+        const customerId = formData.phone || (order.orderNumber as string) || (order.id as string);
         
         // Update customer value in audience manager
         facebookAudienceManager.updateCustomerValue(customerId, subtotalForPixel);

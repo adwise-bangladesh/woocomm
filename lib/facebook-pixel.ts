@@ -113,6 +113,9 @@ class FacebookPixelManager {
   private trackedPurchases = new Set<string>();
   private trackedPageViews = new Set<string>();
   private trackedCategories = new Set<string>();
+  private trackedAddToCart = new Set<string>();
+  private trackedViewCart = new Set<string>();
+  private trackedTimeOnSite = new Set<string>();
 
   constructor() {
     this.loadPixelsFromEnv();
@@ -307,12 +310,23 @@ class FacebookPixelManager {
   public trackAddToCart(cartData: AddToCartData) {
     if (!this.isInitialized || !window.fbq) return;
 
+    // Create a unique key for this AddToCart event
+    const addToCartKey = `addtocart_${cartData.content_ids?.join('_')}_${cartData.value}_${Date.now()}`;
+    
+    // Prevent duplicate tracking for the same AddToCart event
+    if (this.trackedAddToCart.has(addToCartKey)) {
+      return;
+    }
+
     try {
       this.pixels.forEach(pixel => {
         if (pixel.enabled) {
           window.fbq('track', 'AddToCart', cartData, { source: 'nextjs' });
         }
       });
+      
+      // Mark as tracked
+      this.trackedAddToCart.add(addToCartKey);
     } catch (error) {
       console.error('Failed to track AddToCart:', error);
     }
@@ -423,6 +437,14 @@ class FacebookPixelManager {
   public trackTimeOnSite(timeSpent: number) {
     if (!this.isInitialized || !window.fbq) return;
 
+    // Create a unique key for this TimeOnSite event
+    const timeOnSiteKey = `timeonsite_${Math.floor(timeSpent / 60)}_${Date.now()}`;
+    
+    // Prevent duplicate tracking for the same TimeOnSite event
+    if (this.trackedTimeOnSite.has(timeOnSiteKey)) {
+      return;
+    }
+
     try {
       this.pixels.forEach(pixel => {
         if (pixel.enabled) {
@@ -432,6 +454,9 @@ class FacebookPixelManager {
           }, { source: 'nextjs' });
         }
       });
+      
+      // Mark as tracked
+      this.trackedTimeOnSite.add(timeOnSiteKey);
     } catch (error) {
       console.error('Failed to track TimeOnSite:', error);
     }
@@ -535,6 +560,9 @@ class FacebookPixelManager {
     this.trackedPurchases.clear();
     this.trackedPageViews.clear();
     this.trackedCategories.clear();
+    this.trackedAddToCart.clear();
+    this.trackedViewCart.clear();
+    this.trackedTimeOnSite.clear();
     console.log('Cleared all tracked events');
   }
 }

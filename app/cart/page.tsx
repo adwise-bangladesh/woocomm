@@ -78,8 +78,15 @@ export default function CartPage() {
         num_items: localItems.length
       };
       
-      trackCustom('ViewCart', cartData);
-      console.log('Facebook Pixel: ViewCart tracked with', localItems.length, 'items, value:', cartValue);
+      // Create a unique key for this ViewCart event
+      const viewCartKey = `viewcart_${localItems.length}_${cartValue}_${Date.now()}`;
+      
+      // Check if already tracked in this session
+      if (!sessionStorage.getItem(`viewcart_${viewCartKey}`)) {
+        trackCustom('ViewCart', cartData);
+        sessionStorage.setItem(`viewcart_${viewCartKey}`, 'true');
+        console.log('Facebook Pixel: ViewCart tracked with', localItems.length, 'items, value:', cartValue);
+      }
     }
   }, [localItems, trackCustom]);
 

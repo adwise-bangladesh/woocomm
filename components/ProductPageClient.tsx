@@ -107,11 +107,11 @@ const ProductPageClient = memo(function ProductPageClient({
   // Track product view (only once per product)
   useEffect(() => {
     const productId = currentProduct.databaseId || currentProduct.id;
-    if (productId && trackedProductRef.current !== productId) {
+    if (productId && trackedProductRef.current !== productId.toString()) {
       // Add a small delay to prevent multiple rapid calls
       const timeoutId = setTimeout(() => {
         trackProduct(currentProduct);
-        trackedProductRef.current = productId;
+        trackedProductRef.current = productId.toString();
       }, 100);
       
       return () => clearTimeout(timeoutId);

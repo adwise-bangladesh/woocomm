@@ -8,6 +8,8 @@ import Image from 'next/image';
 import { Truck, Clock, Plus, Minus, Trash2, AlertTriangle, ShoppingBag } from 'lucide-react';
 import { CartItem } from '@/lib/types';
 import { verifyCustomerHistory } from '@/lib/utils/courierVerification';
+import { graphqlClient, fetchWithSession } from '@/lib/graphql-client';
+import { PLACE_ORDER, CREATE_CUSTOMER_SESSION, ADD_TO_CART_SIMPLE } from '@/lib/mutations';
 
 export default function CheckoutPage() {
   const { items, isEmpty, clearCart, setCart } = useCartStore();
@@ -52,6 +54,7 @@ export default function CheckoutPage() {
     }
     setIsFormLoaded(true);
   }, []);
+
 
   // Sync localItems with items from store
   useEffect(() => {
@@ -286,18 +289,151 @@ export default function CheckoutPage() {
         }
       }
       
-      // Proceed with order placement
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Prepare checkout input for GraphQL using your exact structure
+      const [firstName, ...lastNameParts] = formData.fullName.split(' ');
+      const lastName = lastNameParts.join(' ') || '';
       
-      const orderNumber = Math.random().toString(36).substr(2, 9).toUpperCase();
-      const deliveryCharge = getDeliveryCharge();
+      // Determine shipping method based on delivery zone (hardcoded)
+      const shippingMethod = formData.deliveryZone === 'dhaka' 
+        ? { methodId: 'flat_rate:1', methodTitle: 'Inside Dhaka', total: '80' }
+        : { methodId: 'flat_rate:2', methodTitle: 'Outside Dhaka', total: '130' };
       
-      // Calculate subtotal from localItems
-      const subtotalAmount = localItems.reduce((sum, item) => {
-        return sum + parseFloat(item.total.replace(/[^0-9.-]+/g, ''));
-      }, 0);
+      const checkoutInput = {
+        clientMutationId: `placeOrder${Date.now()}`,
+        paymentMethod: formData.paymentMethod,
+        billing: {
+          firstName,
+          lastName,
+          address1: formData.address,
+          city: formData.deliveryZone === 'dhaka' ? 'Dhaka' : 'Outside Dhaka',
+          postcode: '1205',
+          country: 'BD',
+          email: `${formattedPhone}@example.com`,
+          phone: formattedPhone,
+        },
+        shipping: {
+          firstName,
+          lastName,
+          address1: formData.address,
+          city: formData.deliveryZone === 'dhaka' ? 'Dhaka' : 'Outside Dhaka',
+          postcode: '1205',
+          country: 'BD',
+        },
+        // Use shippingMethod as a string (just the ID) as shown in your working query
+        shippingMethod: shippingMethod.methodId
+      };
+
+      // Get or create session and add cart items to it
+      let sessionToken: string | null = localStorage.getItem('woocommerce-session-token');
+      console.log('🔑 Current session token:', sessionToken ? sessionToken.substring(0, 20) + '...' : 'None');
       
-      const totalAmount = subtotalAmount + deliveryCharge;
+      // If no session, create one
+      if (!sessionToken) {
+        console.log('🔄 Creating new session...');
+        try {
+          const sessionResult = await fetchWithSession(
+            `query { generalSettings { title } }`,
+            {},
+            undefined
+          );
+          sessionToken = sessionResult.sessionToken;
+          if (sessionToken) {
+            localStorage.setItem('woocommerce-session-token', sessionToken);
+            console.log('✅ New session created:', sessionToken.substring(0, 20) + '...');
+          }
+        } catch (sessionError) {
+          console.error('❌ Failed to create session:', sessionError);
+          throw new Error('Failed to create session');
+        }
+      } else {
+        console.log('✅ Using existing session');
+      }
+      
+      // Add cart items to the session
+      console.log('🛒 Adding cart items to session...');
+      try {
+        for (const item of localItems) {
+          console.log('➕ Adding item:', item.product.node.name, 'Qty:', item.quantity);
+          
+          // Check if this is a variable product with variations
+          const variationId = item.variation?.node?.databaseId;
+          
+          if (variationId) {
+            // Use variation ID for variable products
+            console.log('🔧 Using variation ID:', variationId);
+            await fetchWithSession(
+              ADD_TO_CART_SIMPLE,
+              {
+                input: {
+                  productId: item.product.node.databaseId,
+                  variationId: variationId,
+                  quantity: item.quantity
+                }
+              },
+              sessionToken || undefined
+            );
+          } else {
+            // Use simple product ID for simple products
+            console.log('🔧 Using simple product ID:', item.product.node.databaseId);
+            await fetchWithSession(
+              ADD_TO_CART_SIMPLE,
+              {
+                input: {
+                  productId: item.product.node.databaseId,
+                  quantity: item.quantity
+                }
+              },
+              sessionToken || undefined
+            );
+          }
+        }
+        console.log('✅ All items added to session');
+      } catch (cartError) {
+        // Continue with checkout even if some items fail to add
+        console.warn('⚠️ Failed to add some items to session:', cartError);
+      }
+      
+      // Place the order with the session that has cart items
+      let result: any;
+      
+      if (!sessionToken) {
+        throw new Error('No session token available for checkout');
+      }
+      
+      console.log('🚀 Placing order with session:', sessionToken.substring(0, 20) + '...');
+      console.log('📋 Checkout input:', JSON.stringify(checkoutInput, null, 2));
+      
+      try {
+        // Add timeout wrapper for order placement
+        const orderPromise = fetchWithSession(
+          PLACE_ORDER,
+          { input: checkoutInput },
+          sessionToken
+        );
+        
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Order placement timeout after 30 seconds')), 30000);
+        });
+        
+        result = await Promise.race([orderPromise, timeoutPromise]);
+        console.log('✅ Order placed successfully:', result);
+      } catch (orderError) {
+        console.error('❌ Order placement failed:', orderError);
+        throw orderError;
+      }
+      
+      // Save session token if we got a new one
+      if (result.sessionToken) {
+        localStorage.setItem('woocommerce-session-token', result.sessionToken);
+      }
+      
+      // Handle response
+      const orderData = result.data?.checkout?.order || result.checkout?.order;
+      if (orderData) {
+        const order = orderData;
+        const orderNumber = order.orderNumber;
+        const totalAmount = parseFloat(order.total);
+        const deliveryCharge = parseFloat(order.shippingTotal || '0');
       
       // Save customer info to localStorage for future orders
       const customerInfo = {
@@ -311,12 +447,28 @@ export default function CheckoutPage() {
       // Build thank you page URL
       const thankYouUrl = `/thank-you?orderNumber=${orderNumber}&name=${encodeURIComponent(formData.fullName)}&phone=${formattedPhone}&address=${encodeURIComponent(formData.address)}&total=${totalAmount.toFixed(0)}&delivery=${deliveryCharge}&items=${localItems.length}`;
       
-      // Clear cart and navigate immediately (using replace to prevent back button showing checkout)
+        // Clear cart and navigate to thank you page
       clearCart();
       router.replace(thankYouUrl);
+      } else {
+        throw new Error('Order placement failed - No order in response');
+      }
     } catch (error) {
       console.error('Checkout error:', error);
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Network')) {
+          alert('Network error. Please check your connection and try again.');
+        } else if (error.message.includes('GraphQL')) {
+          alert('Server error. Please try again later.');
+        } else if (error.message.includes('timeout')) {
+          alert('Checkout timed out. Please try again.');
+        } else {
+          alert(`Checkout failed: ${error.message}`);
+        }
+      } else {
       alert('Failed to complete checkout. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }

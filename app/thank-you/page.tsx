@@ -11,10 +11,14 @@ function ThankYouContent() {
   
   // Get order details from URL params
   const orderNumber = searchParams.get('orderNumber') || 'N/A';
-  const customerName = searchParams.get('name') || 'N/A';
+  const orderId = searchParams.get('orderId') || 'N/A';
+  const total = searchParams.get('total') || '0';
+  const status = searchParams.get('status') || 'processing';
+  
+  // For backward compatibility, try to get old params
+  const customerName = searchParams.get('name') || 'Customer';
   const phone = searchParams.get('phone') || 'N/A';
   const address = searchParams.get('address') || 'N/A';
-  const total = searchParams.get('total') || '0';
   const deliveryCharge = searchParams.get('delivery') || '0';
   const itemCount = searchParams.get('items') || '0';
 
@@ -50,8 +54,14 @@ function ThankYouContent() {
                 <p className="text-sm text-gray-500 mb-1">Order Number</p>
                 <p className="text-xl font-bold text-gray-900">#{orderNumber}</p>
               </div>
-              <div className="bg-gray-100 text-gray-700 px-4 py-2 rounded-[5px] text-sm font-semibold">
-                Pending
+              <div className={`px-4 py-2 rounded-[5px] text-sm font-semibold ${
+                status === 'processing' ? 'bg-blue-100 text-blue-700' : 
+                status === 'completed' ? 'bg-green-100 text-green-700' :
+                'bg-gray-100 text-gray-700'
+              }`}>
+                {status === 'processing' ? 'Processing' : 
+                 status === 'completed' ? 'Completed' : 
+                 'Pending'}
               </div>
             </div>
           </div>

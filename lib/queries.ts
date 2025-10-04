@@ -373,3 +373,18 @@ export const GET_CUSTOMER = gql`
     }
   }
 `;
+
+// Query to get shipping methods for checkout
+export const GET_SHIPPING_METHODS = gql`
+  query GetShippingMethods {
+    cart {
+      availableShippingMethods {
+        rates {
+          methodId
+          methodTitle
+          total
+        }
+      }
+    }
+  }
+`;

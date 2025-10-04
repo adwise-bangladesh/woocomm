@@ -3,7 +3,7 @@ import { GraphQLClient } from 'graphql-request';
 const endpoint = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'https://backend.zonash.com/graphql';
 
 if (!process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT && process.env.NODE_ENV === 'development') {
-  console.warn('⚠️  NEXT_PUBLIC_GRAPHQL_ENDPOINT not set, using default endpoint');
+  console.warn('NEXT_PUBLIC_GRAPHQL_ENDPOINT not set, using default endpoint');
 }
 
 // Create a client for server-side requests (no session)
@@ -49,11 +49,18 @@ export async function fetchWithSession(
     headers['woocommerce-session'] = `Session ${sessionToken}`;
   }
 
+  // Add timeout to prevent hanging requests
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
   const response = await fetch(endpoint, {
     method: 'POST',
     headers,
     body: JSON.stringify({ query, variables }),
+    signal: controller.signal,
   });
+
+  clearTimeout(timeoutId);
 
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
@@ -62,6 +69,7 @@ export async function fetchWithSession(
   const data = await response.json();
   
   if (data.errors) {
+    console.error('GraphQL errors:', data.errors);
     throw new Error(data.errors[0]?.message || 'GraphQL Error');
   }
 

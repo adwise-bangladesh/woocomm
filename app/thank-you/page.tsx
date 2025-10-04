@@ -4,14 +4,40 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Package, MapPin, Phone, CreditCard, User } from 'lucide-react';
 import { Suspense } from 'react';
+import Image from 'next/image';
+
+interface OrderedItem {
+  product?: {
+    node?: {
+      name?: string;
+      image?: {
+        sourceUrl?: string;
+      };
+    };
+  };
+  variation?: {
+    node?: {
+      stockStatus?: string;
+      attributes?: {
+        nodes?: Record<string, unknown>[];
+      };
+      metaData?: Record<string, unknown>[];
+    };
+  };
+  deliveryTime?: string;
+  metaData?: Record<string, unknown>[];
+  quantity?: number;
+  total?: string;
+  price?: string;
+}
 
 function ThankYouContent() {
   const searchParams = useSearchParams();
-  const [showAnimation, setShowAnimation] = useState(false);
+  const [_showAnimation, setShowAnimation] = useState(false);
   
   // Get order details from URL params with validation
   const orderNumber = searchParams.get('orderNumber') || 'N/A';
-  const orderId = searchParams.get('orderId') || 'N/A';
+  const _orderId = searchParams.get('orderId') || 'N/A';
   const total = searchParams.get('total') || '0';
   const status = searchParams.get('status') || 'processing';
   
@@ -24,10 +50,10 @@ function ThankYouContent() {
   
   // Validate critical data
   const hasValidOrderData = orderNumber !== 'N/A' && total !== '0';
-  const hasValidCustomerData = customerName !== 'Customer' && phone !== 'N/A' && address !== 'N/A';
+  const _hasValidCustomerData = customerName !== 'Customer' && phone !== 'N/A' && address !== 'N/A';
   
   // Get ordered items from localStorage (stored during checkout)
-  const [orderedItems, setOrderedItems] = useState<any[]>([]);
+  const [orderedItems, setOrderedItems] = useState<OrderedItem[]>([]);
   const [isLoadingItems, setIsLoadingItems] = useState(true);
   
   // Memoize expensive calculations
@@ -44,7 +70,7 @@ function ThankYouContent() {
   }, [calculatedSubtotal, total, deliveryCharge]);
   
   // Memoized function to get delivery time for an item with colors from original data
-  const getDeliveryTimeForItem = useCallback((item: any) => {
+  const getDeliveryTimeForItem = useCallback((item: OrderedItem) => {
     // Check if delivery time info is stored in the item
     if (item.deliveryTime) {
       return item.deliveryTime;
@@ -52,7 +78,7 @@ function ThankYouContent() {
     
     // Check if it's in metadata
     if (item.metaData) {
-      const deliveryMeta = item.metaData.find((meta: any) => meta.key === 'delivery_time');
+      const deliveryMeta = (item.metaData as Record<string, unknown>[]).find((meta: Record<string, unknown>) => meta.key === 'delivery_time');
       if (deliveryMeta) {
         return deliveryMeta.value;
       }
@@ -60,7 +86,7 @@ function ThankYouContent() {
     
     // Fallback to stock status
     const variationStock = item.variation?.node?.stockStatus;
-    const productStock = item.product?.node?.stockStatus;
+    const productStock = (item.product?.node as Record<string, unknown>)?.stockStatus;
     const stockStatus = variationStock || productStock || 'IN_STOCK';
     
     switch (stockStatus) {
@@ -86,7 +112,7 @@ function ThankYouContent() {
         // Try localStorage first
         try {
           storedItems = localStorage.getItem('lastOrderItems');
-        } catch (e) {
+        } catch (_e) {
           // Try backup storage
           storedItems = localStorage.getItem('lastOrderBackup');
         }
@@ -95,16 +121,16 @@ function ThankYouContent() {
         if (!storedItems) {
           try {
             storedItems = sessionStorage.getItem('lastOrderItems');
-          } catch (e) {
+          } catch (_e) {
             // Try memory fallback
-            storedItems = (window as any).lastOrderItems ? JSON.stringify((window as any).lastOrderItems) : null;
+            storedItems = (window as unknown as Record<string, unknown>).lastOrderItems ? JSON.stringify((window as unknown as Record<string, unknown>).lastOrderItems) : null;
           }
         }
         
         if (storedItems) {
           setOrderedItems(JSON.parse(storedItems));
         }
-      } catch (error) {
+      } catch (_error) {
         // Silently handle error - items will show fallback message
       } finally {
         setIsLoadingItems(false);
@@ -122,7 +148,7 @@ function ThankYouContent() {
     const playSuccessSound = () => {
       try {
         // Create a simple beep sound using Web Audio API
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const audioContext = new (window.AudioContext || (window as unknown as Record<string, unknown>).webkitAudioContext)();
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
         
@@ -137,7 +163,7 @@ function ThankYouContent() {
         
         oscillator.start(audioContext.currentTime);
         oscillator.stop(audioContext.currentTime + 0.3);
-      } catch (error) {
+      } catch (_error) {
         // Silently handle audio failure
       }
     };
@@ -245,9 +271,11 @@ function ThankYouContent() {
                   {/* Product Image */}
                   <div className="w-16 h-16 bg-gray-200 rounded-[5px] flex items-center justify-center flex-shrink-0">
                     {item.product?.node?.image?.sourceUrl ? (
-                      <img 
+                      <Image 
                         src={item.product.node.image.sourceUrl} 
-                        alt={item.product.node.name}
+                        alt={item.product.node.name || 'Product'}
+                        width={64}
+                        height={64}
                         className="w-full h-full object-cover rounded-[5px]"
                       />
                     ) : (
@@ -262,31 +290,31 @@ function ThankYouContent() {
                       <div className="flex items-center gap-1">
                         {/* Attributes */}
                         {(() => {
-                          let attributes = [];
+                          let attributes: Record<string, unknown>[] = [];
                           
                           // Try multiple attribute locations
                           if (item.variation?.node?.attributes?.nodes) {
                             attributes = item.variation.node.attributes.nodes;
                           } else if (item.variation?.node?.attributes) {
-                            attributes = item.variation.node.attributes;
+                            attributes = (item.variation.node.attributes as Record<string, unknown>[]);
                           } else if (item.variation?.node?.metaData) {
-                            attributes = item.variation.node.metaData.filter((meta: any) => 
-                              meta.key && (meta.key.includes('attribute') || meta.key.includes('pa_'))
+                            attributes = (item.variation.node.metaData as Record<string, unknown>[]).filter((meta: Record<string, unknown>) => 
+                              meta.key && (meta.key as string).includes('attribute') || (meta.key as string).includes('pa_')
                             );
                           }
                           
                           if (attributes && attributes.length > 0) {
-                            return attributes.map((attr: any, attrIndex: number) => (
+                            return attributes.map((attr: Record<string, unknown>, attrIndex: number) => (
                               <span key={attrIndex} className="text-xs text-gray-600">
                                 {attrIndex > 0 && ', '}
-                                {attr.value || attr.name}
+                                {String(attr.value || attr.name || '')}
                               </span>
                             ));
                           }
                           
                           // Fallback: show variation name if different
-                          if (item.variation?.node?.name && item.variation.node.name !== item.product?.node?.name) {
-                            return <span className="text-xs  text-gray-900">{item.variation.node.name}</span>;
+                          if (item.variation?.node && (item.variation.node as Record<string, unknown>)?.name && (item.variation.node as Record<string, unknown>).name !== item.product?.node?.name) {
+                            return <span className="text-xs  text-gray-900">{String((item.variation.node as Record<string, unknown>).name)}</span>;
                           }
                           
                             return <span className="text-xs text-gray-600">No attributes</span>;
@@ -297,12 +325,12 @@ function ThankYouContent() {
                     {/* Second line: Qty and Price */}
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-xs text-gray-600">Qty: {item.quantity}</span>
-                      <span className="text-xs font-semibold text-gray-900">Tk {parseFloat(item.total?.replace(/[^0-9.-]+/g, '') || '0').toFixed(0)}</span>
+                      <span className="text-xs font-semibold text-gray-900">Tk {parseFloat((item.total as string)?.replace(/[^0-9.-]+/g, '') || '0').toFixed(0)}</span>
                     </div>
                     
                     {/* Third line: Delivery time */}
-                    <p className={`text-xs font-medium ${getDeliveryTimeForItem(item).color}`}>
-                      {getDeliveryTimeForItem(item).text}
+                    <p className={`text-xs font-medium ${(getDeliveryTimeForItem(item) as { color: string }).color}`}>
+                      {(getDeliveryTimeForItem(item) as { text: string }).text}
                     </p>
                   </div>
                 </div>

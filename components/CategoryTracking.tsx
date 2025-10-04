@@ -13,7 +13,7 @@ interface CategoryTrackingProps {
 export default function CategoryTracking({ 
   categoryName, 
   categoryId, 
-  categorySlug,
+  categorySlug: _categorySlug,
   productCount = 0 
 }: CategoryTrackingProps) {
   const { trackCategory } = useFacebookPixel();

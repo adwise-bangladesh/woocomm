@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { User, Settings, ShoppingBag, Heart, Clock, Bell, ArrowRight, Package, CreditCard, MapPin, Phone } from 'lucide-react';
+import { User, ShoppingBag, Heart, Clock, Bell, ArrowRight, Package, CreditCard, MapPin, Phone } from 'lucide-react';
 
 export default function AccountPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -63,7 +63,7 @@ export default function AccountPage() {
                 <div>
                   <h3 className="text-lg font-semibold text-orange-900">Account Features Coming Soon!</h3>
                   <p className="text-sm text-orange-800">
-                    We're working on exciting new account features including order history, wishlist, and personalized recommendations.
+                    We&apos;re working on exciting new account features including order history, wishlist, and personalized recommendations.
                   </p>
                 </div>
               </div>

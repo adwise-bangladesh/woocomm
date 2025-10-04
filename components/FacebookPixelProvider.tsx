@@ -44,7 +44,6 @@ export default function FacebookPixelProvider({ children }: FacebookPixelProvide
   // Track Time on Site (custom event)
   useEffect(() => {
     const startTime = Date.now();
-    let timer: NodeJS.Timeout;
 
     const trackTimeOnSite = () => {
       const duration = Date.now() - startTime; // in milliseconds
@@ -53,7 +52,7 @@ export default function FacebookPixelProvider({ children }: FacebookPixelProvide
     };
 
     // Track every 30 seconds
-    timer = setInterval(trackTimeOnSite, 30000);
+    const timer = setInterval(trackTimeOnSite, 30000);
 
     // Track on unmount/page close
     window.addEventListener('beforeunload', trackTimeOnSite);

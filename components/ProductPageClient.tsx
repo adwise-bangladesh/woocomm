@@ -44,7 +44,7 @@ const ProductPageClient = memo(function ProductPageClient({
   const formatPrice = usePriceFormatter();
   const calculateDiscount = useDiscountCalculator();
   const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null);
-  const [_selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
   const [showPolicyModal, setShowPolicyModal] = useState(false);
   
   // Facebook Pixel tracking

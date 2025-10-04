@@ -8,8 +8,8 @@ import Image from 'next/image';
 import { Truck, Clock, Plus, Minus, Trash2, AlertTriangle, ShoppingBag } from 'lucide-react';
 import { CartItem } from '@/lib/types';
 import { verifyCustomerHistory } from '@/lib/utils/courierVerification';
-import { graphqlClient, fetchWithSession } from '@/lib/graphql-client';
-import { PLACE_ORDER, CREATE_CUSTOMER_SESSION, ADD_TO_CART_SIMPLE } from '@/lib/mutations';
+import { fetchWithSession } from '@/lib/graphql-client';
+import { PLACE_ORDER, ADD_TO_CART_SIMPLE } from '@/lib/mutations';
 import { useFacebookPixel } from '@/hooks/useFacebookPixel';
 import { facebookPixelDataCollector } from '@/lib/facebook-pixel-data-collector';
 import { facebookEventBatcher } from '@/lib/facebook-event-batcher';
@@ -22,7 +22,7 @@ export default function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState<'idle' | 'processing' | 'placing_order' | 'success' | 'error'>('idle');
   const [localItems, setLocalItems] = useState(items);
-  const { trackCheckout, trackOrder, trackCustom, trackViewCheckout } = useFacebookPixel();
+  const { trackCheckout, trackOrder } = useFacebookPixel();
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',

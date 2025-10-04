@@ -5,7 +5,7 @@ import { useCartStore } from '@/lib/store';
 import { fetchWithSession } from '@/lib/graphql-client';
 import { ShoppingCart } from 'lucide-react';
 import { validateProductId } from '@/lib/utils/sanitizer';
-import { logger } from '@/lib/utils/performance';
+// import { logger } from '@/lib/utils/performance';
 import { useFacebookPixel } from '@/hooks/useFacebookPixel';
 
 interface AddToCartButtonProps {
@@ -14,7 +14,11 @@ interface AddToCartButtonProps {
   disabled?: boolean;
   productData?: {
     name?: string;
-    productCategories?: any;
+    productCategories?: {
+      nodes?: Array<{
+        name?: string;
+      }>;
+    };
   };
 }
 
@@ -123,23 +127,23 @@ export default function AddToCartButton({
         setTimeout(() => setIsAdded(false), 2000);
         
         // Track Facebook Pixel AddToCart event with complete product data
-        const cartContents = (response.addToCart.cart as any)?.contents?.nodes || [];
-        const addedItem = cartContents.find((item: any) => 
-          item.product?.node?.databaseId === productId || 
-          item.variation?.node?.databaseId === productId
+        const cartContents = ((response.addToCart.cart as Record<string, unknown>)?.contents as Record<string, unknown>)?.nodes as Record<string, unknown>[] || [];
+        const addedItem = cartContents.find((item: Record<string, unknown>) => 
+          ((item.product as Record<string, unknown>)?.node as Record<string, unknown>)?.databaseId === productId || 
+          ((item.variation as Record<string, unknown>)?.node as Record<string, unknown>)?.databaseId === productId
         );
         
         if (addedItem) {
-          const product = addedItem.product?.node || addedItem.variation?.node;
+          const product = (addedItem.product as Record<string, unknown>)?.node || (addedItem.variation as Record<string, unknown>)?.node;
           // Get price from cart item total or product price
-          const itemPrice = parseFloat(addedItem.total?.replace(/[^0-9.-]+/g, '') || '0') || 
-                           parseFloat(product?.price?.replace(/[^0-9.-]+/g, '') || '0');
+          const itemPrice = parseFloat((addedItem.total as string)?.replace(/[^0-9.-]+/g, '') || '0') || 
+                           parseFloat(((product as Record<string, unknown>)?.price as string)?.replace(/[^0-9.-]+/g, '') || '0');
           
           // Use passed product data or fallback to cart data
           const enhancedProductData = {
-            databaseId: product?.databaseId || productId,
-            id: product?.id || productId.toString(),
-            name: productData?.name || product?.name || 'Unknown Product',
+            databaseId: (product as Record<string, unknown>)?.databaseId || productId,
+            id: (product as Record<string, unknown>)?.id || productId.toString(),
+            name: productData?.name || (product as Record<string, unknown>)?.name || 'Unknown Product',
             price: itemPrice.toString(),
             salePrice: itemPrice.toString(),
             regularPrice: itemPrice.toString(),

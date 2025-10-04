@@ -33,11 +33,11 @@ interface OrderedItem {
 
 function ThankYouContent() {
   const searchParams = useSearchParams();
-  const [_showAnimation, setShowAnimation] = useState(false);
+  const [showAnimation, setShowAnimation] = useState(false);
   
   // Get order details from URL params with validation
   const orderNumber = searchParams.get('orderNumber') || 'N/A';
-  const _orderId = searchParams.get('orderId') || 'N/A';
+  const orderId = searchParams.get('orderId') || 'N/A';
   const total = searchParams.get('total') || '0';
   const status = searchParams.get('status') || 'processing';
   
@@ -50,7 +50,7 @@ function ThankYouContent() {
   
   // Validate critical data
   const hasValidOrderData = orderNumber !== 'N/A' && total !== '0';
-  const _hasValidCustomerData = customerName !== 'Customer' && phone !== 'N/A' && address !== 'N/A';
+  const hasValidCustomerData = customerName !== 'Customer' && phone !== 'N/A' && address !== 'N/A';
   
   // Get ordered items from localStorage (stored during checkout)
   const [orderedItems, setOrderedItems] = useState<OrderedItem[]>([]);

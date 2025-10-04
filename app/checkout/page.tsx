@@ -431,7 +431,7 @@ export default function CheckoutPage() {
           if (sessionToken) {
             localStorage.setItem('woocommerce-session-token', sessionToken);
           }
-        } catch (_sessionError) {
+        } catch {
           throw new Error('Failed to create session');
         }
       }
@@ -453,7 +453,7 @@ export default function CheckoutPage() {
           const batch = batches[batchIndex];
           
           // Process batch items in parallel
-          const batchPromises = batch.map(async (item, _itemIndex) => {
+          const batchPromises = batch.map(async (item) => {
             const variationId = item.variation?.node?.databaseId;
             
             try {
@@ -527,7 +527,7 @@ export default function CheckoutPage() {
           console.warn('Session verification failed:', verifyError);
         }
         
-      } catch (_cartError) {
+      } catch {
         // Continue with checkout even if cart processing fails
       }
       

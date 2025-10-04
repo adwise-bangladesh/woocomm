@@ -84,7 +84,7 @@ export class FacebookAudienceManager {
   }
 
   // Add user to exclusions
-  addToExclusions(userId: string, _reason: string = 'converted') {
+  addToExclusions(userId: string, reason: string = 'converted') {
     this.excludedUsers.add(userId);
     this.saveExcludedUsers();
   }

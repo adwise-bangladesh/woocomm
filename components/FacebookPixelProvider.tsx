@@ -44,9 +44,10 @@ export default function FacebookPixelProvider({ children }: FacebookPixelProvide
   }, [pathname]);
 
   // Track Time on Site (custom event) with duplicate prevention
+  const timeOnSiteTrackedRef = useRef(false);
+  
   useEffect(() => {
     const startTime = Date.now();
-    const timeOnSiteTrackedRef = useRef(false);
 
     const trackTimeOnSite = () => {
       if (!timeOnSiteTrackedRef.current) {

@@ -12,9 +12,10 @@ export default function FacebookPixelProvider({ children }: FacebookPixelProvide
   const pathname = usePathname();
   const initializedRef = useRef(false);
   const pageViewTrackedRef = useRef(new Set<string>());
+  const timeOnSiteTrackedRef = useRef(false);
 
+  // Initialize Facebook Pixel only once - this is the ONLY place pixel should be initialized
   useEffect(() => {
-    // Initialize Facebook Pixel only once
     const initializePixel = async () => {
       if (!initializedRef.current && !facebookPixel.isReady()) {
         await facebookPixel.initialize();
@@ -25,8 +26,8 @@ export default function FacebookPixelProvider({ children }: FacebookPixelProvide
     initializePixel();
   }, []);
 
+  // Track page view on route change with enhanced duplicate prevention
   useEffect(() => {
-    // Track page view on route change with enhanced duplicate prevention
     const trackPageView = () => {
       if (facebookPixel.isReady()) {
         const pageKey = `pageview_${pathname}`;
@@ -43,9 +44,7 @@ export default function FacebookPixelProvider({ children }: FacebookPixelProvide
     setTimeout(trackPageView, 100);
   }, [pathname]);
 
-  // Track Time on Site (custom event) with duplicate prevention
-  const timeOnSiteTrackedRef = useRef(false);
-  
+  // Track Time on Site (custom event) - SINGLE tracking point
   useEffect(() => {
     const startTime = Date.now();
 

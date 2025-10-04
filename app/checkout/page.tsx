@@ -1,7 +1,7 @@
 'use client';
 
 import { useCartStore } from '@/lib/store';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -23,6 +23,7 @@ export default function CheckoutPage() {
   const [checkoutStep, setCheckoutStep] = useState<'idle' | 'processing' | 'placing_order' | 'success' | 'error'>('idle');
   const [localItems, setLocalItems] = useState(items);
   const { trackCheckout, trackOrder } = useFacebookPixel();
+  const trackedInitiateCheckoutRef = useRef<Set<string>>(new Set()); // Prevent duplicate InitiateCheckout events
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -89,9 +90,13 @@ export default function CheckoutPage() {
         return sum + itemTotal;
       }, 0);
       
-      // Track InitiateCheckout event when user starts checkout process
-      trackCheckout(localItems, totalValue);
-      console.log('Facebook Pixel: InitiateCheckout tracked with', localItems.length, 'items, value:', totalValue);
+      // Track InitiateCheckout event when user starts checkout process - SINGLE tracking point
+      const initiateCheckoutKey = `initiate_${localItems.length}_${totalValue}_${Date.now()}`;
+      if (!trackedInitiateCheckoutRef.current.has(initiateCheckoutKey)) {
+        trackCheckout(localItems, totalValue);
+        trackedInitiateCheckoutRef.current.add(initiateCheckoutKey);
+        console.log('Facebook Pixel: InitiateCheckout tracked with', localItems.length, 'items, value:', totalValue);
+      }
     }
   }, [localItems, trackCheckout]);
 

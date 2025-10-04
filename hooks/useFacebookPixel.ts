@@ -1,35 +1,12 @@
-import { useEffect, useCallback } from 'react';
-import { usePathname } from 'next/navigation';
+import { useCallback } from 'react';
 import { facebookPixel, trackProductView, trackAddToCart, trackCheckoutInitiated, trackPurchase } from '@/lib/facebook-pixel';
 
 export const useFacebookPixel = () => {
-  const pathname = usePathname();
+  // NO initialization here - handled by FacebookPixelProvider
+  // NO TimeOnSite tracking here - handled by FacebookPixelProvider
+  // NO PageView tracking here - handled by FacebookPixelProvider
 
-  // Initialize Facebook Pixel on mount
-  useEffect(() => {
-    facebookPixel.initialize();
-  }, []);
-
-  // PageView tracking is handled by FacebookPixelProvider
-  // No need to track here to avoid duplicates
-
-  // Track time on site
-  useEffect(() => {
-    const startTime = Date.now();
-    
-    const handleBeforeUnload = () => {
-      const timeSpent = Math.round((Date.now() - startTime) / 1000); // in seconds
-      facebookPixel.trackTimeOnSite(timeSpent);
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, []);
-
-  // Helper functions for tracking
+  // Helper functions for tracking - these are the ONLY tracking functions
   const trackProduct = useCallback((product: any) => {
     trackProductView(product);
   }, []);

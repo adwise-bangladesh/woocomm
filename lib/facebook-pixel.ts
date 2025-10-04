@@ -243,7 +243,7 @@ class FacebookPixelManager {
     }
   }
 
-  // Track PageView
+  // Track PageView - SINGLE event for all pixels
   public trackPageView() {
     if (!this.isInitialized || !window.fbq) return;
     
@@ -256,11 +256,8 @@ class FacebookPixelManager {
     }
     
     try {
-      this.pixels.forEach(pixel => {
-        if (pixel.enabled) {
-          window.fbq('track', 'PageView', {}, { source: 'nextjs' });
-        }
-      });
+      // Track PageView once for all pixels - no duplicate events
+      window.fbq('track', 'PageView', {}, { source: 'nextjs' });
       
       // Mark as tracked
       this.trackedPageViews.add(pageViewKey);
@@ -269,7 +266,7 @@ class FacebookPixelManager {
     }
   }
 
-  // Track ViewContent
+  // Track ViewContent - SINGLE event for all pixels
   public trackViewContent(productData: ProductData) {
     if (!this.isInitialized || !window.fbq) return;
 
@@ -283,11 +280,8 @@ class FacebookPixelManager {
     }
 
     try {
-      this.pixels.forEach(pixel => {
-        if (pixel.enabled) {
-          window.fbq('track', 'ViewContent', productData, { source: 'nextjs' });
-        }
-      });
+      // Track ViewContent once for all pixels - no duplicate events
+      window.fbq('track', 'ViewContent', productData, { source: 'nextjs' });
       
       // Mark as tracked
       this.trackedProducts.add(viewContentKey);
@@ -296,7 +290,7 @@ class FacebookPixelManager {
     }
   }
 
-  // Track AddToCart
+  // Track AddToCart - SINGLE event for all pixels
   public trackAddToCart(cartData: AddToCartData) {
     if (!this.isInitialized || !window.fbq) return;
 
@@ -309,11 +303,8 @@ class FacebookPixelManager {
     }
 
     try {
-      this.pixels.forEach(pixel => {
-        if (pixel.enabled) {
-          window.fbq('track', 'AddToCart', cartData, { source: 'nextjs' });
-        }
-      });
+      // Track AddToCart once for all pixels - no duplicate events
+      window.fbq('track', 'AddToCart', cartData, { source: 'nextjs' });
       
       // Mark as tracked
       this.trackedAddToCart.add(addToCartKey);
@@ -322,7 +313,7 @@ class FacebookPixelManager {
     }
   }
 
-  // Track InitiateCheckout
+  // Track InitiateCheckout - SINGLE event for all pixels
   public trackInitiateCheckout(checkoutData: PurchaseData) {
     if (!this.isInitialized || !window.fbq) return;
 
@@ -335,11 +326,8 @@ class FacebookPixelManager {
     }
 
     try {
-      this.pixels.forEach(pixel => {
-        if (pixel.enabled) {
-          window.fbq('track', 'InitiateCheckout', checkoutData, { source: 'nextjs' });
-        }
-      });
+      // Track InitiateCheckout once for all pixels - no duplicate events
+      window.fbq('track', 'InitiateCheckout', checkoutData, { source: 'nextjs' });
       
       // Mark as tracked
       this.trackedInitiateCheckouts.add(checkoutKey);
@@ -348,7 +336,7 @@ class FacebookPixelManager {
     }
   }
 
-  // Track Purchase
+  // Track Purchase - SINGLE event for all pixels
   public trackPurchase(purchaseData: PurchaseData) {
     if (!this.isInitialized || !window.fbq) return;
 
@@ -361,11 +349,8 @@ class FacebookPixelManager {
     }
 
     try {
-      this.pixels.forEach(pixel => {
-        if (pixel.enabled) {
-          window.fbq('track', 'Purchase', purchaseData, { source: 'nextjs' });
-        }
-      });
+      // Track Purchase once for all pixels - no duplicate events
+      window.fbq('track', 'Purchase', purchaseData, { source: 'nextjs' });
       
       // Mark as tracked
       this.trackedPurchases.add(purchaseKey);
@@ -374,7 +359,7 @@ class FacebookPixelManager {
     }
   }
 
-  // Track Category View
+  // Track Category View - SINGLE event for all pixels
   public trackCategoryView(categoryName: string, categoryId?: string) {
     if (!this.isInitialized || !window.fbq) return;
 
@@ -393,11 +378,8 @@ class FacebookPixelManager {
         content_type: 'category'
       };
 
-      this.pixels.forEach(pixel => {
-        if (pixel.enabled) {
-          window.fbq('track', 'ViewContent', categoryData, { source: 'nextjs' });
-        }
-      });
+      // Track Category View once for all pixels - no duplicate events
+      window.fbq('track', 'ViewContent', categoryData, { source: 'nextjs' });
       
       // Mark as tracked
       this.trackedCategories.add(categoryKey);
@@ -406,24 +388,21 @@ class FacebookPixelManager {
     }
   }
 
-  // Track Search
+  // Track Search - SINGLE event for all pixels
   public trackSearch(searchTerm: string) {
     if (!this.isInitialized || !window.fbq) return;
 
     try {
-      this.pixels.forEach(pixel => {
-        if (pixel.enabled) {
-          window.fbq('track', 'Search', {
-            search_string: searchTerm
-          }, { source: 'nextjs' });
-        }
-      });
+      // Track Search once for all pixels - no duplicate events
+      window.fbq('track', 'Search', {
+        search_string: searchTerm
+      }, { source: 'nextjs' });
     } catch (error) {
       console.error('Failed to track Search:', error);
     }
   }
 
-  // Track Time on Site
+  // Track Time on Site - SINGLE event for all pixels
   public trackTimeOnSite(timeSpent: number) {
     if (!this.isInitialized || !window.fbq) return;
 
@@ -436,14 +415,11 @@ class FacebookPixelManager {
     }
 
     try {
-      this.pixels.forEach(pixel => {
-        if (pixel.enabled) {
-          window.fbq('trackCustom', 'TimeOnSite', {
-            time_spent_seconds: timeSpent,
-            time_spent_minutes: (timeSpent / 60).toFixed(2)
-          }, { source: 'nextjs' });
-        }
-      });
+      // Track TimeOnSite once for all pixels - no duplicate events
+      window.fbq('trackCustom', 'TimeOnSite', {
+        time_spent_seconds: timeSpent,
+        time_spent_minutes: (timeSpent / 60).toFixed(2)
+      }, { source: 'nextjs' });
       
       // Mark as tracked
       this.trackedTimeOnSite.add(timeOnSiteKey);
@@ -452,22 +428,19 @@ class FacebookPixelManager {
     }
   }
 
-  // Track Custom Event
+  // Track Custom Event - SINGLE event for all pixels
   public trackCustomEvent(eventName: string, eventData: Record<string, unknown> = {}) {
     if (!this.isInitialized || !window.fbq) return;
 
     try {
-      this.pixels.forEach(pixel => {
-        if (pixel.enabled) {
-          window.fbq('track', eventName, eventData, { source: 'nextjs' });
-        }
-      });
+      // Track Custom Event once for all pixels - no duplicate events
+      window.fbq('track', eventName, eventData, { source: 'nextjs' });
     } catch (error) {
       console.error(`Failed to track ${eventName}:`, error);
     }
   }
 
-  // Track ViewCheckout with duplicate prevention
+  // Track ViewCheckout - SINGLE event for all pixels
   public trackViewCheckout(checkoutData: Record<string, unknown>) {
     if (!this.isInitialized || !window.fbq) return;
 
@@ -477,20 +450,15 @@ class FacebookPixelManager {
     
     // Prevent duplicate tracking for the same checkout session
     if (this.trackedCheckouts.has(checkoutKey)) {
-      console.log(`ViewCheckout already tracked for checkout session: ${checkoutKey}`);
       return;
     }
 
     try {
-      this.pixels.forEach(pixel => {
-        if (pixel.enabled) {
-          window.fbq('track', 'ViewCheckout', checkoutData, { source: 'nextjs' });
-        }
-      });
+      // Track ViewCheckout once for all pixels - no duplicate events
+      window.fbq('track', 'ViewCheckout', checkoutData, { source: 'nextjs' });
       
       // Mark as tracked
       this.trackedCheckouts.add(checkoutKey);
-      console.log(`ViewCheckout tracked for checkout session: ${checkoutKey}`);
     } catch (error) {
       console.error('Failed to track ViewCheckout:', error);
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useCartStore } from '@/lib/store';
 import { fetchWithSession } from '@/lib/graphql-client';
 import { ShoppingCart } from 'lucide-react';
@@ -32,6 +32,7 @@ export default function AddToCartButton({
   const [isAdded, setIsAdded] = useState(false);
   const { sessionToken, setSessionToken, setCart } = useCartStore();
   const { trackCartAdd } = useFacebookPixel();
+  const trackedAddToCartRef = useRef<Set<string>>(new Set()); // Prevent duplicate AddToCart events
 
   const handleAddToCart = async () => {
     // Validate inputs
@@ -149,7 +150,13 @@ export default function AddToCartButton({
             regularPrice: itemPrice.toString(),
             productCategories: productData?.productCategories || { nodes: [] }
           };
-          trackCartAdd(enhancedProductData, 1);
+          
+          // Prevent duplicate AddToCart tracking
+          const addToCartKey = `addtocart_${productId}_${variationId || 'no-variation'}_${Date.now()}`;
+          if (!trackedAddToCartRef.current.has(addToCartKey)) {
+            trackCartAdd(enhancedProductData, 1);
+            trackedAddToCartRef.current.add(addToCartKey);
+          }
         }
       }
     } catch (error) {

@@ -198,7 +198,11 @@ class FacebookPixelManager {
           if ((f as Window & { fbq?: unknown }).fbq) return;
           n = (f as Window & { fbq: unknown }).fbq = function(...args: unknown[]) {
             const fbqFunction = n as { callMethod?: (...args: unknown[]) => void; queue: unknown[] };
-            fbqFunction.callMethod ? fbqFunction.callMethod(...args) : fbqFunction.queue.push(args);
+            if (fbqFunction.callMethod) {
+              fbqFunction.callMethod(...args);
+            } else {
+              fbqFunction.queue.push(args);
+            }
           };
           if (!(f as Window & { _fbq?: unknown })._fbq) {
             (f as Window & { _fbq: unknown })._fbq = n as (...args: unknown[]) => void;

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, memo } from 'react';
 import { Product, ProductVariation } from '@/lib/types';
 import { CheckCircle2 } from 'lucide-react';
-import { logger } from '@/lib/utils/performance';
+// import { logger } from '@/lib/utils/performance';
 
 interface VariantSelectorProps {
   product: Product;

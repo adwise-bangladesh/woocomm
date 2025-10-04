@@ -27,7 +27,7 @@ const AnimatedOrderButton = dynamic(() => import('./AnimatedOrderButton'), {
   ssr: false
 });
 import { Phone, Star, Package, Clock } from 'lucide-react';
-import { usePriceFormatter, useDiscountCalculator, logger } from '@/lib/utils/performance';
+import { usePriceFormatter, useDiscountCalculator } from '@/lib/utils/performance';
 import { sanitizeHtml } from '@/lib/utils/sanitizer';
 
 interface ProductPageClientProps {
@@ -44,7 +44,7 @@ const ProductPageClient = memo(function ProductPageClient({
   const formatPrice = usePriceFormatter();
   const calculateDiscount = useDiscountCalculator();
   const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null);
-  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
+  const [_selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
   const [showPolicyModal, setShowPolicyModal] = useState(false);
   
   // Facebook Pixel tracking
@@ -81,7 +81,7 @@ const ProductPageClient = memo(function ProductPageClient({
     });
   }, [reviewStats.rating]);
 
-  const { isFastDelivery, isRegularDelivery, isGlobalDelivery, canOrder } = stockInfo;
+  const { isFastDelivery, isRegularDelivery, isGlobalDelivery } = stockInfo;
   
 
   // Calculate discount for current variation/product (memoized)
@@ -114,7 +114,7 @@ const ProductPageClient = memo(function ProductPageClient({
       
       return () => clearTimeout(timeoutId);
     }
-  }, [currentProduct.databaseId, currentProduct.id, trackProduct]);
+  }, [currentProduct, trackProduct]);
 
   return (
     <>

@@ -120,7 +120,7 @@ export class FacebookEventBatcher {
       case 'Purchase':
         // Use the helper function that handles the data transformation
         const { trackPurchase } = await import('./facebook-pixel');
-        trackPurchase(eventData as any, (eventData.items || []) as CartItem[]);
+        trackPurchase(eventData as unknown as Record<string, unknown>, (eventData.items || []) as CartItem[]);
         break;
       case 'AddToCart':
         // Use the helper function that handles the data transformation
@@ -148,7 +148,7 @@ export class FacebookEventBatcher {
     try {
       switch (eventName) {
         case 'Purchase':
-          await facebookConversionsAPI.trackPurchase(eventData as any, (eventData.items || []) as CartItem[], userData);
+          await facebookConversionsAPI.trackPurchase(eventData as unknown as Record<string, unknown>, (eventData.items || []) as CartItem[], userData);
           break;
         case 'AddToCart':
           await facebookConversionsAPI.trackAddToCart(eventData.product as ProductData, (eventData.quantity as number) || 1, userData);

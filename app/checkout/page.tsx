@@ -34,6 +34,10 @@ export default function CheckoutPage() {
   const [showBlockedModal, setShowBlockedModal] = useState(false);
   const [blockedReason, setBlockedReason] = useState('');
   const [verificationResult, setVerificationResult] = useState<{ allowed: boolean; reason: string } | null>(null);
+  
+  // Rate limiting state
+  const [submitAttempts, setSubmitAttempts] = useState<number[]>([]);
+  const [isRateLimited, setIsRateLimited] = useState(false);
 
   // Load saved customer info from localStorage on mount
   useEffect(() => {
@@ -61,7 +65,7 @@ export default function CheckoutPage() {
     setLocalItems(items);
   }, [items]);
 
-  // Auto-verify customer when phone number is entered (with debounce)
+  // Smart verification system - instant for autofill, debounced for manual typing
   useEffect(() => {
     // Skip verification on initial load when form is being populated from localStorage
     if (!isFormLoaded) return;
@@ -85,14 +89,27 @@ export default function CheckoutPage() {
       }
     };
 
-    // Debounce verification (wait 1 second after user stops typing)
-    const timeoutId = setTimeout(() => {
-      if (formData.phone.length >= 10) {
+    // Smart verification logic
+    const phoneLength = formData.phone.length;
+    
+    // Instant verification for complete phone numbers (likely autofill)
+    if (phoneLength === 11 && validatePhone(formData.phone) === '') {
+      verifyPhone();
+      return;
+    }
+    
+    // For partial numbers, use shorter debounce for better UX
+    if (phoneLength >= 10) {
+      const debounceTime = phoneLength === 10 ? 500 : 1000; // Faster for almost complete numbers
+      const timeoutId = setTimeout(() => {
         verifyPhone();
-      }
-    }, 1000);
-
-    return () => clearTimeout(timeoutId);
+      }, debounceTime);
+      
+      return () => clearTimeout(timeoutId);
+    } else {
+      // Clear verification for incomplete numbers
+      setVerificationResult(null);
+    }
   }, [formData.phone, isFormLoaded]);
 
   const formatPrice = (price: string | null | undefined) => {
@@ -102,8 +119,15 @@ export default function CheckoutPage() {
   };
 
   const validateName = (name: string) => {
-    if (name.length < 3) {
+    if (!name || name.trim().length < 3) {
       return 'Name must be at least 3 characters';
+    }
+    if (name.length > 100) {
+      return 'Name is too long (max 100 characters)';
+    }
+    // Basic XSS prevention
+    if (/<script|javascript:|data:|vbscript:/i.test(name)) {
+      return 'Invalid characters in name';
     }
     return '';
   };
@@ -150,15 +174,28 @@ export default function CheckoutPage() {
   };
 
   const validateAddress = (address: string) => {
-    if (address.trim().length < 10) {
-      return 'Please enter your complete address ';
+    if (!address || address.trim().length < 10) {
+      return 'Please enter your complete address';
+    }
+    if (address.length > 500) {
+      return 'Address is too long (max 500 characters)';
+    }
+    // Basic XSS prevention
+    if (/<script|javascript:|data:|vbscript:/i.test(address)) {
+      return 'Invalid characters in address';
     }
     return '';
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Sanitize input to prevent XSS
+    const sanitizedValue = value.replace(/<script[^>]*>.*?<\/script>/gi, '')
+                               .replace(/javascript:/gi, '')
+                               .replace(/on\w+\s*=/gi, '');
+    
+    setFormData((prev) => ({ ...prev, [name]: sanitizedValue }));
     
     // Clear error when user types
     if (name === 'fullName' || name === 'phone' || name === 'address') {
@@ -242,6 +279,20 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Rate limiting check (max 3 attempts per 10 minutes)
+    const now = Date.now();
+    const tenMinutesAgo = now - (10 * 60 * 1000);
+    const recentAttempts = submitAttempts.filter(timestamp => timestamp > tenMinutesAgo);
+    
+    if (recentAttempts.length >= 3) {
+      setIsRateLimited(true);
+      alert('Too many checkout attempts. Please wait 10 minutes before trying again.');
+      return;
+    }
+
+    // Add current attempt timestamp
+    setSubmitAttempts([...recentAttempts, now]);
 
     // Validate name
     const nameError = validateName(formData.fullName);
@@ -349,45 +400,93 @@ export default function CheckoutPage() {
         console.log('✅ Using existing session');
       }
       
-      // Add cart items to the session
+      // Add cart items to the session sequentially to prevent overwrites
       console.log('🛒 Adding cart items to session...');
+      let currentSessionToken = sessionToken;
+      
       try {
-        for (const item of localItems) {
-          console.log('➕ Adding item:', item.product.node.name, 'Qty:', item.quantity);
+        
+        for (let i = 0; i < localItems.length; i++) {
+          const item = localItems[i];
+          console.log(`➕ Adding item ${i + 1}/${localItems.length}:`, item.product.node.name, 'Qty:', item.quantity);
           
           // Check if this is a variable product with variations
           const variationId = item.variation?.node?.databaseId;
           
-          if (variationId) {
-            // Use variation ID for variable products
-            console.log('🔧 Using variation ID:', variationId);
-            await fetchWithSession(
-              ADD_TO_CART_SIMPLE,
-              {
-                input: {
-                  productId: item.product.node.databaseId,
-                  variationId: variationId,
-                  quantity: item.quantity
-                }
-              },
-              sessionToken || undefined
-            );
-          } else {
-            // Use simple product ID for simple products
-            console.log('🔧 Using simple product ID:', item.product.node.databaseId);
-            await fetchWithSession(
-              ADD_TO_CART_SIMPLE,
-              {
-                input: {
-                  productId: item.product.node.databaseId,
-                  quantity: item.quantity
-                }
-              },
-              sessionToken || undefined
-            );
+          try {
+            let result;
+            if (variationId) {
+              // Use variation ID for variable products
+              console.log('🔧 Using variation ID:', variationId);
+              result = await fetchWithSession(
+                ADD_TO_CART_SIMPLE,
+                {
+                  input: {
+                    productId: item.product.node.databaseId,
+                    variationId: variationId,
+                    quantity: item.quantity
+                  }
+                },
+                currentSessionToken || undefined
+              );
+            } else {
+              // Use simple product ID for simple products
+              console.log('🔧 Using simple product ID:', item.product.node.databaseId);
+              result = await fetchWithSession(
+                ADD_TO_CART_SIMPLE,
+                {
+                  input: {
+                    productId: item.product.node.databaseId,
+                    quantity: item.quantity
+                  }
+                },
+                currentSessionToken || undefined
+              );
+            }
+            
+            // Update session token if we got a new one
+            if (result.sessionToken) {
+              currentSessionToken = result.sessionToken;
+              console.log('🔄 Updated session token for item', i + 1);
+            }
+            
+            // Small delay between items to prevent race conditions
+            if (i < localItems.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+          } catch (itemError) {
+            console.warn(`⚠️ Failed to add item ${i + 1}:`, itemError);
+            // Continue with other items
           }
         }
+        
+        // Update the session token if it changed
+        if (currentSessionToken && currentSessionToken !== sessionToken) {
+          sessionToken = currentSessionToken;
+          localStorage.setItem('woocommerce-session-token', currentSessionToken);
+          console.log('💾 Updated session token in localStorage');
+        }
+        
         console.log('✅ All items added to session');
+        
+        // Verify cart contents before checkout (optional debug step)
+        try {
+          console.log('🔍 Verifying cart contents...');
+          const cartCheck = await fetchWithSession(
+            `query { cart { contents { nodes { key quantity product { node { name } } } } } }`,
+            {},
+            currentSessionToken || undefined
+          );
+          const cartItems = (cartCheck.data as any)?.cart?.contents?.nodes || [];
+          console.log(`📦 Cart verification: ${cartItems.length} items in session`);
+          cartItems.forEach((item: any, index: number) => {
+            console.log(`  ${index + 1}. ${item.product.node.name} (Qty: ${item.quantity})`);
+          });
+        } catch (verifyError) {
+          console.warn('⚠️ Could not verify cart contents:', verifyError);
+        }
+        
       } catch (cartError) {
         // Continue with checkout even if some items fail to add
         console.warn('⚠️ Failed to add some items to session:', cartError);
@@ -396,30 +495,50 @@ export default function CheckoutPage() {
       // Place the order with the session that has cart items
       let result: any;
       
-      if (!sessionToken) {
+      // Use the updated session token
+      const finalSessionToken = currentSessionToken || sessionToken;
+      
+      if (!finalSessionToken) {
         throw new Error('No session token available for checkout');
       }
       
-      console.log('🚀 Placing order with session:', sessionToken.substring(0, 20) + '...');
+      console.log('🚀 Placing order with session:', finalSessionToken.substring(0, 20) + '...');
       console.log('📋 Checkout input:', JSON.stringify(checkoutInput, null, 2));
       
       try {
-        // Add timeout wrapper for order placement
+        // Add timeout wrapper for order placement with retry logic
         const orderPromise = fetchWithSession(
           PLACE_ORDER,
           { input: checkoutInput },
-          sessionToken
+          finalSessionToken
         );
         
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Order placement timeout after 30 seconds')), 30000);
+          setTimeout(() => reject(new Error('Order placement timeout after 20 seconds')), 20000);
         });
         
         result = await Promise.race([orderPromise, timeoutPromise]);
         console.log('✅ Order placed successfully:', result);
       } catch (orderError) {
         console.error('❌ Order placement failed:', orderError);
-        throw orderError;
+        
+        // Retry logic for timeout errors
+        if (orderError instanceof Error && orderError.message.includes('timeout')) {
+          console.log('🔄 Retrying order placement...');
+          try {
+            result = await fetchWithSession(
+              PLACE_ORDER,
+              { input: checkoutInput },
+              finalSessionToken
+            );
+            console.log('✅ Order placed successfully on retry:', result);
+          } catch (retryError) {
+            console.error('❌ Retry also failed:', retryError);
+            throw retryError;
+          }
+        } else {
+          throw orderError;
+        }
       }
       
       // Save session token if we got a new one
@@ -545,6 +664,7 @@ export default function CheckoutPage() {
                   name="fullName"
                   required
                   minLength={3}
+                  maxLength={100}
                   value={formData.fullName}
                   onChange={handleInputChange}
                   className={`w-full px-3 py-2 text-sm text-gray-900 border ${errors.fullName ? 'border-red-500' : 'border-gray-200'} rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent placeholder:text-gray-500`}
@@ -559,18 +679,43 @@ export default function CheckoutPage() {
                 <label htmlFor="phone" className="block text-xs font-medium text-gray-700 mb-1">
                   Phone Number *
                 </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  required
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  className={`w-full px-3 py-2 text-sm text-gray-900 border ${errors.phone ? 'border-red-500' : 'border-gray-200'} rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent placeholder:text-gray-500`}
-                  placeholder="01XXXXXXXXX"
-                />
+                <div className="relative">
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    required
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 text-sm text-gray-900 border ${errors.phone ? 'border-red-500' : 'border-gray-200'} rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent placeholder:text-gray-500`}
+                    placeholder="01XXXXXXXXX"
+                  />
+                  {/* Verification Status Indicator */}
+                  {formData.phone && formData.phone.length >= 10 && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                      {verificationResult === null ? (
+                        <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+                      ) : verificationResult.allowed ? (
+                        <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                          <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      ) : (
+                        <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                          <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
                 {errors.phone && (
                   <p className="text-xs text-red-600 mt-1">{errors.phone}</p>
+                )}
+                {verificationResult && !verificationResult.allowed && (
+                  <p className="text-xs text-red-600 mt-1">{verificationResult.reason}</p>
                 )}
               </div>
 
@@ -583,6 +728,7 @@ export default function CheckoutPage() {
                   name="address"
                   required
                   rows={3}
+                  maxLength={500}
                   value={formData.address}
                   onChange={handleInputChange}
                   className={`w-full px-3 py-2 text-sm text-gray-900 border ${errors.address ? 'border-red-500' : 'border-gray-200'} rounded focus:ring-1 focus:ring-gray-400 focus:border-transparent resize-none placeholder:text-gray-500`}
@@ -672,14 +818,21 @@ export default function CheckoutPage() {
           {/* Place Order Button */}
           <button
             type="submit"
-            disabled={isLoading || localItems.length === 0}
+            disabled={isLoading || localItems.length === 0 || isRateLimited}
             className="w-full text-white px-6 py-3 rounded-[5px] text-base font-bold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed mb-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] disabled:transform-none animate-pulse-btn"
-            style={{ backgroundColor: '#fe6c06' }}
-            onMouseEnter={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = '#e55a00')}
-            onMouseLeave={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = '#fe6c06')}
+            style={{ backgroundColor: isRateLimited ? '#dc2626' : '#fe6c06' }}
+            onMouseEnter={(e) => !e.currentTarget.disabled && !isRateLimited && (e.currentTarget.style.backgroundColor = '#e55a00')}
+            onMouseLeave={(e) => !e.currentTarget.disabled && !isRateLimited && (e.currentTarget.style.backgroundColor = '#fe6c06')}
           >
             <div className="flex items-center justify-center gap-2">
-              {isLoading ? (
+              {isRateLimited ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white rounded-full flex items-center justify-center">
+                    <span className="text-xs">!</span>
+                  </div>
+                  <span>Rate Limited - Wait 10 min</span>
+                </>
+              ) : isLoading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   <span>Processing Order...</span>

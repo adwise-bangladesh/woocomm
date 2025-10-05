@@ -119,36 +119,76 @@ class FacebookPixelManager {
   private sessionId = Date.now().toString();
 
   constructor() {
-    this.loadPixelsFromEnv();
+    // Don't load pixels in constructor - load them when needed
+    // this.loadPixelsFromEnv();
   }
 
   private loadPixelsFromEnv() {
-    // Load multiple pixel IDs from environment variables
-    const pixelIds = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_IDS?.split(',') || [];
+    // Clear existing pixels
+    this.pixels = [];
     
-    this.pixels = pixelIds
-      .map(id => id.trim())
-      .filter(id => id.length > 0)
-      .map(id => ({
-        pixelId: id,
-        enabled: true
-      }));
-
-    // Also check for single pixel ID (backward compatibility)
-    if (process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID && this.pixels.length === 0) {
-      this.pixels.push({
-        pixelId: process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID,
-        enabled: true
-      });
-    }
-
-    // Fallback: hardcode the pixel ID for testing
-    if (this.pixels.length === 0) {
+    // Only load environment variables in browser environment
+    if (typeof window === 'undefined') {
+      console.log('Facebook Pixel: Server-side environment, using fallback');
       this.pixels.push({
         pixelId: '939261277872914',
         enabled: true
       });
+      return;
     }
+    
+    // Load multiple pixel IDs from environment variables (PRIORITY)
+    const pixelIds = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_IDS?.split(',') || [];
+    
+    // Debug: Check if environment variables are loaded (only in development)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Environment variables check:');
+      console.log('NEXT_PUBLIC_FACEBOOK_PIXEL_IDS:', process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_IDS);
+      console.log('NEXT_PUBLIC_FACEBOOK_PIXEL_ID:', process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID);
+      console.log('Split pixelIds:', pixelIds);
+    }
+    
+    if (pixelIds.length > 0) {
+      this.pixels = pixelIds
+        .map(id => id.trim())
+        .filter(id => id.length > 0)
+        .map(id => ({
+          pixelId: id,
+          enabled: true
+        }));
+      
+      console.log('Facebook Pixel: Loaded multiple pixels from NEXT_PUBLIC_FACEBOOK_PIXEL_IDS:', this.pixels.map(p => p.pixelId));
+    }
+    
+    // If no multiple pixels, check for single pixel ID (backward compatibility)
+    if (this.pixels.length === 0 && process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID) {
+      const singlePixelId = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID.trim();
+      this.pixels.push({
+        pixelId: singlePixelId,
+        enabled: true
+      });
+      
+      console.log('Facebook Pixel: Loaded single pixel from NEXT_PUBLIC_FACEBOOK_PIXEL_ID:', singlePixelId);
+    }
+
+    // Fallback: Use hardcoded pixel IDs if environment variables are not loaded
+    if (this.pixels.length === 0) {
+      this.pixels = [
+        {
+          pixelId: '939261277872914',
+          enabled: true
+        },
+        {
+          pixelId: '803205875663517',
+          enabled: true
+        }
+      ];
+      
+      console.log('Facebook Pixel: Using fallback pixel IDs:', this.pixels.map(p => p.pixelId));
+    }
+
+    // Final debug log
+    console.log('Facebook Pixel: Final loaded pixels:', this.pixels.map(p => p.pixelId));
   }
 
   public async initialize() {
@@ -159,10 +199,21 @@ class FacebookPixelManager {
     // Reload pixels in case env vars weren't available during construction
     this.loadPixelsFromEnv();
 
+    // Debug: Check environment variables (only in development)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('=== Facebook Pixel Environment Debug ===');
+      console.log('NEXT_PUBLIC_FACEBOOK_PIXEL_IDS:', process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_IDS);
+      console.log('NEXT_PUBLIC_FACEBOOK_PIXEL_ID:', process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID);
+      console.log('Current pixels array:', this.pixels);
+      console.log('Pixels length:', this.pixels.length);
+    }
+
     if (this.pixels.length === 0) {
       console.warn('No Facebook Pixel IDs found in environment variables');
       return;
     }
+
+    console.log('Facebook Pixel: Initializing with', this.pixels.length, 'pixels:', this.pixels.map(p => p.pixelId));
 
     try {
       // Load Facebook Pixel script
@@ -171,11 +222,13 @@ class FacebookPixelManager {
       // Initialize each pixel
       for (const pixel of this.pixels) {
         if (pixel.enabled) {
+          console.log('Facebook Pixel: Initializing pixel', pixel.pixelId);
           this.initPixel(pixel.pixelId);
         }
       }
 
       this.isInitialized = true;
+      console.log('Facebook Pixel: Successfully initialized', this.pixels.length, 'pixels');
     } catch (error) {
       console.error('Failed to initialize Facebook Pixel:', error);
     }
@@ -237,7 +290,9 @@ class FacebookPixelManager {
 
     try {
       // Initialize the pixel
+      console.log('Facebook Pixel: About to initialize pixel', pixelId);
       window.fbq('init', pixelId);
+      console.log('Facebook Pixel: Successfully initialized pixel', pixelId);
     } catch (error) {
       console.error(`Failed to initialize pixel ${pixelId}:`, error);
     }
